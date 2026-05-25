@@ -26,10 +26,3 @@ export type {
   GraphSnapshot,
   NodeId,
 } from './graph';
-
-export type {
-  StructureAlgorithmFrame,
-  StructureAlgorithmMeta,
-  StructureCell,
-  StructureSnapshot,
-} from './structure';
