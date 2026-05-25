@@ -18,11 +18,11 @@ export const algorithmCatalog: readonly AlgorithmCategory[] = [
     title: 'Базовые структуры данных',
     description: 'Линейные структуры и операции доступа.',
     items: [
-      { id: 'stack-array', name: 'Стек: реализация на массивах', route: '/structures/stack-array', status: 'ready' },
-      { id: 'stack-list', name: 'Стек: реализация на списках', route: '/structures/stack-list', status: 'ready' },
-      { id: 'queue-array', name: 'Очередь: реализация на массивах', route: '/structures/queue-array', status: 'ready' },
-      { id: 'queue-list', name: 'Очередь: реализация на списках', route: '/structures/queue-list', status: 'ready' },
-      { id: 'indexing', name: 'Индексирование', route: '/structures/indexing', status: 'ready' },
+      { id: 'stack-array', name: 'Стек: реализация на массивах', route: '/structures/player', status: 'ready' },
+      { id: 'stack-list', name: 'Стек: реализация на списках', route: '/structures/stack-list', status: 'planned' },
+      { id: 'queue-array', name: 'Очередь: реализация на массивах', route: '/structures/player', status: 'ready' },
+      { id: 'queue-list', name: 'Очередь: реализация на списках', route: '/structures/queue-list', status: 'planned' },
+      { id: 'indexing', name: 'Индексирование', route: '/structures/player', status: 'ready' },
     ],
   },
   {
