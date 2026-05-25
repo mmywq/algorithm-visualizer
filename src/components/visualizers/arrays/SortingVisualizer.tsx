@@ -1,22 +1,28 @@
 import { useEffect, useMemo, useState } from 'react';
 import { bubbleSort, mergeSort } from '@/algorithms/arrays';
 import { PlayerControls } from '@/components/player/PlayerControls';
+import { loadArrayPresets, loadSettings, saveArrayPreset, saveSettings } from '@/lib/storage';
 import { useAlgorithmPlayerStore } from '@/stores';
 import type { AlgorithmFrame, ArrayAlgorithmFrame } from '@/types';
 import { ArrayVisualizer } from './ArrayVisualizer';
 
 type SortingAlgorithmKey = 'bubble' | 'merge';
 
-const DEFAULT_VALUES = [42, 18, 64, 9, 73, 31, 55, 27];
+const FALLBACK_VALUES = [42, 18, 64, 9, 73, 31, 55, 27];
 
 const algorithmLabels: Record<SortingAlgorithmKey, string> = {
   bubble: 'Bubble Sort',
   merge: 'Merge Sort',
 };
 
-export function SortingVisualizer() {
+interface SortingVisualizerProps {
+  readonly defaultValues?: readonly number[];
+}
+
+export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVisualizerProps) {
   const [selectedAlgorithm, setSelectedAlgorithm] = useState<SortingAlgorithmKey>('bubble');
-  const [values, setValues] = useState<readonly number[]>(DEFAULT_VALUES);
+  const [values, setValues] = useState<readonly number[]>(defaultValues);
+  const [presets, setPresets] = useState(loadArrayPresets());
 
   const currentFrame = useAlgorithmPlayerStore((state) => state.currentFrame);
   const currentIndex = useAlgorithmPlayerStore((state) => state.currentIndex);
@@ -36,19 +42,17 @@ export function SortingVisualizer() {
 
   useEffect(() => {
     loadSortingAlgorithm(selectedAlgorithm, values, loadAlgorithm);
-  }, [loadAlgorithm, selectedAlgorithm, values]);
+    const settings = loadSettings();
+    saveSettings({ ...settings, lastArrayValues: values, playbackSpeedMs });
+  }, [loadAlgorithm, playbackSpeedMs, selectedAlgorithm, values]);
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
       <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 shadow-xl shadow-slate-950/20">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-cyan-300">
-              Step 4
-            </p>
-            <h1 className="mt-2 text-4xl font-bold tracking-tight text-white">
-              UI для сортировок
-            </h1>
+            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-cyan-300">Step 4</p>
+            <h1 className="mt-2 text-4xl font-bold tracking-tight text-white">UI для сортировок</h1>
             <p className="mt-3 max-w-3xl text-slate-300">
               UI работает только с кадрами из генераторов и не содержит логики сортировки.
               Смена алгоритма пересоздаёт генератор и сбрасывает историю плеера.
@@ -77,10 +81,32 @@ export function SortingVisualizer() {
           <span>
             Текущий массив: <strong className="text-slate-100">[{valuesLabel}]</strong>
           </span>
-          <button className="control-button" onClick={() => setValues(shuffleValues(values))} type="button">
-            Перемешать
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button className="control-button" onClick={() => setValues(shuffleValues(values))} type="button">
+              Перемешать
+            </button>
+            <button
+              className="control-button"
+              onClick={() => {
+                saveArrayPreset(`Preset ${new Date().toLocaleTimeString()}`, values);
+                setPresets(loadArrayPresets());
+              }}
+              type="button"
+            >
+              Сохранить пресет
+            </button>
+          </div>
         </div>
+
+        {presets.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {presets.slice(0, 5).map((preset) => (
+              <button className="control-button" key={preset.id} onClick={() => setValues(preset.values)} type="button">
+                {preset.name}
+              </button>
+            ))}
+          </div>
+        )}
       </section>
 
       <ArrayVisualizer frame={arrayFrame} />

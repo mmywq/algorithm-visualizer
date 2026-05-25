@@ -6,6 +6,7 @@ export interface AppSettings {
   readonly playbackSpeedMs: number;
   readonly lastArrayValues: readonly number[];
   readonly lastGraphStartNodeId: string;
+  readonly lastRoute?: string;
 }
 
 const defaultSettings: AppSettings = {
@@ -13,6 +14,7 @@ const defaultSettings: AppSettings = {
   playbackSpeedMs: 650,
   lastArrayValues: [42, 18, 64, 9, 73, 31, 55, 27],
   lastGraphStartNodeId: 'A',
+  lastRoute: '/',
 };
 
 export const loadSettings = (): AppSettings => loadFromStorage<AppSettings>(STORAGE_KEYS.settings, defaultSettings);

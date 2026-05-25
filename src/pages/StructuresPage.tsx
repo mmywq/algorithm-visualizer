@@ -1,20 +1,26 @@
 import { useEffect, useState } from 'react';
-import { indexingDemo, queueArrayDemo, stackArrayDemo } from '@/algorithms/structures';
+import { indexingDemo, queueArrayDemo, queueListDemo, stackArrayDemo, stackListDemo } from '@/algorithms/structures';
 import { PlayerControls } from '@/components/player/PlayerControls';
 import { StructureVisualizer } from '@/components/visualizers/structures/StructureVisualizer';
 import { useAlgorithmPlayerStore } from '@/stores';
 import type { AlgorithmFrame, StructureAlgorithmFrame } from '@/types';
 
-type DemoKey = 'stack-array' | 'queue-array' | 'indexing';
+type DemoKey = 'stack-array' | 'stack-list' | 'queue-array' | 'queue-list' | 'indexing';
 
 const demoFactories: Record<DemoKey, () => Generator<StructureAlgorithmFrame, void, unknown>> = {
   'stack-array': () => stackArrayDemo({ values: [8, 3, 5, 1, 9] }),
+  'stack-list': () => stackListDemo({ values: [8, 3, 5, 1, 9] }),
   'queue-array': () => queueArrayDemo({ values: [4, 7, 2, 6] }),
+  'queue-list': () => queueListDemo({ values: [4, 7, 2, 6] }),
   indexing: () => indexingDemo({ values: [12, 7, 19, 25, 3] }),
 };
 
-export function StructuresPage() {
-  const [demoKey, setDemoKey] = useState<DemoKey>('stack-array');
+interface StructuresPageProps {
+  readonly initialDemo?: DemoKey;
+}
+
+export function StructuresPage({ initialDemo = 'stack-array' }: StructuresPageProps) {
+  const [demoKey, setDemoKey] = useState<DemoKey>(initialDemo);
   const currentFrame = useAlgorithmPlayerStore((state) => state.currentFrame);
   const currentIndex = useAlgorithmPlayerStore((state) => state.currentIndex);
   const frames = useAlgorithmPlayerStore((state) => state.frames);
@@ -28,6 +34,10 @@ export function StructuresPage() {
   const status = useAlgorithmPlayerStore((state) => state.status);
 
   useEffect(() => {
+    setDemoKey(initialDemo);
+  }, [initialDemo]);
+
+  useEffect(() => {
     loadAlgorithm(demoFactories[demoKey]());
   }, [demoKey, loadAlgorithm]);
 
@@ -39,7 +49,9 @@ export function StructuresPage() {
         <h1 className="text-3xl font-bold text-white">Базовые структуры данных</h1>
         <div className="mt-4 flex flex-wrap gap-2">
           <button className="control-button" onClick={() => setDemoKey('stack-array')} type="button">Стек (array)</button>
+          <button className="control-button" onClick={() => setDemoKey('stack-list')} type="button">Стек (list)</button>
           <button className="control-button" onClick={() => setDemoKey('queue-array')} type="button">Очередь (array)</button>
+          <button className="control-button" onClick={() => setDemoKey('queue-list')} type="button">Очередь (list)</button>
           <button className="control-button" onClick={() => setDemoKey('indexing')} type="button">Индексирование</button>
         </div>
       </section>

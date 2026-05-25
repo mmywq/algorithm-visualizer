@@ -1,6 +1,7 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
 import { bfs, dfs } from '@/algorithms/graphs';
 import { PlayerControls } from '@/components/player/PlayerControls';
+import { loadGraphPresets, loadSettings, saveGraphPreset, saveSettings } from '@/lib/storage';
 import { useAlgorithmPlayerStore } from '@/stores';
 import type { AlgorithmFrame, GraphAlgorithmFrame, GraphSnapshot, NodeId } from '@/types';
 import { GraphVisualizer } from './GraphVisualizer';
@@ -12,7 +13,7 @@ const algorithmLabels: Record<GraphAlgorithmKey, string> = {
   dfs: 'DFS',
 };
 
-const defaultGraph: GraphSnapshot = {
+const baseGraph: GraphSnapshot = {
   nodes: [
     { id: 'A', label: 'A', position: { x: 0, y: 120 }, payload: {} },
     { id: 'B', label: 'B', position: { x: 180, y: 20 }, payload: {} },
@@ -32,9 +33,15 @@ const defaultGraph: GraphSnapshot = {
   ],
 };
 
-export function GraphTraversalVisualizer() {
+interface GraphTraversalVisualizerProps {
+  readonly defaultStartNodeId?: NodeId;
+}
+
+export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTraversalVisualizerProps) {
   const [selectedAlgorithm, setSelectedAlgorithm] = useState<GraphAlgorithmKey>('bfs');
-  const [startNodeId, setStartNodeId] = useState<NodeId>('A');
+  const [startNodeId, setStartNodeId] = useState<NodeId>(defaultStartNodeId);
+  const [graph, setGraph] = useState<GraphSnapshot>(baseGraph);
+  const [presets, setPresets] = useState(loadGraphPresets());
 
   const currentFrame = useAlgorithmPlayerStore((state) => state.currentFrame);
   const currentIndex = useAlgorithmPlayerStore((state) => state.currentIndex);
@@ -51,24 +58,18 @@ export function GraphTraversalVisualizer() {
   const graphFrame = isGraphAlgorithmFrame(currentFrame) ? currentFrame : null;
 
   useEffect(() => {
-    loadGraphAlgorithm(selectedAlgorithm, defaultGraph, startNodeId, loadAlgorithm);
-  }, [loadAlgorithm, selectedAlgorithm, startNodeId]);
+    loadGraphAlgorithm(selectedAlgorithm, graph, startNodeId, loadAlgorithm);
+    const settings = loadSettings();
+    saveSettings({ ...settings, lastGraphStartNodeId: startNodeId, playbackSpeedMs });
+  }, [graph, loadAlgorithm, playbackSpeedMs, selectedAlgorithm, startNodeId]);
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
       <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 shadow-xl shadow-slate-950/20">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-violet-300">
-              Step 6
-            </p>
-            <h1 className="mt-2 text-4xl font-bold tracking-tight text-white">
-              UI для графов
-            </h1>
-            <p className="mt-3 max-w-3xl text-slate-300">
-              React Flow отображает только снимки графа и метаданные кадра. BFS/DFS
-              остаются чистыми generator-функциями без зависимости от UI.
-            </p>
+            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-violet-300">Step 6</p>
+            <h1 className="mt-2 text-4xl font-bold tracking-tight text-white">UI для графов</h1>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -89,23 +90,48 @@ export function GraphTraversalVisualizer() {
           </div>
         </div>
 
-        <label className="mt-5 block max-w-xs text-sm text-slate-300">
-          Стартовая вершина
-          <select
-            className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 outline-none transition focus:border-violet-400"
-            onChange={(event: ChangeEvent<HTMLSelectElement>) => setStartNodeId(event.target.value)}
-            value={startNodeId}
-          >
-            {defaultGraph.nodes.map((node) => (
-              <option key={node.id} value={node.id}>
-                {node.label}
-              </option>
+        <div className="mt-5 flex flex-col gap-3 md:flex-row md:items-center">
+          <label className="block max-w-xs text-sm text-slate-300">
+            Стартовая вершина
+            <select
+              className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 outline-none transition focus:border-violet-400"
+              onChange={(event: ChangeEvent<HTMLSelectElement>) => setStartNodeId(event.target.value)}
+              value={startNodeId}
+            >
+              {graph.nodes.map((node) => (
+                <option key={node.id} value={node.id}>
+                  {node.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              className="control-button"
+              onClick={() => {
+                saveGraphPreset(`Graph ${new Date().toLocaleTimeString()}`, graph);
+                setPresets(loadGraphPresets());
+              }}
+              type="button"
+            >
+              Сохранить пресет
+            </button>
+          </div>
+        </div>
+
+        {presets.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {presets.slice(0, 5).map((preset) => (
+              <button className="control-button" key={preset.id} onClick={() => setGraph(preset.graph)} type="button">
+                {preset.name}
+              </button>
             ))}
-          </select>
-        </label>
+          </div>
+        )}
       </section>
 
-      <GraphVisualizer frame={graphFrame} graph={defaultGraph} />
+      <GraphVisualizer frame={graphFrame} graph={graph} />
 
       <PlayerControls
         canStepBackward={currentIndex > 0}
@@ -115,7 +141,7 @@ export function GraphTraversalVisualizer() {
         onPause={pause}
         onPlay={play}
         onPrevStep={prevStep}
-        onReset={() => loadGraphAlgorithm(selectedAlgorithm, defaultGraph, startNodeId, loadAlgorithm)}
+        onReset={() => loadGraphAlgorithm(selectedAlgorithm, graph, startNodeId, loadAlgorithm)}
         onSpeedChange={setPlaybackSpeed}
         playbackSpeedMs={playbackSpeedMs}
         status={status}
