@@ -29,7 +29,11 @@ const makeFrame = (
   activeIds: activeIndex === undefined ? [] : [snapshot.cells[activeIndex]?.id ?? ''],
   pseudocode: { line: pseudocodeLine },
   message,
-  meta: { operation, pointerIndex, activeIndex },
+  meta: {
+    operation,
+    ...(pointerIndex === undefined ? {} : { pointerIndex }),
+    ...(activeIndex === undefined ? {} : { activeIndex }),
+  },
 });
 
 export function* stackArrayDemo({ values, capacity = 8 }: DemoInput): Generator<StructureAlgorithmFrame, void, unknown> {

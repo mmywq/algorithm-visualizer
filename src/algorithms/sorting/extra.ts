@@ -27,15 +27,16 @@ export function* countingSortDemo(): Generator<ArrayAlgorithmFrame, void, unknow
   let step = 0;
 
   for (let i = 0; i < items.length; i += 1) {
-    count[items[i]!.value] += 1;
+    const currentValue = items[i]!.value;
+    count[currentValue] = (count[currentValue] ?? 0) + 1;
     yield createFrame(step++, 'inspect', items, [i], `count[${items[i]!.value}]++`, { auxiliaryArray: [...count] });
   }
 
   let write = 0;
   for (let value = 0; value < count.length; value += 1) {
-    while (count[value]! > 0) {
+    while ((count[value] ?? 0) > 0) {
       items[write] = { ...items[write]!, value };
-      count[value] -= 1;
+      count[value] = (count[value] ?? 0) - 1;
       yield createFrame(step++, 'merge', items, [write], `Записываем значение ${value}.`, {
         auxiliaryArray: [...count],
         sortedIndices: Array.from({ length: write + 1 }, (_, idx) => idx),

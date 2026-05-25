@@ -29,7 +29,10 @@ const frame = (
   activeIds: activeIndex === undefined ? [] : [data.cells[activeIndex]?.id ?? ''],
   pseudocode: { line: step + 1 },
   message,
-  meta: { operation, activeIndex, pointerIndex: activeIndex },
+  meta: {
+    operation,
+    ...(activeIndex === undefined ? {} : { activeIndex, pointerIndex: activeIndex }),
+  },
 });
 
 function* runScenario(s: DemoScenario): Generator<StructureAlgorithmFrame, void, unknown> {

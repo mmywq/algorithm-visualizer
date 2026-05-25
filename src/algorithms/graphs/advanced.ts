@@ -111,11 +111,13 @@ export function* dijkstraDemo(): Generator<GraphAlgorithmFrame, void, unknown> {
 
   while (visited.size < graph.nodes.length) {
     const candidates = graph.nodes.filter((n) => !visited.has(n.id));
+    const seed = candidates[0];
+    if (seed === undefined) break;
     const currentNode = candidates.reduce((best, node) =>
       dist.get(node.id)! < dist.get(best.id)! ? node : best,
-    candidates[0]);
+    seed);
 
-    if (currentNode === undefined || dist.get(currentNode.id) === Number.POSITIVE_INFINITY) break;
+    if (dist.get(currentNode.id) === Number.POSITIVE_INFINITY) break;
     visited.add(currentNode.id);
 
     yield createGraphFrame(

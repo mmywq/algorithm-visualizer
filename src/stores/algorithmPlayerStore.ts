@@ -4,7 +4,7 @@ import type { AlgorithmFrame, AlgorithmGenerator, AlgorithmStatus } from '@/type
 type PlayerFrame = AlgorithmFrame<unknown, Record<string, unknown>>;
 type PlayerGenerator = AlgorithmGenerator<unknown, Record<string, unknown>>;
 
-type PlaybackTimerId = ReturnType<typeof window.setInterval>;
+type PlaybackTimerId = number | ReturnType<typeof setInterval>;
 
 interface LoadAlgorithmOptions {
   readonly initialFrame?: PlayerFrame;

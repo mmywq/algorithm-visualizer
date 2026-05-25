@@ -1,4 +1,4 @@
-import ReactFlow, { Background, Controls, type Edge, type Node } from 'reactflow';
+import ReactFlow, { Background, Controls, MarkerType, type Edge, type Node } from 'reactflow';
 import type { GraphAlgorithmFrame, GraphEdge, GraphNode, GraphSnapshot } from '@/types';
 import 'reactflow/dist/style.css';
 
@@ -112,7 +112,7 @@ const toReactFlowEdge = (edge: GraphEdge, frame: GraphAlgorithmFrame | null): Ed
     target: edge.target,
     animated: isActive,
     ...(edge.weight === undefined ? {} : { label: edge.weight.toString() }),
-    ...(edge.directed ? { markerEnd: { type: 'arrowclosed', color } } : {}),
+    ...(edge.directed ? { markerEnd: { type: MarkerType.ArrowClosed, color } } : {}),
     style: {
       stroke: color,
       strokeWidth: isActive || isTraversed ? 3 : 2,
