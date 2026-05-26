@@ -1,3 +1,5 @@
+import { useUiPreferencesStore } from '@/stores';
+
 interface SiteHeaderProps {
   readonly navigate: (route: string) => void;
 }

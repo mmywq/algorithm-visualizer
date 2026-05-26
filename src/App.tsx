@@ -18,10 +18,14 @@ function App() {
   const [route, setRoute] = useState<string>(getInitialRoute());
   const setPlaybackSpeed = useAlgorithmPlayerStore((state) => state.setPlaybackSpeed);
   const theme = useUiPreferencesStore((state) => state.theme);
+  const setTheme = useUiPreferencesStore((state) => state.setTheme);
+  const setUiPlaybackSpeed = useUiPreferencesStore((state) => state.setPlaybackSpeedMs);
 
   useEffect(() => {
     setPlaybackSpeed(settings.playbackSpeedMs);
-  }, [setPlaybackSpeed, settings.playbackSpeedMs]);
+    setUiPlaybackSpeed(settings.playbackSpeedMs);
+    setTheme(settings.theme);
+  }, [setPlaybackSpeed, setTheme, setUiPlaybackSpeed, settings.playbackSpeedMs, settings.theme]);
 
   useEffect(() => {
     const onHashChange = () => {

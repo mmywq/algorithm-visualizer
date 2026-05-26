@@ -11,6 +11,10 @@ type SortingAlgorithmKey = 'bubble' | 'merge';
 const FALLBACK_VALUES = [42, 18, 64, 9, 73, 31, 55, 27];
 const MAX_ARRAY_SIZE = 64;
 const algorithmLabels: Record<SortingAlgorithmKey, string> = { bubble: 'Bubble Sort', merge: 'Merge Sort' };
+const pseudocodeByAlgorithm: Record<SortingAlgorithmKey, readonly string[]> = {
+  bubble: ['for i = 0..n-1', 'for j = 0..n-i-2', 'if A[j] > A[j+1]', 'swap(A[j], A[j+1])'],
+  merge: ['split array in halves', 'recursively sort left half', 'recursively sort right half', 'merge two sorted halves'],
+};
 
 interface SortingVisualizerProps {
   readonly defaultValues?: readonly number[];
@@ -66,11 +70,11 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
 
   return (
     <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-4 pb-8 lg:px-8">
-      <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 shadow-xl shadow-slate-950/20">
+      <section className="rounded-3xl border border-app bg-surface p-6 shadow-xl shadow-slate-950/10">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h1 className="mt-2 text-4xl font-bold tracking-tight text-white">Алгоритмы сортировки</h1>
-            <p className="mt-3 max-w-3xl text-slate-300">Выберите алгоритм, задайте входные данные вручную или сгенерируйте случайные значения, затем изучайте каждый шаг.</p>
+            <h1 className="mt-2 text-4xl font-bold tracking-tight text-app-primary">Алгоритмы сортировки</h1>
+            <p className="mt-3 max-w-3xl text-app-muted">Выберите алгоритм, задайте входные данные вручную или сгенерируйте случайные значения, затем изучайте каждый шаг.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             {(['bubble', 'merge'] as const).map((algorithmKey) => (
@@ -81,11 +85,11 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
           </div>
         </div>
 
-        <div className="mt-5 grid gap-3 rounded-2xl border border-slate-800 bg-slate-950/70 p-4 text-sm text-slate-300 lg:grid-cols-[1fr_auto]">
+        <div className="mt-5 grid gap-3 rounded-2xl border border-app bg-surface p-4 text-sm text-app-muted lg:grid-cols-[1fr_auto]">
           <div>
-            <p className="mb-2 text-slate-200">Ввод массива (через запятую)</p>
+            <p className="mb-2 text-app-primary">Ввод массива (через запятую)</p>
             <div className="flex gap-2">
-              <input className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100" value={manualInput} onChange={(e) => setManualInput(e.target.value)} />
+              <input className="w-full rounded-xl border border-app bg-surface px-3 py-2 text-app-primary" value={manualInput} onChange={(e) => setManualInput(e.target.value)} />
               <button className="control-button" onClick={applyManualValues} type="button">Применить</button>
             </div>
             {inputError !== null && <p className="mt-2 text-rose-300">{inputError}</p>}
@@ -94,7 +98,7 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
             <button className="control-button" onClick={() => setValues(shuffleValues(values))} type="button">Перемешать</button>
             <button className="control-button" onClick={() => { saveArrayPreset(`Preset ${new Date().toLocaleTimeString()}`, values); setPresets(loadArrayPresets()); }} type="button">Сохранить пресет</button>
           </div>
-          <p>Текущий массив: <strong className="text-slate-100">[{valuesLabel}]</strong></p>
+          <p>Текущий массив: <strong className="text-app-primary">[{valuesLabel}]</strong></p>
         </div>
 
         {presets.length > 0 && (
@@ -108,20 +112,21 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
         <ArrayVisualizer frame={arrayFrame} />
-        <aside className="rounded-3xl border border-slate-800 bg-slate-900/70 p-5">
-          <h3 className="text-lg font-semibold text-slate-100">Theory Panel</h3>
-          <p className="mt-2 text-sm text-slate-300">{selectedAlgorithm === 'bubble' ? 'Bubble Sort: многократно сравнивает соседние элементы и переставляет их.' : 'Merge Sort: рекурсивно делит массив и сливает отсортированные подмассивы.'}</p>
-          <p className="mt-2 text-sm text-slate-400">Сложность: {selectedAlgorithm === 'bubble' ? 'O(n²)' : 'O(n log n)'}</p>
-          <div className="mt-4 rounded-2xl border border-slate-700 bg-slate-950/70 p-3 text-sm text-slate-300">
+        <aside className="rounded-3xl border border-app bg-surface p-5">
+          <h3 className="text-lg font-semibold text-app-primary">Theory Panel</h3>
+          <p className="mt-2 text-sm text-app-muted">{selectedAlgorithm === 'bubble' ? 'Bubble Sort: многократно сравнивает соседние элементы и переставляет их.' : 'Merge Sort: рекурсивно делит массив и сливает отсортированные подмассивы.'}</p>
+          <p className="mt-2 text-sm text-app-muted">Сложность: {selectedAlgorithm === 'bubble' ? 'O(n²)' : 'O(n log n)'}</p>
+          <div className="mt-4 rounded-2xl border border-app bg-surface p-3 text-sm text-app-muted">
             <p className="font-semibold text-cyan-200">Semantic Player</p>
             <p className="mt-2">{arrayFrame?.message ?? 'Запустите визуализацию для объяснения шага.'}</p>
           </div>
-          <div className="mt-4 rounded-2xl border border-slate-700 bg-slate-950/70 p-3 text-xs text-slate-300">
+          <div className="mt-4 rounded-2xl border border-app bg-surface p-3 text-xs text-app-muted">
             <p className="mb-2 font-semibold text-cyan-200">Pseudocode</p>
-            <p className={arrayFrame?.pseudocode.line === 1 ? 'text-cyan-200' : ''}>1. for i = 0..n-1</p>
-            <p className={arrayFrame?.pseudocode.line === 2 ? 'text-cyan-200' : ''}>2. compare neighbors</p>
-            <p className={arrayFrame?.pseudocode.line === 3 ? 'text-cyan-200' : ''}>3. swap if needed</p>
-            <p className={arrayFrame?.pseudocode.line === 4 ? 'text-cyan-200' : ''}>4. mark sorted region</p>
+            {pseudocodeByAlgorithm[selectedAlgorithm].map((line, index) => (
+              <p className={arrayFrame?.pseudocode.line === index + 1 ? 'text-cyan-200' : ''} key={line}>
+                {index + 1}. {line}
+              </p>
+            ))}
           </div>
         </aside>
       </div>
