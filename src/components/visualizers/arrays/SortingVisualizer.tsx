@@ -3,11 +3,13 @@ import { bubbleSort, mergeSort } from '@/algorithms/arrays';
 import { PlayerControls } from '@/components/player/PlayerControls';
 import { loadArrayPresets, loadSettings, saveArrayPreset, saveSettings } from '@/lib/storage';
 import { useAlgorithmPlayerStore } from '@/stores';
+import { useUiPreferencesStore } from '@/stores';
 import type { AlgorithmFrame, ArrayAlgorithmFrame } from '@/types';
 import { ArrayVisualizer } from './ArrayVisualizer';
 
 type SortingAlgorithmKey = 'bubble' | 'merge';
 const FALLBACK_VALUES = [42, 18, 64, 9, 73, 31, 55, 27];
+const MAX_ARRAY_SIZE = 64;
 const algorithmLabels: Record<SortingAlgorithmKey, string> = { bubble: 'Bubble Sort', merge: 'Merge Sort' };
 
 interface SortingVisualizerProps {
@@ -32,6 +34,7 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
   const prevStep = useAlgorithmPlayerStore((state) => state.prevStep);
   const setPlaybackSpeed = useAlgorithmPlayerStore((state) => state.setPlaybackSpeed);
   const status = useAlgorithmPlayerStore((state) => state.status);
+  const setUiPlaybackSpeed = useUiPreferencesStore((state) => state.setPlaybackSpeedMs);
 
   const arrayFrame = isArrayAlgorithmFrame(currentFrame) ? currentFrame : null;
   const valuesLabel = useMemo(() => values.join(', '), [values]);
@@ -50,6 +53,10 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
 
     if (parsed.length < 2) {
       setInputError('Введите минимум 2 числа через запятую.');
+      return;
+    }
+    if (parsed.length > MAX_ARRAY_SIZE) {
+      setInputError(`Максимальный размер массива: ${MAX_ARRAY_SIZE}.`);
       return;
     }
 
@@ -99,8 +106,26 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
         )}
       </section>
 
-      <ArrayVisualizer frame={arrayFrame} />
-      <PlayerControls canStepBackward={currentIndex > 0} canStepForward={status !== 'completed'} currentIndex={currentIndex} onNextStep={nextStep} onPause={pause} onPlay={play} onPrevStep={prevStep} onReset={() => loadSortingAlgorithm(selectedAlgorithm, values, loadAlgorithm)} onSpeedChange={setPlaybackSpeed} playbackSpeedMs={playbackSpeedMs} status={status} totalFrames={frames.length} />
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
+        <ArrayVisualizer frame={arrayFrame} />
+        <aside className="rounded-3xl border border-slate-800 bg-slate-900/70 p-5">
+          <h3 className="text-lg font-semibold text-slate-100">Theory Panel</h3>
+          <p className="mt-2 text-sm text-slate-300">{selectedAlgorithm === 'bubble' ? 'Bubble Sort: многократно сравнивает соседние элементы и переставляет их.' : 'Merge Sort: рекурсивно делит массив и сливает отсортированные подмассивы.'}</p>
+          <p className="mt-2 text-sm text-slate-400">Сложность: {selectedAlgorithm === 'bubble' ? 'O(n²)' : 'O(n log n)'}</p>
+          <div className="mt-4 rounded-2xl border border-slate-700 bg-slate-950/70 p-3 text-sm text-slate-300">
+            <p className="font-semibold text-cyan-200">Semantic Player</p>
+            <p className="mt-2">{arrayFrame?.message ?? 'Запустите визуализацию для объяснения шага.'}</p>
+          </div>
+          <div className="mt-4 rounded-2xl border border-slate-700 bg-slate-950/70 p-3 text-xs text-slate-300">
+            <p className="mb-2 font-semibold text-cyan-200">Pseudocode</p>
+            <p className={arrayFrame?.pseudocode.line === 1 ? 'text-cyan-200' : ''}>1. for i = 0..n-1</p>
+            <p className={arrayFrame?.pseudocode.line === 2 ? 'text-cyan-200' : ''}>2. compare neighbors</p>
+            <p className={arrayFrame?.pseudocode.line === 3 ? 'text-cyan-200' : ''}>3. swap if needed</p>
+            <p className={arrayFrame?.pseudocode.line === 4 ? 'text-cyan-200' : ''}>4. mark sorted region</p>
+          </div>
+        </aside>
+      </div>
+      <PlayerControls canStepBackward={currentIndex > 0} canStepForward={status !== 'completed'} currentIndex={currentIndex} onNextStep={nextStep} onPause={pause} onPlay={play} onPrevStep={prevStep} onReset={() => loadSortingAlgorithm(selectedAlgorithm, values, loadAlgorithm)} onSpeedChange={(speed) => { setPlaybackSpeed(speed); setUiPlaybackSpeed(speed); }} playbackSpeedMs={playbackSpeedMs} status={status} totalFrames={frames.length} />
     </div>
   );
 }
