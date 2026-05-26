@@ -9,8 +9,8 @@ import { GraphVisualizer } from './GraphVisualizer';
 type GraphAlgorithmKey = 'bfs' | 'dfs';
 
 const algorithmLabels: Record<GraphAlgorithmKey, string> = {
-  bfs: 'BFS',
-  dfs: 'DFS',
+  bfs: 'Поиск в ширину (BFS)',
+  dfs: 'Поиск в глубину (DFS)',
 };
 
 const baseGraph: GraphSnapshot = {
@@ -44,6 +44,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
   const [presets, setPresets] = useState(loadGraphPresets());
   const [adjacencyInput, setAdjacencyInput] = useState('A:B,C\nB:D,E\nC:E\nD:F\nE:F');
   const [graphInputError, setGraphInputError] = useState<string | null>(null);
+  const [presetName, setPresetName] = useState('');
 
   const currentFrame = useAlgorithmPlayerStore((state) => state.currentFrame);
   const currentIndex = useAlgorithmPlayerStore((state) => state.currentIndex);
@@ -95,7 +96,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
       <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 shadow-xl shadow-slate-950/20">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-violet-300">Step 6</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-violet-300">Раздел графов</p>
             <h1 className="mt-2 text-4xl font-bold tracking-tight text-white">UI для графов</h1>
           </div>
 
@@ -138,13 +139,16 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
             <button
               className="control-button"
               onClick={() => {
-                saveGraphPreset(`Graph ${new Date().toLocaleTimeString()}`, graph);
+                const name = presetName.trim() || `Граф ${new Date().toLocaleTimeString()}`;
+                saveGraphPreset(name, graph);
+                setPresetName('');
                 setPresets(loadGraphPresets());
               }}
               type="button"
             >
               Сохранить пресет
             </button>
+            <input className="h-10 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" onChange={(event) => setPresetName(event.target.value)} placeholder="Имя пресета" value={presetName} />
           </div>
         </div>
 

@@ -26,6 +26,7 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
   const [manualInput, setManualInput] = useState(defaultValues.join(', '));
   const [inputError, setInputError] = useState<string | null>(null);
   const [presets, setPresets] = useState(loadArrayPresets());
+  const [presetName, setPresetName] = useState('');
 
   const currentFrame = useAlgorithmPlayerStore((state) => state.currentFrame);
   const currentIndex = useAlgorithmPlayerStore((state) => state.currentIndex);
@@ -96,7 +97,8 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
           </div>
           <div className="flex flex-wrap gap-2">
             <button className="control-button" onClick={() => setValues(shuffleValues(values))} type="button">Перемешать</button>
-            <button className="control-button" onClick={() => { saveArrayPreset(`Preset ${new Date().toLocaleTimeString()}`, values); setPresets(loadArrayPresets()); }} type="button">Сохранить пресет</button>
+            <input className="h-10 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" onChange={(event) => setPresetName(event.target.value)} placeholder="Имя пресета" value={presetName} />
+            <button className="control-button" onClick={() => { const name = presetName.trim() || `Набор ${new Date().toLocaleTimeString()}`; saveArrayPreset(name, values); setPresetName(''); setPresets(loadArrayPresets()); }} type="button">Сохранить пресет</button>
           </div>
           <p>Текущий массив: <strong className="text-app-primary">[{valuesLabel}]</strong></p>
         </div>
