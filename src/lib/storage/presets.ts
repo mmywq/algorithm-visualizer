@@ -19,8 +19,13 @@ export const saveArrayPreset = (name: string, values: readonly number[]): ArrayP
     updatedAt: timestamp,
   };
 
-  saveToStorage(STORAGE_KEYS.arrayPresets, [preset, ...presets]);
+  saveToStorage(STORAGE_KEYS.arrayPresets, [preset, ...presets].slice(0, 20));
   return preset;
+};
+
+export const removeArrayPreset = (id: string): void => {
+  const presets = loadArrayPresets().filter((preset) => preset.id !== id);
+  saveToStorage(STORAGE_KEYS.arrayPresets, presets);
 };
 
 export const loadGraphPresets = (): readonly GraphPreset[] =>
@@ -38,6 +43,11 @@ export const saveGraphPreset = (name: string, graph: GraphSnapshot): GraphPreset
     updatedAt: timestamp,
   };
 
-  saveToStorage(STORAGE_KEYS.graphPresets, [preset, ...presets]);
+  saveToStorage(STORAGE_KEYS.graphPresets, [preset, ...presets].slice(0, 20));
   return preset;
+};
+
+export const removeGraphPreset = (id: string): void => {
+  const presets = loadGraphPresets().filter((preset) => preset.id !== id);
+  saveToStorage(STORAGE_KEYS.graphPresets, presets);
 };
