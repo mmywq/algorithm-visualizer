@@ -66,8 +66,19 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
     saveSettings({ ...settings, lastGraphStartNodeId: startNodeId, playbackSpeedMs });
   }, [graph, loadAlgorithm, playbackSpeedMs, selectedAlgorithm, startNodeId]);
 
+  useEffect(() => {
+    if (graph.nodes.some((node) => node.id === startNodeId)) {
+      return;
+    }
+
+    const fallbackNodeId = graph.nodes[0]?.id;
+    if (fallbackNodeId !== undefined) {
+      setStartNodeId(fallbackNodeId);
+    }
+  }, [graph.nodes, startNodeId]);
+
   const addNode = (): void => {
-    const id = String.fromCharCode(65 + graph.nodes.length);
+    const id = createNextNodeId(graph);
     setGraph({
       ...graph,
       nodes: [...graph.nodes, { id, label: id, position: { x: 120 + graph.nodes.length * 80, y: 160 }, payload: {} }],
@@ -225,6 +236,7 @@ const parseAdjacencyList = (source: string): GraphSnapshot | null => {
   }
 
   const nodeSet = new Set<string>();
+  const edgeKeySet = new Set<string>();
   const edges: Array<GraphSnapshot['edges'][number]> = [];
 
   for (const line of lines) {
@@ -241,6 +253,13 @@ const parseAdjacencyList = (source: string): GraphSnapshot | null => {
         return null;
       }
       nodeSet.add(target);
+
+      const edgeKey = [node, target].sort().join('--');
+      if (edgeKeySet.has(edgeKey)) {
+        continue;
+      }
+
+      edgeKeySet.add(edgeKey);
       edges.push({ id: `${node}-${target}`, source: node, target, directed: false, payload: {} });
     }
   }
@@ -253,4 +272,29 @@ const parseAdjacencyList = (source: string): GraphSnapshot | null => {
   }));
 
   return { nodes, edges };
+};
+
+const createNextNodeId = (graph: GraphSnapshot): string => {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const existingIds = new Set(graph.nodes.map((node) => node.id));
+
+  for (let size = 1; size <= 3; size += 1) {
+    const combinations = Math.pow(alphabet.length, size);
+
+    for (let index = 0; index < combinations; index += 1) {
+      let value = '';
+      let cursor = index;
+
+      for (let position = 0; position < size; position += 1) {
+        value = alphabet[cursor % alphabet.length] + value;
+        cursor = Math.floor(cursor / alphabet.length);
+      }
+
+      if (existingIds.has(value) === false) {
+        return value;
+      }
+    }
+  }
+
+  return `Узел-${Date.now()}`;
 };
