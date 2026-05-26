@@ -43,6 +43,8 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
   const [graph, setGraph] = useState<GraphSnapshot>(baseGraph);
   const [presets, setPresets] = useState(loadGraphPresets());
   const [adjacencyInput, setAdjacencyInput] = useState('A:B,C\nB:D,E\nC:E\nD:F\nE:F');
+  const [inputMode, setInputMode] = useState<'list' | 'matrix'>('list');
+  const [matrixNodeLabels, setMatrixNodeLabels] = useState('A,B,C,D,E,F');
   const [graphInputError, setGraphInputError] = useState<string | null>(null);
   const [presetName, setPresetName] = useState('');
 
@@ -86,9 +88,13 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
   };
 
   const applyAdjacencyInput = (): void => {
-    const parsed = parseAdjacencyList(adjacencyInput);
+    const parsed = inputMode === 'list'
+      ? parseAdjacencyList(adjacencyInput)
+      : parseAdjacencyMatrix(adjacencyInput, matrixNodeLabels);
     if (parsed === null) {
-      setGraphInputError('Некорректный формат. Пример: A:B,C');
+      setGraphInputError(inputMode === 'list'
+        ? 'Некорректный формат списка смежности. Пример: A:B,C'
+        : 'Некорректная матрица смежности. Проверьте размер и значения 0/1.');
       return;
     }
     if (parsed.nodes.length > 24) {
@@ -177,7 +183,24 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
         )}
 
         <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-950/70 p-3">
-          <p className="text-sm text-slate-300">Матрица/список смежности (формат: A:B,C)</p>
+          <p className="text-sm text-slate-300">Пользовательский ввод графа</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button className={inputMode === 'list' ? 'control-button control-button-primary' : 'control-button'} onClick={() => setInputMode('list')} type="button">Список смежности</button>
+            <button className={inputMode === 'matrix' ? 'control-button control-button-primary' : 'control-button'} onClick={() => setInputMode('matrix')} type="button">Матрица смежности</button>
+          </div>
+
+          {inputMode === 'matrix' && (
+            <input
+              className="mt-2 w-full rounded-xl border border-app bg-surface px-3 py-2 text-sm text-app-primary"
+              onChange={(event) => setMatrixNodeLabels(event.target.value)}
+              placeholder="Метки вершин (например: A,B,C,D)"
+              value={matrixNodeLabels}
+            />
+          )}
+
+          <p className="mt-2 text-xs text-slate-400">
+            {inputMode === 'list' ? 'Формат: A:B,C' : 'Формат: строки матрицы 0/1 через пробелы, по одной строке на вершину.'}
+          </p>
           <textarea className="mt-2 h-24 w-full rounded-xl border border-slate-700 bg-slate-900 p-2 text-sm text-slate-100" onChange={(event) => setAdjacencyInput(event.target.value)} value={adjacencyInput} />
           <div className="mt-2 flex items-center gap-2">
             <button className="control-button" onClick={applyAdjacencyInput} type="button">Применить граф</button>
@@ -267,6 +290,61 @@ const parseAdjacencyList = (source: string): GraphSnapshot | null => {
   const nodes = [...nodeSet].map((id, index) => ({
     id,
     label: id,
+    position: { x: 90 + (index % 6) * 120, y: 80 + Math.floor(index / 6) * 120 },
+    payload: {},
+  }));
+
+  return { nodes, edges };
+};
+
+const parseAdjacencyMatrix = (source: string, labelsSource: string): GraphSnapshot | null => {
+  const labels = labelsSource.split(',').map((label) => label.trim()).filter((label) => label.length > 0);
+  if (labels.length < 2 || labels.length > 24) {
+    return null;
+  }
+
+  if (labels.some((label) => /^[A-Za-z0-9_-]+$/.test(label) === false)) {
+    return null;
+  }
+
+  const rows = source.split('\n').map((row) => row.trim()).filter((row) => row.length > 0);
+  if (rows.length !== labels.length) {
+    return null;
+  }
+
+  const matrix = rows.map((row) => row.split(/\s+/));
+  if (matrix.some((row) => row.length !== labels.length)) {
+    return null;
+  }
+
+  const edgeKeySet = new Set<string>();
+  const edges: Array<GraphSnapshot['edges'][number]> = [];
+
+  for (let i = 0; i < labels.length; i += 1) {
+    for (let j = 0; j < labels.length; j += 1) {
+      const value = matrix[i]?.[j];
+      if (value !== '0' && value !== '1') {
+        return null;
+      }
+      if (value === '0' || i === j) {
+        continue;
+      }
+
+      const sourceNode = labels[i]!;
+      const targetNode = labels[j]!;
+      const edgeKey = [sourceNode, targetNode].sort().join('--');
+      if (edgeKeySet.has(edgeKey)) {
+        continue;
+      }
+
+      edgeKeySet.add(edgeKey);
+      edges.push({ id: `${sourceNode}-${targetNode}`, source: sourceNode, target: targetNode, directed: false, payload: {} });
+    }
+  }
+
+  const nodes = labels.map((label, index) => ({
+    id: label,
+    label,
     position: { x: 90 + (index % 6) * 120, y: 80 + Math.floor(index / 6) * 120 },
     payload: {},
   }));
