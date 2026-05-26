@@ -16,9 +16,9 @@ export function SiteHeader({ navigate }: SiteHeaderProps) {
   const toggleTheme = useUiPreferencesStore((state) => state.toggleTheme);
   return (
     <header className="sticky top-0 z-20 mb-6 rounded-2xl border border-app bg-surface/85 backdrop-blur-xl">
-      <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 px-4 py-4 lg:px-8">
+      <div className="flex w-full flex-col gap-3 px-3 py-3 lg:px-4">
         <button className="text-left" onClick={() => navigate('/')} type="button">
-          <p className="text-xs uppercase tracking-[0.22em] text-accent">Algorithm Visualizer</p>
+          <p className="text-xs uppercase tracking-[0.22em] text-accent">Визуализатор алгоритмов</p>
           <p className="text-lg font-semibold text-app-primary">Интерактивная среда изучения алгоритмов и структур данных</p>
         </button>
 
@@ -28,7 +28,7 @@ export function SiteHeader({ navigate }: SiteHeaderProps) {
               {shortcut.label}
             </button>
           ))}
-          <button className="control-button" onClick={toggleTheme} type="button">Тема</button>
+          <button className="control-button" onClick={toggleTheme} type="button">Сменить тему</button>
         </nav>
       </div>
     </header>

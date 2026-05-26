@@ -66,7 +66,7 @@ export function GraphVisualizer({ frame, graph, editable = false, onGraphChange 
       <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.28em] text-violet-300">
-            Graph Visualizer
+            Визуализация графа
           </p>
           <h2 className="mt-2 text-2xl font-bold text-slate-50">Обход графа</h2>
         </div>
@@ -111,7 +111,7 @@ function GraphLegend() {
       <div className="mb-2 font-semibold uppercase tracking-[0.18em] text-slate-500">Легенда</div>
       <LegendItem color="bg-violet-400" label="текущая" />
       <LegendItem color="bg-emerald-400" label="посещена" />
-      <LegendItem color="bg-cyan-400" label="frontier" />
+      <LegendItem color="bg-cyan-400" label="граница обхода" />
       <div className="mt-2 text-[11px] text-slate-400">В режиме редактирования можно двигать узлы, удалять связи и создавать новые.</div>
     </div>
   );

@@ -57,7 +57,7 @@ function App() {
   }, [route, theme]);
 
   return (
-    <main className="min-h-screen bg-app px-4 py-6 text-app-primary lg:px-6 lg:py-8">
+    <main className="min-h-screen bg-app px-3 py-4 text-app-primary lg:px-5 lg:py-6">
       <SiteHeader navigate={navigate} />
       {renderRoute(route, navigate, settings)}
     </main>

@@ -12,7 +12,7 @@ export function StepTutorPanel({ frame, title, complexity, useCases }: StepTutor
 
   return (
     <aside className="rounded-3xl border border-app bg-surface p-5">
-      <h3 className="text-lg font-semibold text-app-primary">Theory Panel</h3>
+      <h3 className="text-lg font-semibold text-app-primary">Теория</h3>
       <p className="mt-2 text-sm text-app-muted">{title}</p>
       <p className="mt-2 text-sm text-app-muted">Сложность: {complexity}</p>
       <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-app-muted">
@@ -22,12 +22,12 @@ export function StepTutorPanel({ frame, title, complexity, useCases }: StepTutor
       </ul>
 
       <div className="mt-4 rounded-2xl border border-app bg-surface p-3 text-sm text-app-muted">
-        <p className="font-semibold text-accent">Semantic Player</p>
+        <p className="font-semibold text-accent">Пояснение шага</p>
         <p className="mt-2">{explanation}</p>
       </div>
 
       <div className="mt-4 rounded-2xl border border-app bg-surface p-3 text-sm text-app-muted">
-        <p className="font-semibold text-accent">Pseudocode</p>
+        <p className="font-semibold text-accent">Псевдокод</p>
         <p className="mt-2">Активная строка: {frame?.pseudocode.line ?? '—'}</p>
       </div>
     </aside>

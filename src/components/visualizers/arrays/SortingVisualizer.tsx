@@ -10,10 +10,10 @@ import { ArrayVisualizer } from './ArrayVisualizer';
 type SortingAlgorithmKey = 'bubble' | 'merge';
 const FALLBACK_VALUES = [42, 18, 64, 9, 73, 31, 55, 27];
 const MAX_ARRAY_SIZE = 64;
-const algorithmLabels: Record<SortingAlgorithmKey, string> = { bubble: 'Bubble Sort', merge: 'Merge Sort' };
+const algorithmLabels: Record<SortingAlgorithmKey, string> = { bubble: 'Сортировка пузырьком', merge: 'Сортировка слиянием' };
 const pseudocodeByAlgorithm: Record<SortingAlgorithmKey, readonly string[]> = {
-  bubble: ['for i = 0..n-1', 'for j = 0..n-i-2', 'if A[j] > A[j+1]', 'swap(A[j], A[j+1])'],
-  merge: ['split array in halves', 'recursively sort left half', 'recursively sort right half', 'merge two sorted halves'],
+  bubble: ['для i = 0..n-1', 'для j = 0..n-i-2', 'если A[j] > A[j+1]', 'обмен(A[j], A[j+1])'],
+  merge: ['разделить массив пополам', 'рекурсивно сортировать левую часть', 'рекурсивно сортировать правую часть', 'слить две отсортированные части'],
 };
 
 interface SortingVisualizerProps {
@@ -69,7 +69,7 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-4 pb-8 lg:px-8">
+    <div className="flex w-full flex-col gap-6 px-4 pb-8 lg:px-8">
       <section className="rounded-3xl border border-app bg-surface p-6 shadow-xl shadow-slate-950/10">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -113,15 +113,15 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
       <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
         <ArrayVisualizer frame={arrayFrame} />
         <aside className="rounded-3xl border border-app bg-surface p-5">
-          <h3 className="text-lg font-semibold text-app-primary">Theory Panel</h3>
-          <p className="mt-2 text-sm text-app-muted">{selectedAlgorithm === 'bubble' ? 'Bubble Sort: многократно сравнивает соседние элементы и переставляет их.' : 'Merge Sort: рекурсивно делит массив и сливает отсортированные подмассивы.'}</p>
+          <h3 className="text-lg font-semibold text-app-primary">Теория</h3>
+          <p className="mt-2 text-sm text-app-muted">{selectedAlgorithm === 'bubble' ? 'Сортировка пузырьком: многократно сравнивает соседние элементы и переставляет их.' : 'Сортировка слиянием: рекурсивно делит массив и сливает отсортированные подмассивы.'}</p>
           <p className="mt-2 text-sm text-app-muted">Сложность: {selectedAlgorithm === 'bubble' ? 'O(n²)' : 'O(n log n)'}</p>
           <div className="mt-4 rounded-2xl border border-app bg-surface p-3 text-sm text-app-muted">
-            <p className="font-semibold text-cyan-200">Semantic Player</p>
+            <p className="font-semibold text-cyan-200">Пояснение шага</p>
             <p className="mt-2">{arrayFrame?.message ?? 'Запустите визуализацию для объяснения шага.'}</p>
           </div>
           <div className="mt-4 rounded-2xl border border-app bg-surface p-3 text-xs text-app-muted">
-            <p className="mb-2 font-semibold text-cyan-200">Pseudocode</p>
+            <p className="mb-2 font-semibold text-cyan-200">Псевдокод</p>
             {pseudocodeByAlgorithm[selectedAlgorithm].map((line, index) => (
               <p className={arrayFrame?.pseudocode.line === index + 1 ? 'text-cyan-200' : ''} key={line}>
                 {index + 1}. {line}
