@@ -9,8 +9,8 @@ import { GraphVisualizer } from './GraphVisualizer';
 type GraphAlgorithmKey = 'bfs' | 'dfs';
 
 const algorithmLabels: Record<GraphAlgorithmKey, string> = {
-  bfs: 'BFS',
-  dfs: 'DFS',
+  bfs: 'Поиск в ширину (BFS)',
+  dfs: 'Поиск в глубину (DFS)',
 };
 
 const baseGraph: GraphSnapshot = {
@@ -42,6 +42,9 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
   const [startNodeId, setStartNodeId] = useState<NodeId>(defaultStartNodeId);
   const [graph, setGraph] = useState<GraphSnapshot>(baseGraph);
   const [presets, setPresets] = useState(loadGraphPresets());
+  const [adjacencyInput, setAdjacencyInput] = useState('A:B,C\nB:D,E\nC:E\nD:F\nE:F');
+  const [graphInputError, setGraphInputError] = useState<string | null>(null);
+  const [presetName, setPresetName] = useState('');
 
   const currentFrame = useAlgorithmPlayerStore((state) => state.currentFrame);
   const currentIndex = useAlgorithmPlayerStore((state) => state.currentIndex);
@@ -63,12 +66,37 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
     saveSettings({ ...settings, lastGraphStartNodeId: startNodeId, playbackSpeedMs });
   }, [graph, loadAlgorithm, playbackSpeedMs, selectedAlgorithm, startNodeId]);
 
+  const addNode = (): void => {
+    const id = String.fromCharCode(65 + graph.nodes.length);
+    setGraph({
+      ...graph,
+      nodes: [...graph.nodes, { id, label: id, position: { x: 120 + graph.nodes.length * 80, y: 160 }, payload: {} }],
+    });
+  };
+
+  const applyAdjacencyInput = (): void => {
+    const parsed = parseAdjacencyList(adjacencyInput);
+    if (parsed === null) {
+      setGraphInputError('Некорректный формат. Пример: A:B,C');
+      return;
+    }
+    if (parsed.nodes.length > 24) {
+      setGraphInputError('Слишком большой граф: максимум 24 вершины.');
+      return;
+    }
+    setGraphInputError(null);
+    setGraph(parsed);
+    if (parsed.nodes.some((node) => node.id === startNodeId) === false) {
+      setStartNodeId(parsed.nodes[0]?.id ?? 'A');
+    }
+  };
+
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 shadow-xl shadow-slate-950/20">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-violet-300">Step 6</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-violet-300">Раздел графов</p>
             <h1 className="mt-2 text-4xl font-bold tracking-tight text-white">UI для графов</h1>
           </div>
 
@@ -107,16 +135,20 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
           </label>
 
           <div className="flex flex-wrap gap-2">
+            <button className="control-button" onClick={addNode} type="button">Добавить узел</button>
             <button
               className="control-button"
               onClick={() => {
-                saveGraphPreset(`Graph ${new Date().toLocaleTimeString()}`, graph);
+                const name = presetName.trim() || `Граф ${new Date().toLocaleTimeString()}`;
+                saveGraphPreset(name, graph);
+                setPresetName('');
                 setPresets(loadGraphPresets());
               }}
               type="button"
             >
               Сохранить пресет
             </button>
+            <input className="h-10 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" onChange={(event) => setPresetName(event.target.value)} placeholder="Имя пресета" value={presetName} />
           </div>
         </div>
 
@@ -129,9 +161,18 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
             ))}
           </div>
         )}
+
+        <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-950/70 p-3">
+          <p className="text-sm text-slate-300">Матрица/список смежности (формат: A:B,C)</p>
+          <textarea className="mt-2 h-24 w-full rounded-xl border border-slate-700 bg-slate-900 p-2 text-sm text-slate-100" onChange={(event) => setAdjacencyInput(event.target.value)} value={adjacencyInput} />
+          <div className="mt-2 flex items-center gap-2">
+            <button className="control-button" onClick={applyAdjacencyInput} type="button">Применить граф</button>
+            {graphInputError !== null && <span className="text-xs text-rose-300">{graphInputError}</span>}
+          </div>
+        </div>
       </section>
 
-      <GraphVisualizer frame={graphFrame} graph={graph} />
+      <GraphVisualizer editable frame={graphFrame} graph={graph} onGraphChange={setGraph} />
 
       <PlayerControls
         canStepBackward={currentIndex > 0}
@@ -169,3 +210,44 @@ const isGraphAlgorithmFrame = (
   frame.data !== null &&
   'nodes' in frame.data &&
   'edges' in frame.data;
+
+const parseAdjacencyList = (source: string): GraphSnapshot | null => {
+  const lines = source
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  if (lines.length === 0) {
+    return null;
+  }
+
+  const nodeSet = new Set<string>();
+  const edges: Array<GraphSnapshot['edges'][number]> = [];
+
+  for (const line of lines) {
+    const [rawNode, rawTargets = ''] = line.split(':');
+    const node = rawNode?.trim();
+    if (node === undefined || /^[A-Za-z0-9_-]+$/.test(node) === false) {
+      return null;
+    }
+    nodeSet.add(node);
+
+    const targets = rawTargets.split(',').map((target) => target.trim()).filter((target) => target.length > 0);
+    for (const target of targets) {
+      if (/^[A-Za-z0-9_-]+$/.test(target) === false) {
+        return null;
+      }
+      nodeSet.add(target);
+      edges.push({ id: `${node}-${target}`, source: node, target, directed: false, payload: {} });
+    }
+  }
+
+  const nodes = [...nodeSet].map((id, index) => ({
+    id,
+    label: id,
+    position: { x: 90 + (index % 6) * 120, y: 80 + Math.floor(index / 6) * 120 },
+    payload: {},
+  }));
+
+  return { nodes, edges };
+};

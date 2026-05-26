@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { AlgorithmFrame, AlgorithmGenerator, AlgorithmStatus } from '@/types';
 
 type PlayerFrame = AlgorithmFrame<unknown, Record<string, unknown>>;
@@ -47,7 +48,8 @@ const initialState: AlgorithmPlayerState = {
   timerId: null,
 };
 
-export const useAlgorithmPlayerStore = create<AlgorithmPlayerStore>((set, get) => ({
+export const useAlgorithmPlayerStore = create<AlgorithmPlayerStore>()(
+  persist((set, get) => ({
   ...initialState,
 
   loadAlgorithm: (generator, options) => {
@@ -187,7 +189,11 @@ export const useAlgorithmPlayerStore = create<AlgorithmPlayerStore>((set, get) =
       get().play();
     }
   },
-}));
+}), {
+  name: 'av-player-preferences',
+  partialize: (state) => ({ playbackSpeedMs: state.playbackSpeedMs }),
+}),
+);
 
 const clearPlaybackTimer = (timerId: PlaybackTimerId | null): void => {
   if (timerId !== null) {
