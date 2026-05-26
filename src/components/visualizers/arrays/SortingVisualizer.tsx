@@ -10,6 +10,8 @@ import { ArrayVisualizer } from './ArrayVisualizer';
 type SortingAlgorithmKey = 'bubble' | 'merge';
 const FALLBACK_VALUES = [42, 18, 64, 9, 73, 31, 55, 27];
 const MAX_ARRAY_SIZE = 64;
+const MIN_ARRAY_VALUE = -999;
+const MAX_ARRAY_VALUE = 999;
 const algorithmLabels: Record<SortingAlgorithmKey, string> = { bubble: 'Сортировка пузырьком', merge: 'Сортировка слиянием' };
 const pseudocodeByAlgorithm: Record<SortingAlgorithmKey, readonly string[]> = {
   bubble: ['для i = 0..n-1', 'для j = 0..n-i-2', 'если A[j] > A[j+1]', 'обмен(A[j], A[j+1])'],
@@ -51,10 +53,31 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
   }, [loadAlgorithm, playbackSpeedMs, selectedAlgorithm, values]);
 
   const applyManualValues = () => {
-    const parsed = manualInput
+    const segments = manualInput
       .split(',')
-      .map((v) => Number(v.trim()))
-      .filter((v) => Number.isFinite(v));
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
+
+    if (segments.length === 0) {
+      setInputError('Введите значения массива через запятую.');
+      return;
+    }
+
+    const parsed: number[] = [];
+    for (const segment of segments) {
+      if (/^-?\d+$/.test(segment) === false) {
+        setInputError(`Недопустимое значение: "${segment}". Используйте только целые числа.`);
+        return;
+      }
+
+      const numberValue = Number(segment);
+      if (numberValue < MIN_ARRAY_VALUE || numberValue > MAX_ARRAY_VALUE) {
+        setInputError(`Числа должны быть в диапазоне от ${MIN_ARRAY_VALUE} до ${MAX_ARRAY_VALUE}.`);
+        return;
+      }
+
+      parsed.push(numberValue);
+    }
 
     if (parsed.length < 2) {
       setInputError('Введите минимум 2 числа через запятую.');
