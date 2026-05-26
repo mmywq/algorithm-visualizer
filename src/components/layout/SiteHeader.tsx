@@ -3,6 +3,7 @@ import { useUiPreferencesStore } from '@/stores';
 interface SiteHeaderProps {
   readonly navigate: (route: string) => void;
 }
+import { useUiPreferencesStore } from '@/stores';
 
 const shortcuts = [
   { label: 'Каталог', route: '/' },
