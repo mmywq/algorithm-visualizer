@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { bubbleSort, mergeSort } from '@/algorithms/arrays';
 import { PlayerControls } from '@/components/player/PlayerControls';
-import { loadArrayPresets, loadSettings, saveArrayPreset, saveSettings } from '@/lib/storage';
+import { loadArrayPresets, loadSettings, removeArrayPreset, saveArrayPreset, saveSettings } from '@/lib/storage';
 import { useAlgorithmPlayerStore } from '@/stores';
 import { useUiPreferencesStore } from '@/stores';
 import type { AlgorithmFrame, ArrayAlgorithmFrame } from '@/types';
@@ -104,9 +104,12 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
         </div>
 
         {presets.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
             {presets.slice(0, 8).map((preset) => (
-              <button className="control-button" key={preset.id} onClick={() => { setValues(preset.values); setManualInput(preset.values.join(', ')); }} type="button">{preset.name}</button>
+              <div className="flex items-center gap-2" key={preset.id}>
+                <button className="control-button flex-1" onClick={() => { setValues(preset.values); setManualInput(preset.values.join(', ')); }} type="button">{preset.name}</button>
+                <button className="control-button" onClick={() => { removeArrayPreset(preset.id); setPresets(loadArrayPresets()); }} type="button">Удалить</button>
+              </div>
             ))}
           </div>
         )}

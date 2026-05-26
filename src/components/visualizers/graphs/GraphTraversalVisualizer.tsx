@@ -1,7 +1,7 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
 import { bfs, dfs } from '@/algorithms/graphs';
 import { PlayerControls } from '@/components/player/PlayerControls';
-import { loadGraphPresets, loadSettings, saveGraphPreset, saveSettings } from '@/lib/storage';
+import { loadGraphPresets, loadSettings, removeGraphPreset, saveGraphPreset, saveSettings } from '@/lib/storage';
 import { useAlgorithmPlayerStore } from '@/stores';
 import type { AlgorithmFrame, GraphAlgorithmFrame, GraphSnapshot, NodeId } from '@/types';
 import { GraphVisualizer } from './GraphVisualizer';
@@ -153,11 +153,14 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
         </div>
 
         {presets.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
             {presets.slice(0, 5).map((preset) => (
-              <button className="control-button" key={preset.id} onClick={() => setGraph(preset.graph)} type="button">
-                {preset.name}
-              </button>
+              <div className="flex items-center gap-2" key={preset.id}>
+                <button className="control-button flex-1" onClick={() => setGraph(preset.graph)} type="button">
+                  {preset.name}
+                </button>
+                <button className="control-button" onClick={() => { removeGraphPreset(preset.id); setPresets(loadGraphPresets()); }} type="button">Удалить</button>
+              </div>
             ))}
           </div>
         )}
