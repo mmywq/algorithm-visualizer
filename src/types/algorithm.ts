@@ -29,6 +29,7 @@ export interface AlgorithmFrame<TData, TMeta extends Record<string, unknown> = R
   readonly activeIds: readonly string[];
   readonly pseudocode: PseudocodeLocation;
   readonly message: string;
+  readonly description?: string;
   readonly meta: TMeta;
 }
 
