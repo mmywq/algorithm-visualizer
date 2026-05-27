@@ -35,6 +35,12 @@ export function ArrayVisualizer({ frame }: ArrayVisualizerProps) {
       <p className="mt-5 min-h-12 rounded-2xl border border-app bg-surface px-4 py-3 text-sm leading-6 text-app-muted">
         {frame?.message ?? 'Загрузите алгоритм, чтобы увидеть пошаговую визуализацию.'}
       </p>
+
+      <div className="mt-3 flex flex-wrap gap-3 text-xs text-app-muted">
+        <Legend color="#06b6d4" label="сравнение" />
+        <Legend color="#f97316" label="обмен" />
+        <Legend color="#10b981" label="отсортировано" />
+      </div>
     </section>
   );
 }
@@ -97,3 +103,8 @@ const getBarTone = (frame: ArrayAlgorithmFrame | null, index: number) => {
     shadow: '0 0 0 rgba(0, 0, 0, 0)',
   };
 };
+
+
+function Legend({ color, label }: { color: string; label: string }) {
+  return (<span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />{label}</span>);
+}

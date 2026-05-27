@@ -63,8 +63,8 @@ export const queueListScenario = () => runScenario({
   messages: ['Создаём очередь на списке.', 'Добавляем в tail.', 'Удаляем из head.'],
 });
 
-export function* bstScenario(): Generator<StructureAlgorithmFrame, void, unknown> {
-  const insertionOrder = createRandomUniqueValues(7, -100, 100);
+export function* bstScenario(inputValues?: readonly number[]): Generator<StructureAlgorithmFrame, void, unknown> {
+  const insertionOrder = inputValues !== undefined && inputValues.length > 0 ? [...inputValues] : createRandomUniqueValues(7, -100, 100);
   const cells: Array<number | null> = Array.from({ length: 15 }, () => null);
   let step = 0;
 

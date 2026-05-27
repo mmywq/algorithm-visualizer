@@ -78,16 +78,12 @@ export function StructuresPage({ initialDemo = 'stack-array' }: StructuresPagePr
   }, [demoKey, loadAlgorithm, values]);
 
   const frame = isStructureAlgorithmFrame(currentFrame) ? currentFrame : null;
-  const stepsHistory = useMemo(() => frames.map((stepFrame) => `${stepFrame.step + 1}. ${stepFrame.description ?? stepFrame.message}`), [frames]);
+  const stepsHistory = useMemo(() => frames.map((stepFrame) => stepFrame.description ?? stepFrame.message), [frames]);
 
   const applyManualValues = () => {
     const parsed = manualInput.split(',').map((item) => item.trim()).filter(Boolean).map(Number);
     if (parsed.length < 2 || parsed.some((value) => Number.isFinite(value) === false || Number.isInteger(value) === false)) {
       setInputError('Введите минимум 2 целых числа через запятую.');
-      return;
-    }
-    if (parsed.some((value) => Math.abs(value) > MAX_VALUE)) {
-      setInputError(`Для наглядности допустимы значения по модулю до ${MAX_VALUE}.`);
       return;
     }
     setInputError(null);
@@ -117,7 +113,7 @@ export function StructuresPage({ initialDemo = 'stack-array' }: StructuresPagePr
           <div className="flex gap-2">
             <input className="control-input w-full" value={manualInput} onChange={(event) => setManualInput(event.target.value)} placeholder="Введите числа через запятую" />
             <button className="control-button" onClick={applyManualValues} type="button">Применить</button>
-            <button className="control-button" onClick={randomizeValues} type="button">Случайные значения</button>
+            <button className="control-button" onClick={randomizeValues} type="button">Случайные значения (до 100)</button>
           </div>
           {inputError && <p className="text-sm text-rose-300">{inputError}</p>}
           <div className="flex flex-wrap gap-2">
