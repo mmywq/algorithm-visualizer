@@ -49,6 +49,7 @@ interface StructuresPageProps {
 
 export function StructuresPage({ initialDemo = 'stack-array' }: StructuresPageProps) {
   const [demoKey, setDemoKey] = useState<DemoKey>(initialDemo);
+  const [showHelp, setShowHelp] = useState(false);
   const currentFrame = useAlgorithmPlayerStore((state) => state.currentFrame);
   const currentIndex = useAlgorithmPlayerStore((state) => state.currentIndex);
   const frames = useAlgorithmPlayerStore((state) => state.frames);
@@ -80,7 +81,7 @@ export function StructuresPage({ initialDemo = 'stack-array' }: StructuresPagePr
   return (
     <div className="flex w-full flex-col gap-6">
       <section className="rounded-3xl border border-app bg-surface p-6">
-        <h1 className="text-3xl font-bold text-app-primary">Базовые структуры данных</h1>
+        <div className="flex items-center justify-between gap-3"><h1 className="text-3xl font-bold text-app-primary">Базовые структуры данных</h1><button className="control-button" type="button" onClick={() => setShowHelp(true)}>Справка</button></div>
         <div className="mt-4 flex flex-wrap gap-2">
           <button className="control-button" onClick={() => setDemoKey('stack-array')} type="button">Стек (массив)</button>
           <button className="control-button" onClick={() => setDemoKey('stack-list')} type="button">Стек (список)</button>
@@ -95,6 +96,7 @@ export function StructuresPage({ initialDemo = 'stack-array' }: StructuresPagePr
           <p className="mt-2 text-app-muted">Сложность: {theoryByDemo[demoKey].complexity}</p>
           <p className="mt-2 text-app-muted">Пояснение шага: {frame?.description ?? frame?.message ?? 'Запустите плеер для пошагового разбора.'}</p>
         </div>
+      {showHelp && <div className="mt-4 rounded-2xl border border-app bg-surface p-4 text-sm text-app-muted"><p className="font-semibold text-app-primary">Как пользоваться</p><ul className="mt-2 list-disc space-y-1 pl-5"><li>Выберите структуру кнопками сверху.</li><li>Запустите анимацию через кнопки плеера: шаг назад/вперёд, авто-проигрывание.</li><li>Следите за подсветкой активной ячейки и пояснением шага.</li></ul><button className="control-button mt-3" type="button" onClick={() => setShowHelp(false)}>Закрыть</button></div>}
       </section>
 
       <StructureVisualizer frame={frame} />
