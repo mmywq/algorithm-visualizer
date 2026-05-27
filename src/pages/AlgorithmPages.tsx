@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { compareSortsDemo, blockSortDemo, countingSortDemo, radixSortDemo } from '@/algorithms/sorting/extra';
 import { connectedComponentsDemo, dijkstraDemo, mstDemo } from '@/algorithms/graphs';
 import { balancedBstScenario, binomialHeapScenario, bstScenario, hashBlockScenario, hashClosedScenario, hashOpenScenario, heapScenario } from '@/algorithms/structures/extendedStructures';
@@ -50,6 +50,7 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
 
   const frame = currentFrame;
   const theory = getTheoryByTitle(title, mode);
+  const stepsHistory = useMemo(() => frames.map((stepFrame) => stepFrame.description ?? stepFrame.message), [frames]);
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -71,6 +72,15 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
           useCases={theory.useCases}
         />
       </section>
+
+      {status === 'completed' && stepsHistory.length > 0 && (
+        <section className="app-panel">
+          <h3 className="text-xl font-semibold text-app-primary">Полный список выполненных шагов</h3>
+          <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-app-muted">
+            {stepsHistory.map((entry) => (<li key={entry}>{entry}</li>))}
+          </ol>
+        </section>
+      )}
 
       <PlayerControls
         canStepBackward={currentIndex > 0}
