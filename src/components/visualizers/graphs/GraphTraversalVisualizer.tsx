@@ -136,11 +136,11 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
 
   return (
     <div className="flex w-full flex-col gap-6">
-      <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 shadow-xl shadow-slate-950/20">
+      <section className="rounded-3xl border border-app bg-surface p-6 shadow-xl shadow-slate-950/20">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.28em] text-violet-300">Раздел графов</p>
-            <h1 className="mt-2 text-4xl font-bold tracking-tight text-white">UI для графов</h1>
+            <h1 className="mt-2 text-4xl font-bold tracking-tight text-app-primary">UI для графов</h1>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -162,10 +162,10 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
         </div>
 
         <div className="mt-5 flex flex-col gap-3 md:flex-row md:items-center">
-          <label className="block max-w-xs text-sm text-slate-300">
+          <label className="block max-w-xs text-sm text-app-muted">
             Стартовая вершина
             <select
-              className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 outline-none transition focus:border-violet-400"
+              className="mt-2 w-full rounded-xl border border-app bg-slate-950 px-3 py-2 text-app-primary outline-none transition focus:border-violet-400"
               onChange={(event: ChangeEvent<HTMLSelectElement>) => setStartNodeId(event.target.value)}
               value={startNodeId}
             >
@@ -197,7 +197,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
           </div>
         </div>
 
-        <div className="mt-4 grid gap-3 rounded-2xl border border-slate-800 bg-slate-950/60 p-3 md:grid-cols-4">
+        <div className="mt-4 grid gap-3 rounded-2xl border border-app bg-surface p-3 md:grid-cols-4">
           <StatCard label="Вершин" value={graphStats.nodes.toString()} />
           <StatCard label="Рёбер" value={graphStats.edges.toString()} />
           <StatCard label="Плотность" value={graphStats.density} />
@@ -219,8 +219,8 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
         )}
 
         {renamePresetState !== null && (
-          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-800 bg-slate-950/70 p-3">
-            <p className="text-sm text-slate-300">Переименование пресета</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-app bg-surface p-3">
+            <p className="text-sm text-app-muted">Переименование пресета</p>
             <input className="h-10 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" onChange={(event) => setRenamePresetState({ ...renamePresetState, name: event.target.value })} value={renamePresetState.name} />
             <button className="control-button" onClick={() => { renameGraphPreset(renamePresetState.id, renamePresetState.name); setRenamePresetState(null); setPresets(loadGraphPresets()); }} type="button">Сохранить</button>
             <button className="control-button" onClick={() => setRenamePresetState(null)} type="button">Отмена</button>
@@ -228,8 +228,8 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
         )}
 
         {graph.nodes.length > 0 && (
-          <div className="mt-3 rounded-2xl border border-slate-800 bg-slate-950/70 p-3">
-            <p className="text-sm text-slate-300">Удаление вершин</p>
+          <div className="mt-3 rounded-2xl border border-app bg-surface p-3">
+            <p className="text-sm text-app-muted">Удаление вершин</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {graph.nodes.map((node) => (
                 <button className="control-button" key={node.id} onClick={() => removeNode(node.id)} type="button">
@@ -240,8 +240,8 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
           </div>
         )}
 
-        <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-950/70 p-3">
-          <p className="text-sm text-slate-300">Пользовательский ввод графа</p>
+        <div className="mt-4 rounded-2xl border border-app bg-surface p-3">
+          <p className="text-sm text-app-muted">Пользовательский ввод графа</p>
           <div className="mt-2 flex flex-wrap gap-2">
             <button className={inputMode === 'list' ? 'control-button control-button-primary' : 'control-button'} onClick={() => setInputMode('list')} type="button">Список смежности</button>
             <button className={inputMode === 'matrix' ? 'control-button control-button-primary' : 'control-button'} onClick={() => setInputMode('matrix')} type="button">Матрица смежности</button>
@@ -259,7 +259,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
           <p className="mt-2 text-xs text-slate-400">
             {inputMode === 'list' ? 'Формат: A:B,C' : 'Формат: строки матрицы 0/1 через пробелы, по одной строке на вершину.'}
           </p>
-          <textarea className="mt-2 h-24 w-full rounded-xl border border-slate-700 bg-slate-900 p-2 text-sm text-slate-100" onChange={(event) => setAdjacencyInput(event.target.value)} value={adjacencyInput} />
+          <textarea className="mt-2 h-24 w-full rounded-xl border border-app bg-surface p-2 text-sm text-app-primary" onChange={(event) => setAdjacencyInput(event.target.value)} value={adjacencyInput} />
           <div className="mt-2 flex items-center gap-2">
             <button className="control-button" onClick={applyAdjacencyInput} type="button">Применить граф</button>
             {graphInputError !== null && <span className="text-xs text-rose-300">{graphInputError}</span>}
@@ -269,9 +269,9 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
 
       <GraphVisualizer editable frame={graphFrame} graph={graph} onGraphChange={setGraph} />
 
-      <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-5">
-        <h3 className="text-lg font-semibold text-slate-100">Краткая теория обходов</h3>
-        <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-slate-300">
+      <section className="rounded-3xl border border-app bg-surface p-5">
+        <h3 className="text-lg font-semibold text-app-primary">Краткая теория обходов</h3>
+        <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-app-muted">
           <li><strong>BFS</strong> находит кратчайший путь в невзвешенном графе.</li>
           <li><strong>DFS</strong> удобен для поиска компонент, циклов и топологического анализа.</li>
           <li>Сложность обеих стратегий: <strong>O(V + E)</strong>, где V — вершины, E — рёбра.</li>
@@ -513,9 +513,9 @@ interface StatCardProps {
 
 function StatCard({ label, value }: StatCardProps) {
   return (
-    <div className="rounded-xl border border-slate-700 bg-slate-900/70 px-3 py-2">
+    <div className="rounded-xl border border-app bg-surface/70 px-3 py-2">
       <p className="text-xs text-slate-400">{label}</p>
-      <p className="mt-1 text-lg font-semibold text-slate-100">{value}</p>
+      <p className="mt-1 text-lg font-semibold text-app-primary">{value}</p>
     </div>
   );
 }

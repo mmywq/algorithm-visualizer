@@ -75,20 +75,20 @@ export function GraphVisualizer({ frame, graph, editable = false, onGraphChange 
   };
 
   return (
-    <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 shadow-2xl shadow-violet-950/20">
+    <section className="rounded-3xl border border-app bg-surface p-6 shadow-2xl shadow-slate-950/10">
       <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.28em] text-violet-300">
             Визуализация графа
           </p>
-          <h2 className="mt-2 text-2xl font-bold text-slate-50">Обход графа</h2>
+          <h2 className="mt-2 text-2xl font-bold text-app-primary">Обход графа</h2>
         </div>
-        <div className="rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-sm text-slate-300">
+        <div className="rounded-2xl border border-app bg-surface px-4 py-3 text-sm text-app-muted">
           Строка псевдокода: <span className="font-semibold text-violet-200">{frame?.pseudocode.line ?? '—'}</span>
         </div>
       </div>
 
-      <div className="h-[460px] overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
+      <div className="h-[460px] overflow-hidden rounded-2xl border border-app bg-surface">
         <ReactFlow
           edges={edges}
           fitView
@@ -109,7 +109,7 @@ export function GraphVisualizer({ frame, graph, editable = false, onGraphChange 
       </div>
 
       <div className="mt-5 grid gap-3 md:grid-cols-[1fr_auto] md:items-start">
-        <p className="min-h-12 rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-sm leading-6 text-slate-300">
+        <p className="min-h-12 rounded-2xl border border-app bg-surface px-4 py-3 text-sm leading-6 text-app-muted">
           {frame?.message ?? 'Загрузите BFS или DFS, чтобы увидеть пошаговый обход графа.'}
         </p>
         <GraphLegend />
@@ -120,13 +120,13 @@ export function GraphVisualizer({ frame, graph, editable = false, onGraphChange 
 
 function GraphLegend() {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-xs text-slate-300">
-      <div className="mb-2 font-semibold uppercase tracking-[0.18em] text-slate-500">Легенда</div>
+    <div className="rounded-2xl border border-app bg-surface px-4 py-3 text-xs text-app-muted">
+      <div className="mb-2 font-semibold uppercase tracking-[0.18em] text-app-muted">Легенда</div>
       <LegendItem color="bg-violet-400" label="текущая" />
       <LegendItem color="bg-emerald-400" label="посещена" />
       <LegendItem color="bg-cyan-400" label="граница обхода" />
       <LegendItem color="bg-slate-400" label="обычная вершина" />
-      <div className="mt-2 text-[11px] text-slate-400">В режиме редактирования можно двигать узлы, удалять связи и создавать новые.</div>
+      <div className="mt-2 text-[11px] text-app-muted">В режиме редактирования можно двигать узлы, удалять связи и создавать новые.</div>
     </div>
   );
 }
