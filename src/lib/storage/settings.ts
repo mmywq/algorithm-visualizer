@@ -3,6 +3,7 @@ import { STORAGE_KEYS } from './keys';
 
 export interface AppSettings {
   readonly mode: 'arrays' | 'graphs';
+  readonly theme: 'dark' | 'light';
   readonly playbackSpeedMs: number;
   readonly lastArrayValues: readonly number[];
   readonly lastGraphStartNodeId: string;
@@ -11,6 +12,7 @@ export interface AppSettings {
 
 const defaultSettings: AppSettings = {
   mode: 'arrays',
+  theme: 'dark',
   playbackSpeedMs: 650,
   lastArrayValues: [42, 18, 64, 9, 73, 31, 55, 27],
   lastGraphStartNodeId: 'A',

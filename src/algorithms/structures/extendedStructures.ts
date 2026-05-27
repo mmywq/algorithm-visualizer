@@ -29,6 +29,7 @@ const frame = (
   activeIds: activeIndex === undefined ? [] : [data.cells[activeIndex]?.id ?? ''],
   pseudocode: { line: step + 1 },
   message,
+  description: message,
   meta: {
     operation,
     ...(activeIndex === undefined ? {} : { activeIndex, pointerIndex: activeIndex }),
