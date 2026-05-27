@@ -46,8 +46,8 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
 
   return (
     <div className="flex w-full flex-col gap-6">
-      <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
-        <h1 className="text-3xl font-bold text-white">{title}</h1>
+      <section className="rounded-3xl border border-app bg-surface p-6">
+        <h1 className="text-3xl font-bold text-app-primary">{title}</h1>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
