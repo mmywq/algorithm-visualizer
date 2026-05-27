@@ -36,6 +36,7 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
   }, [generatorFactory, loadAlgorithm]);
 
   const frame = currentFrame;
+  const theory = getTheoryByTitle(title, mode);
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -50,16 +51,10 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
           {mode === 'structure' && <StructureVisualizer frame={isStructureFrame(frame) ? frame : null} />}
         </div>
         <StepTutorPanel
-          complexity={mode === 'array' ? 'O(n log n) / зависит от алгоритма' : mode === 'graph' ? 'O(V + E) / зависит от алгоритма' : 'O(log n) / зависит от операции'}
+          complexity={theory.complexity}
           frame={frame}
-          title="Пошаговое объяснение текущего алгоритма"
-          useCases={
-            mode === 'array'
-              ? ['Сортировка данных', 'Подготовка к бинарному поиску']
-              : mode === 'graph'
-                ? ['Поиск путей', 'Анализ сетевых структур']
-                : ['Моделирование памяти', 'Изучение операций push/pop/enqueue/dequeue']
-          }
+          title={theory.description}
+          useCases={theory.useCases}
         />
       </section>
 
@@ -84,6 +79,54 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
 const isArrayFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | null): frame is ArrayAlgorithmFrame => frame?.domain === 'array' && Array.isArray(frame.data) && frame.data.every((item) => typeof item === 'object' && item !== null && 'value' in item);
 const isGraphFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | null): frame is GraphAlgorithmFrame => frame?.domain === 'graph';
 const isStructureFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | null): frame is StructureAlgorithmFrame => frame?.domain === 'array' && typeof frame.data === 'object' && frame.data !== null && 'cells' in frame.data;
+
+const getTheoryByTitle = (title: string, mode: Mode): { description: string; complexity: string; useCases: readonly string[] } => {
+  if (title.includes('Двоичное дерево поиска')) {
+    return {
+      description: 'BST хранит ключи так, что слева меньше, справа больше. Это ускоряет поиск, вставку и удаление по сравнению с линейным списком.',
+      complexity: 'Поиск/вставка/удаление: O(h), в среднем O(log n)',
+      useCases: ['Индексные структуры', 'Поддержка отсортированного множества', 'Поиск диапазонов'],
+    };
+  }
+
+  if (title.includes('хеш-таблицы')) {
+    return {
+      description: 'Хеш-таблица вычисляет индекс корзины по ключу. Коллизии решаются цепочками, пробированием или блочными схемами.',
+      complexity: 'В среднем O(1), в худшем O(n)',
+      useCases: ['Словари и кэш', 'Проверка принадлежности', 'Подсчёт частот'],
+    };
+  }
+
+  if (title.includes('Куча')) {
+    return {
+      description: 'Куча — полное бинарное дерево с инвариантом приоритета. Корень хранит минимум/максимум.',
+      complexity: 'insert/extract: O(log n), peek: O(1)',
+      useCases: ['Очередь с приоритетом', 'Планировщики задач', 'Алгоритм Дейкстры/Прима'],
+    };
+  }
+
+  if (mode === 'graph') {
+    return {
+      description: 'Графовые алгоритмы анализируют вершины и связи между ними: обход, поиск путей, связность и остовы.',
+      complexity: 'Часто O(V + E), зависит от задачи',
+      useCases: ['Маршрутизация', 'Социальные графы', 'Сетевой анализ'],
+    };
+  }
+
+  if (mode === 'array') {
+    return {
+      description: 'Алгоритмы сортировки упорядочивают данные для ускорения поиска, агрегации и аналитики.',
+      complexity: 'От O(n) до O(n log n) и O(n²)',
+      useCases: ['Подготовка к бинарному поиску', 'Сравнение наборов', 'Обработка данных'],
+    };
+  }
+
+  return {
+    description: 'Пошаговое объяснение текущего алгоритма.',
+    complexity: 'Зависит от операций',
+    useCases: ['Обучение структурам данных', 'Понимание инвариантов'],
+  };
+};
 
 export const algorithmRouteRegistry = {
   '/trees/bst': { title: 'Двоичное дерево поиска', mode: 'structure' as const, generatorFactory: bstScenario },
