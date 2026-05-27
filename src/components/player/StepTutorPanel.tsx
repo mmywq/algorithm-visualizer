@@ -5,9 +5,10 @@ interface StepTutorPanelProps {
   readonly title: string;
   readonly complexity: string;
   readonly useCases: readonly string[];
+  readonly pseudocodeLines?: readonly string[];
 }
 
-export function StepTutorPanel({ frame, title, complexity, useCases }: StepTutorPanelProps) {
+export function StepTutorPanel({ frame, title, complexity, useCases, pseudocodeLines = [] }: StepTutorPanelProps) {
   const explanation = frame?.description ?? frame?.message ?? 'Запустите плеер, чтобы увидеть пояснение шага.';
 
   return (
@@ -28,7 +29,17 @@ export function StepTutorPanel({ frame, title, complexity, useCases }: StepTutor
 
       <div className="mt-4 rounded-2xl border border-app bg-surface p-3 text-sm text-app-muted">
         <p className="font-semibold text-accent">Псевдокод</p>
-        <p className="mt-2">Активная строка: {frame?.pseudocode.line ?? '—'}</p>
+        {pseudocodeLines.length > 0 ? (
+          <div className="mt-2 space-y-1">
+            {pseudocodeLines.map((line, index) => (
+              <p className={frame?.pseudocode.line === index + 1 ? 'font-semibold text-accent' : ''} key={line}>
+                {index + 1}. {line}
+              </p>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-2">Активная строка: {frame?.pseudocode.line ?? '—'}</p>
+        )}
       </div>
     </aside>
   );

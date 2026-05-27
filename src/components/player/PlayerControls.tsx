@@ -66,7 +66,7 @@ export function PlayerControls({
       </div>
 
       <label className="mt-5 block text-sm text-app-muted">
-        Скорость: {playbackSpeedMs} ms
+        Задержка шага: {playbackSpeedMs} мс
         <input
           className="mt-2 w-full accent-cyan-400"
           max={3000}

@@ -18,6 +18,13 @@ interface AlgorithmPageProps {
   readonly generatorFactory: () => Generator<AlgorithmFrame<unknown, Record<string, unknown>>, void, unknown>;
 }
 
+interface TheoryContent {
+  readonly description: string;
+  readonly complexity: string;
+  readonly useCases: readonly string[];
+  readonly pseudocodeLines: readonly string[];
+}
+
 export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPageProps) {
   const currentFrame = useAlgorithmPlayerStore((state) => state.currentFrame);
   const currentIndex = useAlgorithmPlayerStore((state) => state.currentIndex);
@@ -59,6 +66,7 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
         <StepTutorPanel
           complexity={theory.complexity}
           frame={frame}
+          pseudocodeLines={theory.pseudocodeLines}
           title={theory.description}
           useCases={theory.useCases}
         />
@@ -94,12 +102,18 @@ const isArrayFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | 
 const isGraphFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | null): frame is GraphAlgorithmFrame => frame?.domain === 'graph';
 const isStructureFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | null): frame is StructureAlgorithmFrame => frame?.domain === 'array' && typeof frame.data === 'object' && frame.data !== null && 'cells' in frame.data;
 
-const getTheoryByTitle = (title: string, mode: Mode): { description: string; complexity: string; useCases: readonly string[] } => {
+const getTheoryByTitle = (title: string, mode: Mode): TheoryContent => {
   if (title.includes('Двоичное дерево поиска')) {
     return {
       description: 'BST хранит ключи так, что слева меньше, справа больше. Это ускоряет поиск, вставку и удаление по сравнению с линейным списком.',
       complexity: 'Поиск/вставка/удаление: O(h), в среднем O(log n)',
       useCases: ['Индексные структуры', 'Поддержка отсортированного множества', 'Поиск диапазонов'],
+      pseudocodeLines: [
+        'если корень пуст, создаём узел',
+        'если key < node.key, идём влево',
+        'иначе идём вправо',
+        'повторяем, пока не найдём позицию',
+      ],
     };
   }
 
@@ -108,6 +122,12 @@ const getTheoryByTitle = (title: string, mode: Mode): { description: string; com
       description: 'Хеш-таблица вычисляет индекс корзины по ключу. Коллизии решаются цепочками, пробированием или блочными схемами.',
       complexity: 'В среднем O(1), в худшем O(n)',
       useCases: ['Словари и кэш', 'Проверка принадлежности', 'Подсчёт частот'],
+      pseudocodeLines: [
+        'index = hash(key) mod m',
+        'если корзина свободна, вставить',
+        'иначе разрешить коллизию',
+        'при поиске проверить соответствующий bucket',
+      ],
     };
   }
 
@@ -116,6 +136,12 @@ const getTheoryByTitle = (title: string, mode: Mode): { description: string; com
       description: 'Куча — полное бинарное дерево с инвариантом приоритета. Корень хранит минимум/максимум.',
       complexity: 'insert/extract: O(log n), peek: O(1)',
       useCases: ['Очередь с приоритетом', 'Планировщики задач', 'Алгоритм Дейкстры/Прима'],
+      pseudocodeLines: [
+        'insert: добавить элемент в конец',
+        'sift-up до восстановления инварианта',
+        'extract: заменить корень последним элементом',
+        'sift-down до восстановления инварианта',
+      ],
     };
   }
 
@@ -124,6 +150,12 @@ const getTheoryByTitle = (title: string, mode: Mode): { description: string; com
       description: 'Графовые алгоритмы анализируют вершины и связи между ними: обход, поиск путей, связность и остовы.',
       complexity: 'Часто O(V + E), зависит от задачи',
       useCases: ['Маршрутизация', 'Социальные графы', 'Сетевой анализ'],
+      pseudocodeLines: [
+        'инициализировать структуру frontier',
+        'добавить стартовую вершину',
+        'извлечь вершину и обработать',
+        'для соседей добавить непосещённые',
+      ],
     };
   }
 
@@ -132,6 +164,12 @@ const getTheoryByTitle = (title: string, mode: Mode): { description: string; com
       description: 'Алгоритмы сортировки упорядочивают данные для ускорения поиска, агрегации и аналитики.',
       complexity: 'От O(n) до O(n log n) и O(n²)',
       useCases: ['Подготовка к бинарному поиску', 'Сравнение наборов', 'Обработка данных'],
+      pseudocodeLines: [
+        'выбрать стратегию сортировки',
+        'сравнивать элементы по правилу',
+        'переставлять/сливать элементы',
+        'повторять до полной упорядоченности',
+      ],
     };
   }
 
@@ -139,6 +177,7 @@ const getTheoryByTitle = (title: string, mode: Mode): { description: string; com
     description: 'Пошаговое объяснение текущего алгоритма.',
     complexity: 'Зависит от операций',
     useCases: ['Обучение структурам данных', 'Понимание инвариантов'],
+    pseudocodeLines: ['инициализация', 'основной цикл', 'обработка шага', 'завершение'],
   };
 };
 
