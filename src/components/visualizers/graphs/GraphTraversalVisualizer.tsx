@@ -183,7 +183,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
 
   return (
     <div className="flex w-full flex-col gap-6">
-      <section className="rounded-3xl border border-app bg-surface p-6 shadow-xl shadow-slate-950/20">
+      <section className="app-panel shadow-xl shadow-slate-950/20">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.28em] text-violet-300">Раздел графов</p>
@@ -225,7 +225,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
           </label>
 
           <div className="flex flex-wrap gap-2">
-            <input className="h-10 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" onChange={(event) => setNewNodeLabel(event.target.value)} placeholder="Метка новой вершины" value={newNodeLabel} />
+            <input className="control-input" onChange={(event) => setNewNodeLabel(event.target.value)} placeholder="Метка новой вершины" value={newNodeLabel} />
             <input className="h-10 w-52 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" onChange={(event) => setNewNodeLinks(event.target.value)} placeholder="Связи: A,B,C" value={newNodeLinks} />
             <button className="control-button" onClick={addNode} type="button">Добавить узел</button>
             <button className="control-button" onClick={clearGraph} type="button">Очистить граф</button>
@@ -244,7 +244,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
             >
               Сохранить пресет
             </button>
-            <input className="h-10 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" onChange={(event) => setPresetName(event.target.value)} placeholder="Имя пресета" value={presetName} />
+            <input className="control-input" onChange={(event) => setPresetName(event.target.value)} placeholder="Имя пресета" value={presetName} />
           </div>
         </div>
 
@@ -272,7 +272,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
         {renamePresetState !== null && (
           <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-app bg-surface p-3">
             <p className="text-sm text-app-muted">Переименование пресета</p>
-            <input className="h-10 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" onChange={(event) => setRenamePresetState({ ...renamePresetState, name: event.target.value })} value={renamePresetState.name} />
+            <input className="control-input" onChange={(event) => setRenamePresetState({ ...renamePresetState, name: event.target.value })} value={renamePresetState.name} />
             <button className="control-button" onClick={() => { renameGraphPreset(renamePresetState.id, renamePresetState.name); setRenamePresetState(null); setPresets(loadGraphPresets()); }} type="button">Сохранить</button>
             <button className="control-button" onClick={() => setRenamePresetState(null)} type="button">Отмена</button>
           </div>
@@ -300,7 +300,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
 
           {inputMode === 'matrix' && (
             <input
-              className="mt-2 w-full rounded-xl border border-app bg-surface px-3 py-2 text-sm text-app-primary"
+              className="control-input mt-2 w-full"
               onChange={(event) => setMatrixNodeLabels(event.target.value)}
               placeholder="Метки вершин (например: A,B,C,D)"
               value={matrixNodeLabels}
@@ -330,7 +330,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
 
       <GraphVisualizer editable frame={graphFrame} graph={graph} onGraphChange={setGraph} />
 
-      <section className="rounded-3xl border border-app bg-surface p-5">
+      <section className="app-panel">
         <h3 className="text-lg font-semibold text-app-primary">Краткая теория обходов</h3>
         <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-app-muted">
           <li><strong>BFS</strong> находит кратчайший путь в невзвешенном графе.</li>

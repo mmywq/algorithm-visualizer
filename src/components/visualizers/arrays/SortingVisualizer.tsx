@@ -95,7 +95,7 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
 
   return (
     <div className="flex w-full flex-col gap-6 px-4 pb-8 lg:px-8">
-      <section className="rounded-3xl border border-app bg-surface p-6 shadow-xl shadow-slate-950/10">
+      <section className="app-panel shadow-xl shadow-slate-950/10">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h1 className="mt-2 text-4xl font-bold tracking-tight text-app-primary">Алгоритмы сортировки</h1>
@@ -114,14 +114,14 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
           <div>
             <p className="mb-2 text-app-primary">Ввод массива (через запятую)</p>
             <div className="flex gap-2">
-              <input className="w-full rounded-xl border border-app bg-surface px-3 py-2 text-app-primary" value={manualInput} onChange={(e) => setManualInput(e.target.value)} />
+              <input className="control-input w-full" value={manualInput} onChange={(e) => setManualInput(e.target.value)} />
               <button className="control-button" onClick={applyManualValues} type="button">Применить</button>
             </div>
             {inputError !== null && <p className="mt-2 text-rose-300">{inputError}</p>}
           </div>
           <div className="flex flex-wrap gap-2">
             <button className="control-button" onClick={() => { const randomValues = generateRandomValues(values.length); setValues(randomValues); setManualInput(randomValues.join(', ')); }} type="button">Случайные значения</button>
-            <input className="h-10 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" onChange={(event) => setPresetName(event.target.value)} placeholder="Имя пресета" value={presetName} />
+            <input className="control-input" onChange={(event) => setPresetName(event.target.value)} placeholder="Имя пресета" value={presetName} />
             <button className="control-button" onClick={() => { const name = presetName.trim() || `Набор ${new Date().toLocaleTimeString()}`; saveArrayPreset(name, values); setPresetName(''); setPresets(loadArrayPresets()); }} type="button">Сохранить пресет</button>
           </div>
           <p>Текущий массив: <strong className="text-app-primary">[{valuesLabel}]</strong></p>
@@ -142,7 +142,7 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
         {renamePresetState !== null && (
           <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-app bg-surface p-3">
             <p className="text-sm text-app-muted">Переименование пресета</p>
-            <input className="h-10 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" onChange={(event) => setRenamePresetState({ ...renamePresetState, name: event.target.value })} value={renamePresetState.name} />
+            <input className="control-input" onChange={(event) => setRenamePresetState({ ...renamePresetState, name: event.target.value })} value={renamePresetState.name} />
             <button className="control-button" onClick={() => { renameArrayPreset(renamePresetState.id, renamePresetState.name); setRenamePresetState(null); setPresets(loadArrayPresets()); }} type="button">Сохранить</button>
             <button className="control-button" onClick={() => setRenamePresetState(null)} type="button">Отмена</button>
           </div>
@@ -151,7 +151,7 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
         <ArrayVisualizer frame={arrayFrame} />
-        <aside className="rounded-3xl border border-app bg-surface p-5">
+        <aside className="app-panel">
           <h3 className="text-lg font-semibold text-app-primary">Теория</h3>
           <p className="mt-2 text-sm text-app-muted">{selectedAlgorithm === 'bubble' ? 'Сортировка пузырьком: многократно сравнивает соседние элементы и переставляет их.' : 'Сортировка слиянием: рекурсивно делит массив и сливает отсортированные подмассивы.'}</p>
           <p className="mt-2 text-sm text-app-muted">Сложность: {selectedAlgorithm === 'bubble' ? 'O(n²)' : 'O(n log n)'}</p>
