@@ -29,6 +29,7 @@ const makeFrame = (
   activeIds: activeIndex === undefined ? [] : [snapshot.cells[activeIndex]?.id ?? ''],
   pseudocode: { line: pseudocodeLine },
   message,
+  description: message,
   meta: {
     operation,
     ...(pointerIndex === undefined ? {} : { pointerIndex }),

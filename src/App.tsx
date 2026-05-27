@@ -9,6 +9,7 @@ import { StructuresPage } from '@/pages/StructuresPage';
 import { PlannedAlgorithmPage } from '@/pages/PlannedAlgorithmPage';
 import { AlgorithmPage, algorithmRouteRegistry } from '@/pages/AlgorithmPages';
 import { useAlgorithmPlayerStore } from '@/stores';
+import { useUiPreferencesStore } from '@/stores';
 
 const getInitialRoute = (): string => window.location.hash.replace('#', '') || '/';
 
@@ -16,10 +17,15 @@ function App() {
   const settings = useMemo(() => loadSettings(), []);
   const [route, setRoute] = useState<string>(getInitialRoute());
   const setPlaybackSpeed = useAlgorithmPlayerStore((state) => state.setPlaybackSpeed);
+  const theme = useUiPreferencesStore((state) => state.theme);
+  const setTheme = useUiPreferencesStore((state) => state.setTheme);
+  const setUiPlaybackSpeed = useUiPreferencesStore((state) => state.setPlaybackSpeedMs);
 
   useEffect(() => {
     setPlaybackSpeed(settings.playbackSpeedMs);
-  }, [setPlaybackSpeed, settings.playbackSpeedMs]);
+    setUiPlaybackSpeed(settings.playbackSpeedMs);
+    setTheme(settings.theme);
+  }, [setPlaybackSpeed, setTheme, setUiPlaybackSpeed, settings.playbackSpeedMs, settings.theme]);
 
   useEffect(() => {
     const onHashChange = () => {
@@ -37,16 +43,21 @@ function App() {
   };
 
   useEffect(() => {
+    document.documentElement.classList.toggle('light', theme === 'light');
+  }, [theme]);
+
+  useEffect(() => {
     const currentSettings = loadSettings();
     saveSettings({
       ...currentSettings,
+      theme,
       mode: route.includes('/graphs') ? 'graphs' : 'arrays',
       lastRoute: route,
     });
-  }, [route]);
+  }, [route, theme]);
 
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-10 text-slate-100">
+    <main className="min-h-screen bg-app px-3 py-4 text-app-primary lg:px-5 lg:py-6">
       <SiteHeader navigate={navigate} />
       {renderRoute(route, navigate, settings)}
     </main>
