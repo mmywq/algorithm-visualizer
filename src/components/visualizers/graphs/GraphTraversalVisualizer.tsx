@@ -1,7 +1,7 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
 import { bfs, dfs } from '@/algorithms/graphs';
 import { PlayerControls } from '@/components/player/PlayerControls';
-import { loadGraphPresets, loadSettings, removeGraphPreset, saveGraphPreset, saveSettings } from '@/lib/storage';
+import { loadGraphPresets, loadSettings, removeGraphPreset, renameGraphPreset, saveGraphPreset, saveSettings } from '@/lib/storage';
 import { useAlgorithmPlayerStore } from '@/stores';
 import type { AlgorithmFrame, GraphAlgorithmFrame, GraphSnapshot, NodeId } from '@/types';
 import { GraphVisualizer } from './GraphVisualizer';
@@ -47,6 +47,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
   const [matrixNodeLabels, setMatrixNodeLabels] = useState('A,B,C,D,E,F');
   const [graphInputError, setGraphInputError] = useState<string | null>(null);
   const [presetName, setPresetName] = useState('');
+  const [renamePresetState, setRenamePresetState] = useState<{ id: string; name: string } | null>(null);
   const [newNodeLabel, setNewNodeLabel] = useState('');
 
   const currentFrame = useAlgorithmPlayerStore((state) => state.currentFrame);
@@ -210,9 +211,19 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
                 <button className="control-button flex-1" onClick={() => setGraph(preset.graph)} type="button">
                   {preset.name}
                 </button>
+                <button className="control-button" onClick={() => setRenamePresetState({ id: preset.id, name: preset.name })} type="button">Переим.</button>
                 <button className="control-button" onClick={() => { removeGraphPreset(preset.id); setPresets(loadGraphPresets()); }} type="button">Удалить</button>
               </div>
             ))}
+          </div>
+        )}
+
+        {renamePresetState !== null && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-800 bg-slate-950/70 p-3">
+            <p className="text-sm text-slate-300">Переименование пресета</p>
+            <input className="h-10 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" onChange={(event) => setRenamePresetState({ ...renamePresetState, name: event.target.value })} value={renamePresetState.name} />
+            <button className="control-button" onClick={() => { renameGraphPreset(renamePresetState.id, renamePresetState.name); setRenamePresetState(null); setPresets(loadGraphPresets()); }} type="button">Сохранить</button>
+            <button className="control-button" onClick={() => setRenamePresetState(null)} type="button">Отмена</button>
           </div>
         )}
 

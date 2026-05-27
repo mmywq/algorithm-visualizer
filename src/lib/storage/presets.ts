@@ -28,6 +28,25 @@ export const removeArrayPreset = (id: string): void => {
   saveToStorage(STORAGE_KEYS.arrayPresets, presets);
 };
 
+export const renameArrayPreset = (id: string, name: string): void => {
+  const normalizedName = name.trim();
+  if (normalizedName.length === 0) {
+    return;
+  }
+
+  const presets = loadArrayPresets().map((preset) =>
+    preset.id === id
+      ? {
+          ...preset,
+          name: normalizedName,
+          updatedAt: nowIso(),
+        }
+      : preset,
+  );
+
+  saveToStorage(STORAGE_KEYS.arrayPresets, presets);
+};
+
 export const loadGraphPresets = (): readonly GraphPreset[] =>
   loadFromStorage<readonly GraphPreset[]>(STORAGE_KEYS.graphPresets, []);
 
@@ -49,5 +68,24 @@ export const saveGraphPreset = (name: string, graph: GraphSnapshot): GraphPreset
 
 export const removeGraphPreset = (id: string): void => {
   const presets = loadGraphPresets().filter((preset) => preset.id !== id);
+  saveToStorage(STORAGE_KEYS.graphPresets, presets);
+};
+
+export const renameGraphPreset = (id: string, name: string): void => {
+  const normalizedName = name.trim();
+  if (normalizedName.length === 0) {
+    return;
+  }
+
+  const presets = loadGraphPresets().map((preset) =>
+    preset.id === id
+      ? {
+          ...preset,
+          name: normalizedName,
+          updatedAt: nowIso(),
+        }
+      : preset,
+  );
+
   saveToStorage(STORAGE_KEYS.graphPresets, presets);
 };

@@ -4,12 +4,7 @@ interface SiteHeaderProps {
   readonly navigate: (route: string) => void;
 }
 
-const shortcuts = [
-  { label: 'Каталог', route: '/' },
-  { label: 'Сортировки', route: '/sorting/player' },
-  { label: 'Структуры', route: '/structures/stack-array' },
-  { label: 'Графы', route: '/graphs/traversal' },
-] as const;
+const shortcuts = [{ label: 'Каталог разделов', route: '/' }] as const;
 
 export function SiteHeader({ navigate }: SiteHeaderProps) {
   const toggleTheme = useUiPreferencesStore((state) => state.toggleTheme);

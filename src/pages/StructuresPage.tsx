@@ -15,6 +15,34 @@ const demoFactories: Record<DemoKey, () => Generator<StructureAlgorithmFrame, vo
   indexing: () => indexingDemo({ values: [12, 7, 19, 25, 3] }),
 };
 
+const theoryByDemo: Record<DemoKey, { title: string; description: string; complexity: string }> = {
+  'stack-array': {
+    title: 'Стек на массиве',
+    description: 'LIFO-структура: последний добавленный элемент извлекается первым. Операции идут через вершину стека.',
+    complexity: 'push/pop: O(1)',
+  },
+  'stack-list': {
+    title: 'Стек на списке',
+    description: 'Стек можно хранить через голову списка: вставка и удаление выполняются у начала списка.',
+    complexity: 'push/pop: O(1)',
+  },
+  'queue-array': {
+    title: 'Очередь на массиве',
+    description: 'FIFO-структура: первый пришёл — первый ушёл. Элементы добавляются в хвост, удаляются из головы.',
+    complexity: 'enqueue/dequeue: O(1) амортизированно',
+  },
+  'queue-list': {
+    title: 'Очередь на списке',
+    description: 'Очередь на связном списке обычно держит ссылки на голову и хвост для быстрых операций.',
+    complexity: 'enqueue/dequeue: O(1)',
+  },
+  indexing: {
+    title: 'Индексирование массива',
+    description: 'Индексирование — доступ к элементу по номеру ячейки. Это базовая операция массивов и таблиц.',
+    complexity: 'доступ по индексу: O(1)',
+  },
+};
+
 interface StructuresPageProps {
   readonly initialDemo?: DemoKey;
 }
@@ -45,14 +73,21 @@ export function StructuresPage({ initialDemo = 'stack-array' }: StructuresPagePr
 
   return (
     <div className="flex w-full flex-col gap-6">
-      <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
-        <h1 className="text-3xl font-bold text-white">Базовые структуры данных</h1>
+      <section className="rounded-3xl border border-app bg-surface p-6">
+        <h1 className="text-3xl font-bold text-app-primary">Базовые структуры данных</h1>
         <div className="mt-4 flex flex-wrap gap-2">
-          <button className="control-button" onClick={() => setDemoKey('stack-array')} type="button">Стек (array)</button>
-          <button className="control-button" onClick={() => setDemoKey('stack-list')} type="button">Стек (list)</button>
-          <button className="control-button" onClick={() => setDemoKey('queue-array')} type="button">Очередь (array)</button>
-          <button className="control-button" onClick={() => setDemoKey('queue-list')} type="button">Очередь (list)</button>
+          <button className="control-button" onClick={() => setDemoKey('stack-array')} type="button">Стек (массив)</button>
+          <button className="control-button" onClick={() => setDemoKey('stack-list')} type="button">Стек (список)</button>
+          <button className="control-button" onClick={() => setDemoKey('queue-array')} type="button">Очередь (массив)</button>
+          <button className="control-button" onClick={() => setDemoKey('queue-list')} type="button">Очередь (список)</button>
           <button className="control-button" onClick={() => setDemoKey('indexing')} type="button">Индексирование</button>
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-app bg-surface p-4 text-sm">
+          <h2 className="text-lg font-semibold text-app-primary">{theoryByDemo[demoKey].title}</h2>
+          <p className="mt-2 text-app-muted">{theoryByDemo[demoKey].description}</p>
+          <p className="mt-2 text-app-muted">Сложность: {theoryByDemo[demoKey].complexity}</p>
+          <p className="mt-2 text-app-muted">Пояснение шага: {frame?.description ?? frame?.message ?? 'Запустите плеер для пошагового разбора.'}</p>
         </div>
       </section>
 

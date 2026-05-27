@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { bubbleSort, mergeSort } from '@/algorithms/arrays';
 import { PlayerControls } from '@/components/player/PlayerControls';
-import { loadArrayPresets, loadSettings, removeArrayPreset, saveArrayPreset, saveSettings } from '@/lib/storage';
+import { loadArrayPresets, loadSettings, removeArrayPreset, renameArrayPreset, saveArrayPreset, saveSettings } from '@/lib/storage';
 import { useAlgorithmPlayerStore } from '@/stores';
 import { useUiPreferencesStore } from '@/stores';
 import type { AlgorithmFrame, ArrayAlgorithmFrame } from '@/types';
@@ -29,6 +29,7 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
   const [inputError, setInputError] = useState<string | null>(null);
   const [presets, setPresets] = useState(loadArrayPresets());
   const [presetName, setPresetName] = useState('');
+  const [renamePresetState, setRenamePresetState] = useState<{ id: string; name: string } | null>(null);
 
   const currentFrame = useAlgorithmPlayerStore((state) => state.currentFrame);
   const currentIndex = useAlgorithmPlayerStore((state) => state.currentIndex);
@@ -119,7 +120,7 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
             {inputError !== null && <p className="mt-2 text-rose-300">{inputError}</p>}
           </div>
           <div className="flex flex-wrap gap-2">
-            <button className="control-button" onClick={() => setValues(shuffleValues(values))} type="button">Перемешать</button>
+            <button className="control-button" onClick={() => { const shuffled = shuffleValues(values); setValues(shuffled); setManualInput(shuffled.join(', ')); }} type="button">Перемешать</button>
             <input className="h-10 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" onChange={(event) => setPresetName(event.target.value)} placeholder="Имя пресета" value={presetName} />
             <button className="control-button" onClick={() => { const name = presetName.trim() || `Набор ${new Date().toLocaleTimeString()}`; saveArrayPreset(name, values); setPresetName(''); setPresets(loadArrayPresets()); }} type="button">Сохранить пресет</button>
           </div>
@@ -131,9 +132,19 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
             {presets.slice(0, 8).map((preset) => (
               <div className="flex items-center gap-2" key={preset.id}>
                 <button className="control-button flex-1" onClick={() => { setValues(preset.values); setManualInput(preset.values.join(', ')); }} type="button">{preset.name}</button>
+                <button className="control-button" onClick={() => setRenamePresetState({ id: preset.id, name: preset.name })} type="button">Переим.</button>
                 <button className="control-button" onClick={() => { removeArrayPreset(preset.id); setPresets(loadArrayPresets()); }} type="button">Удалить</button>
               </div>
             ))}
+          </div>
+        )}
+
+        {renamePresetState !== null && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-app bg-surface p-3">
+            <p className="text-sm text-app-muted">Переименование пресета</p>
+            <input className="h-10 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" onChange={(event) => setRenamePresetState({ ...renamePresetState, name: event.target.value })} value={renamePresetState.name} />
+            <button className="control-button" onClick={() => { renameArrayPreset(renamePresetState.id, renamePresetState.name); setRenamePresetState(null); setPresets(loadArrayPresets()); }} type="button">Сохранить</button>
+            <button className="control-button" onClick={() => setRenamePresetState(null)} type="button">Отмена</button>
           </div>
         )}
       </section>

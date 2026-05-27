@@ -1,6 +1,8 @@
 export {
   loadArrayPresets,
   loadGraphPresets,
+  renameArrayPreset,
+  renameGraphPreset,
   removeArrayPreset,
   removeGraphPreset,
   saveArrayPreset,
