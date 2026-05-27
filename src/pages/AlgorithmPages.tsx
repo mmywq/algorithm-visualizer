@@ -3,6 +3,7 @@ import { compareSortsDemo, blockSortDemo, countingSortDemo, radixSortDemo } from
 import { connectedComponentsDemo, dijkstraDemo, mstDemo } from '@/algorithms/graphs';
 import { balancedBstScenario, binomialHeapScenario, bstScenario, hashBlockScenario, hashClosedScenario, hashOpenScenario, heapScenario } from '@/algorithms/structures/extendedStructures';
 import { PlayerControls } from '@/components/player/PlayerControls';
+import { StepTutorPanel } from '@/components/player/StepTutorPanel';
 import { ArrayVisualizer } from '@/components/visualizers/arrays/ArrayVisualizer';
 import { GraphVisualizer } from '@/components/visualizers/graphs/GraphVisualizer';
 import { StructureVisualizer } from '@/components/visualizers/structures/StructureVisualizer';
@@ -37,14 +38,30 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
   const frame = currentFrame;
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
         <h1 className="text-3xl font-bold text-white">{title}</h1>
       </section>
 
-      {mode === 'array' && <ArrayVisualizer frame={isArrayFrame(frame) ? frame : null} />}
-      {mode === 'graph' && <GraphVisualizer frame={isGraphFrame(frame) ? frame : null} graph={isGraphFrame(frame) ? frame.data : { nodes: [], edges: [] }} />}
-      {mode === 'structure' && <StructureVisualizer frame={isStructureFrame(frame) ? frame : null} />}
+      <section className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
+        <div>
+          {mode === 'array' && <ArrayVisualizer frame={isArrayFrame(frame) ? frame : null} />}
+          {mode === 'graph' && <GraphVisualizer frame={isGraphFrame(frame) ? frame : null} graph={isGraphFrame(frame) ? frame.data : { nodes: [], edges: [] }} />}
+          {mode === 'structure' && <StructureVisualizer frame={isStructureFrame(frame) ? frame : null} />}
+        </div>
+        <StepTutorPanel
+          complexity={mode === 'array' ? 'O(n log n) / зависит от алгоритма' : mode === 'graph' ? 'O(V + E) / зависит от алгоритма' : 'O(log n) / зависит от операции'}
+          frame={frame}
+          title="Пошаговое объяснение текущего алгоритма"
+          useCases={
+            mode === 'array'
+              ? ['Сортировка данных', 'Подготовка к бинарному поиску']
+              : mode === 'graph'
+                ? ['Поиск путей', 'Анализ сетевых структур']
+                : ['Моделирование памяти', 'Изучение операций push/pop/enqueue/dequeue']
+          }
+        />
+      </section>
 
       <PlayerControls
         canStepBackward={currentIndex > 0}
