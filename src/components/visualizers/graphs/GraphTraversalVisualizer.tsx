@@ -62,6 +62,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
   const status = useAlgorithmPlayerStore((state) => state.status);
 
   const graphFrame = isGraphAlgorithmFrame(currentFrame) ? currentFrame : null;
+  const graphStats = getGraphStats(graph);
 
   useEffect(() => {
     loadGraphAlgorithm(selectedAlgorithm, graph, startNodeId, loadAlgorithm);
@@ -195,6 +196,13 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
           </div>
         </div>
 
+        <div className="mt-4 grid gap-3 rounded-2xl border border-slate-800 bg-slate-950/60 p-3 md:grid-cols-4">
+          <StatCard label="Вершин" value={graphStats.nodes.toString()} />
+          <StatCard label="Рёбер" value={graphStats.edges.toString()} />
+          <StatCard label="Плотность" value={graphStats.density} />
+          <StatCard label="Компонент (оценка)" value={graphStats.componentsEstimate.toString()} />
+        </div>
+
         {presets.length > 0 && (
           <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
             {presets.slice(0, 5).map((preset) => (
@@ -249,6 +257,15 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
       </section>
 
       <GraphVisualizer editable frame={graphFrame} graph={graph} onGraphChange={setGraph} />
+
+      <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-5">
+        <h3 className="text-lg font-semibold text-slate-100">Краткая теория обходов</h3>
+        <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-slate-300">
+          <li><strong>BFS</strong> находит кратчайший путь в невзвешенном графе.</li>
+          <li><strong>DFS</strong> удобен для поиска компонент, циклов и топологического анализа.</li>
+          <li>Сложность обеих стратегий: <strong>O(V + E)</strong>, где V — вершины, E — рёбра.</li>
+        </ul>
+      </section>
 
       <PlayerControls
         canStepBackward={currentIndex > 0}
@@ -415,3 +432,79 @@ const createNextNodeId = (graph: GraphSnapshot): string => {
 
   return `Узел-${Date.now()}`;
 };
+
+const getGraphStats = (graph: GraphSnapshot) => {
+  const nodes = graph.nodes.length;
+  const edges = graph.edges.length;
+  const maxUndirectedEdges = nodes <= 1 ? 1 : (nodes * (nodes - 1)) / 2;
+  const densityValue = edges / maxUndirectedEdges;
+  const density = Number.isFinite(densityValue) ? densityValue.toFixed(2) : '0.00';
+
+  const componentsEstimate = estimateComponents(graph);
+
+  return {
+    nodes,
+    edges,
+    density,
+    componentsEstimate,
+  };
+};
+
+const estimateComponents = (graph: GraphSnapshot): number => {
+  if (graph.nodes.length === 0) {
+    return 0;
+  }
+
+  const adjacency = new Map<NodeId, NodeId[]>();
+  for (const node of graph.nodes) {
+    adjacency.set(node.id, []);
+  }
+  for (const edge of graph.edges) {
+    adjacency.get(edge.source)?.push(edge.target);
+    adjacency.get(edge.target)?.push(edge.source);
+  }
+
+  const visited = new Set<NodeId>();
+  let count = 0;
+
+  for (const node of graph.nodes) {
+    if (visited.has(node.id)) {
+      continue;
+    }
+
+    count += 1;
+    const stack: NodeId[] = [node.id];
+    visited.add(node.id);
+
+    while (stack.length > 0) {
+      const current = stack.pop();
+      if (current === undefined) {
+        continue;
+      }
+
+      for (const neighbor of adjacency.get(current) ?? []) {
+        if (visited.has(neighbor)) {
+          continue;
+        }
+        visited.add(neighbor);
+        stack.push(neighbor);
+      }
+    }
+  }
+
+  return count;
+};
+
+interface StatCardProps {
+  readonly label: string;
+  readonly value: string;
+}
+
+function StatCard({ label, value }: StatCardProps) {
+  return (
+    <div className="rounded-xl border border-slate-700 bg-slate-900/70 px-3 py-2">
+      <p className="text-xs text-slate-400">{label}</p>
+      <p className="mt-1 text-lg font-semibold text-slate-100">{value}</p>
+    </div>
+  );
+}

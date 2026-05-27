@@ -49,6 +49,19 @@ export function GraphVisualizer({ frame, graph, editable = false, onGraphChange 
       return;
     }
 
+    if (connection.source === connection.target) {
+      return;
+    }
+
+    const duplicateEdge = sourceGraph.edges.some((edge) =>
+      (edge.source === connection.source && edge.target === connection.target) ||
+      (!edge.directed && edge.source === connection.target && edge.target === connection.source),
+    );
+
+    if (duplicateEdge) {
+      return;
+    }
+
     const candidateId = `${connection.source}-${connection.target}`;
     const defaultEdge: Edge = {
       id: candidateId,
@@ -112,6 +125,7 @@ function GraphLegend() {
       <LegendItem color="bg-violet-400" label="текущая" />
       <LegendItem color="bg-emerald-400" label="посещена" />
       <LegendItem color="bg-cyan-400" label="граница обхода" />
+      <LegendItem color="bg-slate-400" label="обычная вершина" />
       <div className="mt-2 text-[11px] text-slate-400">В режиме редактирования можно двигать узлы, удалять связи и создавать новые.</div>
     </div>
   );
