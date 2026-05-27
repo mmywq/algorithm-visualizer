@@ -47,6 +47,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
   const [matrixNodeLabels, setMatrixNodeLabels] = useState('A,B,C,D,E,F');
   const [graphInputError, setGraphInputError] = useState<string | null>(null);
   const [presetName, setPresetName] = useState('');
+  const [newNodeLabel, setNewNodeLabel] = useState('');
 
   const currentFrame = useAlgorithmPlayerStore((state) => state.currentFrame);
   const currentIndex = useAlgorithmPlayerStore((state) => state.currentIndex);
@@ -80,11 +81,34 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
   }, [graph.nodes, startNodeId]);
 
   const addNode = (): void => {
-    const id = createNextNodeId(graph);
+    const candidate = newNodeLabel.trim();
+    const id = candidate.length > 0 ? candidate : createNextNodeId(graph);
+
+    if (/^[A-Za-z0-9_-]+$/.test(id) === false) {
+      setGraphInputError('Метка новой вершины содержит недопустимые символы.');
+      return;
+    }
+    if (graph.nodes.some((node) => node.id === id)) {
+      setGraphInputError(`Вершина с меткой "${id}" уже существует.`);
+      return;
+    }
+
+    setGraphInputError(null);
+    setNewNodeLabel('');
     setGraph({
       ...graph,
       nodes: [...graph.nodes, { id, label: id, position: { x: 120 + graph.nodes.length * 80, y: 160 }, payload: {} }],
     });
+  };
+
+  const removeNode = (nodeId: NodeId): void => {
+    const nodes = graph.nodes.filter((node) => node.id !== nodeId);
+    const edges = graph.edges.filter((edge) => edge.source !== nodeId && edge.target !== nodeId);
+    setGraph({ nodes, edges });
+  };
+
+  const clearGraph = (): void => {
+    setGraph({ nodes: [], edges: [] });
   };
 
   const applyAdjacencyInput = (): void => {
@@ -152,7 +176,9 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
           </label>
 
           <div className="flex flex-wrap gap-2">
+            <input className="h-10 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" onChange={(event) => setNewNodeLabel(event.target.value)} placeholder="Метка новой вершины" value={newNodeLabel} />
             <button className="control-button" onClick={addNode} type="button">Добавить узел</button>
+            <button className="control-button" onClick={clearGraph} type="button">Очистить граф</button>
             <button
               className="control-button"
               onClick={() => {
@@ -179,6 +205,19 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
                 <button className="control-button" onClick={() => { removeGraphPreset(preset.id); setPresets(loadGraphPresets()); }} type="button">Удалить</button>
               </div>
             ))}
+          </div>
+        )}
+
+        {graph.nodes.length > 0 && (
+          <div className="mt-3 rounded-2xl border border-slate-800 bg-slate-950/70 p-3">
+            <p className="text-sm text-slate-300">Удаление вершин</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {graph.nodes.map((node) => (
+                <button className="control-button" key={node.id} onClick={() => removeNode(node.id)} type="button">
+                  Удалить {node.label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -213,7 +252,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
 
       <PlayerControls
         canStepBackward={currentIndex > 0}
-        canStepForward={status !== 'completed'}
+        canStepForward={status !== 'completed' && graph.nodes.length > 0}
         currentIndex={currentIndex}
         onNextStep={nextStep}
         onPause={pause}
