@@ -17,6 +17,7 @@ const createFrame = (
   activeIds: getArrayItemIds(items, activeIndices),
   pseudocode: { line: step + 1 },
   message,
+  description: message,
   meta,
 });
 
