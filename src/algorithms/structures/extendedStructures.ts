@@ -50,21 +50,21 @@ function* runScenario(s: DemoScenario): Generator<StructureAlgorithmFrame, void,
 }
 
 export const stackListScenario = () => runScenario({
-  title: 'Stack(List)',
+  title: 'Стек (список)',
   operation: 'push',
   values: [9, 4, 7, 2, 1],
   messages: ['Создаём связный стек.', 'Добавляем узел в head.', 'Снимаем узел с head.'],
 });
 
 export const queueListScenario = () => runScenario({
-  title: 'Queue(List)',
+  title: 'Очередь (список)',
   operation: 'enqueue',
   values: [3, 8, 5, 1, 6],
   messages: ['Создаём очередь на списке.', 'Добавляем в tail.', 'Удаляем из head.'],
 });
 
 export const bstScenario = () => runScenario({
-  title: 'BST',
+  title: 'Дерево BST',
   operation: 'index',
   values: [50, 30, 70, 20, 40, 60, 80],
   messages: [
@@ -79,7 +79,7 @@ export const bstScenario = () => runScenario({
 });
 
 export const balancedBstScenario = () => runScenario({
-  title: 'Balanced BST',
+  title: 'Сбалансированное BST',
   operation: 'index',
   values: [30, 20, 40, 10, 25, 35, 50],
   messages: [
@@ -93,7 +93,7 @@ export const balancedBstScenario = () => runScenario({
 });
 
 export const hashOpenScenario = () => runScenario({
-  title: 'Hash Open Chaining',
+  title: 'Хеш-таблица: цепочки',
   operation: 'index',
   values: [12, 22, 32, 42, 52],
   messages: [
@@ -104,7 +104,7 @@ export const hashOpenScenario = () => runScenario({
 });
 
 export const hashClosedScenario = () => runScenario({
-  title: 'Hash Open Addressing',
+  title: 'Хеш-таблица: открытая адресация',
   operation: 'index',
   values: [15, 25, 35, 45, 55],
   messages: [
@@ -115,14 +115,18 @@ export const hashClosedScenario = () => runScenario({
 });
 
 export const hashBlockScenario = () => runScenario({
-  title: 'Hash Block Addressing',
+  title: 'Хеш-таблица: блочная адресация',
   operation: 'index',
   values: [11, 21, 31, 41, 51],
-  messages: ['Хешируем ключ.', 'Заполняем блок bucket.', 'Переход к overflow-блоку.'],
+  messages: [
+    'Хешируем ключ и определяем номер блока таблицы.',
+    'Заполняем ячейки выбранного блока по локальным правилам размещения.',
+    'Если блок переполнен, переходим к связанному overflow-блоку.',
+  ],
 });
 
 export const heapScenario = () => runScenario({
-  title: 'Heap',
+  title: 'Бинарная куча',
   operation: 'push',
   values: [40, 15, 60, 5, 30, 55],
   messages: [
@@ -135,7 +139,7 @@ export const heapScenario = () => runScenario({
 });
 
 export const binomialHeapScenario = () => runScenario({
-  title: 'Binomial Heap',
+  title: 'Биномиальная куча',
   operation: 'push',
   values: [18, 7, 24, 3, 12, 30],
   messages: [

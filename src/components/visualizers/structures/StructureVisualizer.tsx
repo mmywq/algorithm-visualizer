@@ -6,7 +6,10 @@ interface StructureVisualizerProps {
 
 export function StructureVisualizer({ frame }: StructureVisualizerProps) {
   const snapshot = frame?.data;
-  const isTreeLike = snapshot?.label.includes('BST') === true || snapshot?.label.includes('Heap') === true;
+  const isTreeLike =
+    snapshot?.label.includes('BST') === true ||
+    snapshot?.label.includes('куча') === true ||
+    snapshot?.label.includes('Куча') === true;
 
   return (
     <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
