@@ -36,15 +36,19 @@ export function StructureVisualizer({ frame }: StructureVisualizerProps) {
       ) : (
         <div className="mt-4 flex flex-wrap gap-3">
           {snapshot?.cells.map((cell, index) => (
-            <div
-              className={
-                frame?.meta.activeIndex === index
-                  ? 'h-16 w-16 rounded-xl border border-cyan-300 bg-cyan-500/30 text-center leading-[4rem] text-cyan-100'
-                  : 'h-16 w-16 rounded-xl border border-slate-700 bg-slate-950 text-center leading-[4rem] text-slate-200'
-              }
-              key={cell.id}
-            >
-              {cell.value ?? '·'}
+            <div className="relative" key={cell.id}>
+              {Object.entries(frame?.meta.pointers ?? {}).filter(([, pointerIndex]) => pointerIndex === index).map(([label]) => (
+                <div className="absolute -top-5 left-1/2 -translate-x-1/2 rounded bg-violet-500 px-1.5 py-0.5 text-[10px] font-semibold text-white" key={label}>{label}</div>
+              ))}
+              <div
+                className={
+                  frame?.meta.activeIndex === index
+                    ? 'h-16 w-16 rounded-xl border border-cyan-300 bg-cyan-500/30 text-center leading-[4rem] text-cyan-100'
+                    : 'h-16 w-16 rounded-xl border border-slate-700 bg-slate-950 text-center leading-[4rem] text-slate-200'
+                }
+              >
+                {cell.value ?? '·'}
+              </div>
             </div>
           ))}
         </div>
