@@ -49,6 +49,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
   const [presetName, setPresetName] = useState('');
   const [renamePresetState, setRenamePresetState] = useState<{ id: string; name: string } | null>(null);
   const [newNodeLabel, setNewNodeLabel] = useState('');
+  const [newNodeLinks, setNewNodeLinks] = useState('');
   const [randomNodesCount, setRandomNodesCount] = useState(8);
   const [randomDensity, setRandomDensity] = useState(0.3);
 
@@ -97,12 +98,23 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
       return;
     }
 
+    const targets = newNodeLinks.split(',').map((v) => v.trim()).filter((v) => v.length > 0);
+    if (targets.some((target) => graph.nodes.some((node) => node.id === target) === false)) {
+      setGraphInputError('В поле связей есть вершины, которых нет в графе.');
+      return;
+    }
+
+    const nodes = applyForceLayout([...graph.nodes, { id, label: id, position: { x: 120 + graph.nodes.length * 80, y: 160 }, payload: {} }]);
+    const existing = new Set(graph.edges.map((edge) => [edge.source, edge.target].sort().join('--')));
+    const extraEdges = targets
+      .filter((target) => target !== id)
+      .filter((target) => existing.has([id, target].sort().join('--')) === false)
+      .map((target) => ({ id: `${id}-${target}`, source: id, target, directed: false, payload: {} }));
+
     setGraphInputError(null);
     setNewNodeLabel('');
-    setGraph({
-      ...graph,
-      nodes: applyForceLayout([...graph.nodes, { id, label: id, position: { x: 120 + graph.nodes.length * 80, y: 160 }, payload: {} }]),
-    });
+    setNewNodeLinks('');
+    setGraph({ nodes, edges: [...graph.edges, ...extraEdges] });
   };
 
   const removeNode = (nodeId: NodeId): void => {
@@ -214,6 +226,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
 
           <div className="flex flex-wrap gap-2">
             <input className="h-10 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" onChange={(event) => setNewNodeLabel(event.target.value)} placeholder="Метка новой вершины" value={newNodeLabel} />
+            <input className="h-10 w-52 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" onChange={(event) => setNewNodeLinks(event.target.value)} placeholder="Связи: A,B,C" value={newNodeLinks} />
             <button className="control-button" onClick={addNode} type="button">Добавить узел</button>
             <button className="control-button" onClick={clearGraph} type="button">Очистить граф</button>
             <input className="h-10 w-24 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" type="number" min={2} max={24} value={randomNodesCount} onChange={(event) => setRandomNodesCount(Number(event.target.value))} placeholder="Вершин" />
@@ -302,6 +315,16 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
             <button className="control-button" onClick={applyAdjacencyInput} type="button">Применить граф</button>
             {graphInputError !== null && <span className="text-xs text-rose-300">{graphInputError}</span>}
           </div>
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-app bg-surface p-3 text-sm text-app-muted">
+          <p className="font-semibold text-app-primary">Псевдокод {selectedAlgorithm.toUpperCase()}</p>
+          {(selectedAlgorithm === 'bfs'
+            ? ['поместить стартовую вершину в очередь и отметить посещённой', 'пока очередь не пуста:', '  извлечь вершину u из очереди', '  для каждого соседа v вершины u:', '    если v не посещена, отметить и добавить в очередь']
+            : ['поместить стартовую вершину в стек и отметить посещённой', 'пока стек не пуст:', '  снять вершину u со стека', '  для каждого соседа v вершины u:', '    если v не посещена, отметить и поместить в стек'])
+            .map((line, index) => (
+              <p key={line} className={graphFrame?.pseudocode.line === index + 1 ? 'text-violet-200 font-semibold' : ''}>{index + 1}. {line}</p>
+            ))}
         </div>
       </section>
 
