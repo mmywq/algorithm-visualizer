@@ -303,7 +303,12 @@ const loadGraphAlgorithm = (
   loadAlgorithm: ReturnType<typeof useAlgorithmPlayerStore.getState>['loadAlgorithm'],
 ): void => {
   const generator = algorithmKey === 'bfs' ? bfs({ graph, startNodeId }) : dfs({ graph, startNodeId });
-  loadAlgorithm(generator);
+  const first = generator.next();
+  if (first.done) {
+    loadAlgorithm(generator);
+  } else {
+    loadAlgorithm(generator, { initialFrame: first.value });
+  }
 };
 
 const isGraphAlgorithmFrame = (

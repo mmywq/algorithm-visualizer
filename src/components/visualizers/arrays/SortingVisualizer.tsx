@@ -176,7 +176,12 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
 
 const loadSortingAlgorithm = (algorithmKey: SortingAlgorithmKey, values: readonly number[], loadAlgorithm: ReturnType<typeof useAlgorithmPlayerStore.getState>['loadAlgorithm']): void => {
   const generator = algorithmKey === 'bubble' ? bubbleSort(values) : mergeSort(values);
-  loadAlgorithm(generator);
+  const first = generator.next();
+  if (first.done) {
+    loadAlgorithm(generator);
+  } else {
+    loadAlgorithm(generator, { initialFrame: first.value });
+  }
 };
 
 const shuffleValues = (values: readonly number[]): readonly number[] => [...values].map((value) => ({ sortKey: Math.random(), value })).sort((l, r) => l.sortKey - r.sortKey).map(({ value }) => value);

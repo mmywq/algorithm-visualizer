@@ -32,7 +32,13 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
   const status = useAlgorithmPlayerStore((state) => state.status);
 
   useEffect(() => {
-    loadAlgorithm(generatorFactory());
+    const generator = generatorFactory();
+    const first = generator.next();
+    if (first.done) {
+    loadAlgorithm(generator);
+  } else {
+    loadAlgorithm(generator, { initialFrame: first.value });
+  }
   }, [generatorFactory, loadAlgorithm]);
 
   const frame = currentFrame;
@@ -66,7 +72,15 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
         onPause={pause}
         onPlay={play}
         onPrevStep={prevStep}
-        onReset={() => loadAlgorithm(generatorFactory())}
+        onReset={() => {
+          const generator = generatorFactory();
+          const first = generator.next();
+          if (first.done) {
+    loadAlgorithm(generator);
+  } else {
+    loadAlgorithm(generator, { initialFrame: first.value });
+  }
+        }}
         onSpeedChange={setPlaybackSpeed}
         playbackSpeedMs={playbackSpeedMs}
         status={status}

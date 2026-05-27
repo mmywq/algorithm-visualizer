@@ -66,7 +66,13 @@ export function StructuresPage({ initialDemo = 'stack-array' }: StructuresPagePr
   }, [initialDemo]);
 
   useEffect(() => {
-    loadAlgorithm(demoFactories[demoKey]());
+    const generator = demoFactories[demoKey]();
+    const first = generator.next();
+    if (first.done) {
+    loadAlgorithm(generator);
+  } else {
+    loadAlgorithm(generator, { initialFrame: first.value });
+  }
   }, [demoKey, loadAlgorithm]);
 
   const frame = isStructureAlgorithmFrame(currentFrame) ? currentFrame : null;
@@ -101,7 +107,15 @@ export function StructuresPage({ initialDemo = 'stack-array' }: StructuresPagePr
         onPause={pause}
         onPlay={play}
         onPrevStep={prevStep}
-        onReset={() => loadAlgorithm(demoFactories[demoKey]())}
+        onReset={() => {
+          const generator = demoFactories[demoKey]();
+          const first = generator.next();
+          if (first.done) {
+    loadAlgorithm(generator);
+  } else {
+    loadAlgorithm(generator, { initialFrame: first.value });
+  }
+        }}
         onSpeedChange={setPlaybackSpeed}
         playbackSpeedMs={playbackSpeedMs}
         status={status}
