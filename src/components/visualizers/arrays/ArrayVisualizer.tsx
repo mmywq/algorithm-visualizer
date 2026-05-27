@@ -10,7 +10,7 @@ const MAX_BAR_HEIGHT_PX = 260;
 
 export function ArrayVisualizer({ frame }: ArrayVisualizerProps) {
   const items = frame?.data ?? [];
-  const maxValue = Math.max(...items.map((item) => item.value), 1);
+  const maxValue = Math.max(...items.map((item) => Math.abs(item.value)), 1);
 
   return (
     <section className="rounded-3xl border border-app bg-surface p-6 shadow-2xl shadow-slate-950/10">
@@ -47,7 +47,7 @@ interface ArrayBarProps {
 }
 
 function ArrayBar({ frame, index, item, maxValue }: ArrayBarProps) {
-  const height = Math.max(MIN_BAR_HEIGHT_PX, (item.value / maxValue) * MAX_BAR_HEIGHT_PX);
+  const height = Math.max(MIN_BAR_HEIGHT_PX, (Math.abs(item.value) / maxValue) * MAX_BAR_HEIGHT_PX);
   const tone = getBarTone(frame, index);
 
   return (
