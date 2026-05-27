@@ -120,7 +120,7 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
             {inputError !== null && <p className="mt-2 text-rose-300">{inputError}</p>}
           </div>
           <div className="flex flex-wrap gap-2">
-            <button className="control-button" onClick={() => { const shuffled = shuffleValues(values); setValues(shuffled); setManualInput(shuffled.join(', ')); }} type="button">Перемешать</button>
+            <button className="control-button" onClick={() => { const randomValues = generateRandomValues(values.length); setValues(randomValues); setManualInput(randomValues.join(', ')); }} type="button">Случайные значения</button>
             <input className="h-10 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" onChange={(event) => setPresetName(event.target.value)} placeholder="Имя пресета" value={presetName} />
             <button className="control-button" onClick={() => { const name = presetName.trim() || `Набор ${new Date().toLocaleTimeString()}`; saveArrayPreset(name, values); setPresetName(''); setPresets(loadArrayPresets()); }} type="button">Сохранить пресет</button>
           </div>
@@ -184,6 +184,6 @@ const loadSortingAlgorithm = (algorithmKey: SortingAlgorithmKey, values: readonl
   }
 };
 
-const shuffleValues = (values: readonly number[]): readonly number[] => [...values].map((value) => ({ sortKey: Math.random(), value })).sort((l, r) => l.sortKey - r.sortKey).map(({ value }) => value);
+const generateRandomValues = (size: number): readonly number[] => Array.from({ length: Math.max(2, size) }, () => Math.floor(Math.random() * (MAX_ARRAY_VALUE - MIN_ARRAY_VALUE + 1)) + MIN_ARRAY_VALUE);
 
 const isArrayAlgorithmFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | null): frame is ArrayAlgorithmFrame => frame?.domain === 'array' && Array.isArray(frame.data);
