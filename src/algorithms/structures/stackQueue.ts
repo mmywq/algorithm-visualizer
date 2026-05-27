@@ -20,6 +20,7 @@ const makeFrame = (
   operation: StructureAlgorithmFrame['meta']['operation'],
   pointerIndex?: number,
   activeIndex?: number,
+  pointers?: Readonly<Record<string, number>>,
 ): StructureAlgorithmFrame => ({
   step,
   domain: 'array',
@@ -34,6 +35,7 @@ const makeFrame = (
     operation,
     ...(pointerIndex === undefined ? {} : { pointerIndex }),
     ...(activeIndex === undefined ? {} : { activeIndex }),
+    ...(pointers === undefined ? {} : { pointers }),
   },
 });
 
@@ -44,15 +46,15 @@ export function* stackArrayDemo({ values, capacity = 8 }: DemoInput): Generator<
   for (const value of values) {
     top += 1;
     storage[top] = value;
-    yield makeFrame(step++, 'push', 'running', 2, `push(${value}) в стек (array).`, createSnapshot('Stack(Array)', storage), 'push', top, top);
+    yield makeFrame(step++, 'push', 'running', 2, `push(${value}) в стек (array).`, createSnapshot('Stack(Array)', storage), 'push', top, top, { top: -1 });
   }
   while (top >= 0) {
     const popped = storage[top];
     storage[top] = null;
-    yield makeFrame(step++, 'pop', 'running', 4, `pop() => ${popped}.`, createSnapshot('Stack(Array)', storage), 'pop', top - 1, top);
+    yield makeFrame(step++, 'pop', 'running', 4, `pop() => ${popped}.`, createSnapshot('Stack(Array)', storage), 'pop', top - 1, top, { top: top - 1 });
     top -= 1;
   }
-  yield makeFrame(step, 'complete', 'completed', 6, 'Демонстрация Stack(Array) завершена.', createSnapshot('Stack(Array)', storage), 'pop');
+  yield makeFrame(step, 'complete', 'completed', 6, 'Демонстрация Stack(Array) завершена.', createSnapshot('Stack(Array)', storage), 'pop', undefined, undefined, { top: -1 });
 }
 
 export function* queueArrayDemo({ values, capacity = 10 }: DemoInput): Generator<StructureAlgorithmFrame, void, unknown> {
@@ -63,27 +65,27 @@ export function* queueArrayDemo({ values, capacity = 10 }: DemoInput): Generator
 
   for (const value of values) {
     storage[tail] = value;
-    yield makeFrame(step++, 'enqueue', 'running', 2, `enqueue(${value}) в очередь (array).`, createSnapshot('Queue(Array)', storage), 'enqueue', tail, tail);
+    yield makeFrame(step++, 'enqueue', 'running', 2, `enqueue(${value}) в очередь (array).`, createSnapshot('Queue(Array)', storage), 'enqueue', tail, tail, { head: 0, tail: 0 });
     tail += 1;
   }
 
   while (head < tail) {
     const taken = storage[head];
     storage[head] = null;
-    yield makeFrame(step++, 'dequeue', 'running', 4, `dequeue() => ${taken}.`, createSnapshot('Queue(Array)', storage), 'dequeue', head + 1, head);
+    yield makeFrame(step++, 'dequeue', 'running', 4, `dequeue() => ${taken}.`, createSnapshot('Queue(Array)', storage), 'dequeue', head + 1, head, { head: head + 1, tail });
     head += 1;
   }
 
-  yield makeFrame(step, 'complete', 'completed', 6, 'Демонстрация Queue(Array) завершена.', createSnapshot('Queue(Array)', storage), 'dequeue');
+  yield makeFrame(step, 'complete', 'completed', 6, 'Демонстрация Queue(Array) завершена.', createSnapshot('Queue(Array)', storage), 'dequeue', undefined, undefined, { head: 0, tail: 0 });
 }
 
 export function* indexingDemo({ values }: DemoInput): Generator<StructureAlgorithmFrame, void, unknown> {
   let step = 0;
   const storage: (number | null)[] = [...values];
   for (let index = 0; index < storage.length; index += 1) {
-    yield makeFrame(step++, 'inspect', 'running', 2, `Читаем a[${index}] = ${storage[index]}.`, createSnapshot('Indexing', storage), 'index', index, index);
+    yield makeFrame(step++, 'inspect', 'running', 2, `Читаем a[${index}] = ${storage[index]}.`, createSnapshot('Indexing', storage), 'index', index, index, { i: index });
   }
-  yield makeFrame(step, 'complete', 'completed', 4, 'Индексирование завершено.', createSnapshot('Indexing', storage), 'index');
+  yield makeFrame(step, 'complete', 'completed', 4, 'Индексирование завершено.', createSnapshot('Indexing', storage), 'index', undefined, undefined, { i: -1 });
 }
 
 
@@ -92,13 +94,13 @@ export function* stackListDemo({ values }: DemoInput): Generator<StructureAlgori
   let step = 0;
   for (const value of values) {
     list.unshift(value);
-    yield makeFrame(step++, 'push', 'running', 2, `push(${value}) в стек (list head).`, createSnapshot('Stack(List)', list), 'push', 0, 0);
+    yield makeFrame(step++, 'push', 'running', 2, `push(${value}) в стек (list head).`, createSnapshot('Stack(List)', list), 'push', 0, 0, { head: 0, top: 0 });
   }
   while (list.length > 0) {
     const popped = list.shift();
-    yield makeFrame(step++, 'pop', 'running', 4, `pop() => ${popped}.`, createSnapshot('Stack(List)', list), 'pop', 0, 0);
+    yield makeFrame(step++, 'pop', 'running', 4, `pop() => ${popped}.`, createSnapshot('Stack(List)', list), 'pop', 0, 0, { head: 0, top: 0 });
   }
-  yield makeFrame(step, 'complete', 'completed', 6, 'Демонстрация Stack(List) завершена.', createSnapshot('Stack(List)', list), 'pop');
+  yield makeFrame(step, 'complete', 'completed', 6, 'Демонстрация Stack(List) завершена.', createSnapshot('Stack(List)', list), 'pop', undefined, undefined, { top: -1 });
 }
 
 export function* queueListDemo({ values }: DemoInput): Generator<StructureAlgorithmFrame, void, unknown> {
@@ -106,11 +108,11 @@ export function* queueListDemo({ values }: DemoInput): Generator<StructureAlgori
   let step = 0;
   for (const value of values) {
     list.push(value);
-    yield makeFrame(step++, 'enqueue', 'running', 2, `enqueue(${value}) в очередь (list tail).`, createSnapshot('Queue(List)', list), 'enqueue', list.length - 1, list.length - 1);
+    yield makeFrame(step++, 'enqueue', 'running', 2, `enqueue(${value}) в очередь (list tail).`, createSnapshot('Queue(List)', list), 'enqueue', list.length - 1, list.length - 1, { head: 0, tail: list.length - 1 });
   }
   while (list.length > 0) {
     const taken = list.shift();
-    yield makeFrame(step++, 'dequeue', 'running', 4, `dequeue() => ${taken}.`, createSnapshot('Queue(List)', list), 'dequeue', 0, 0);
+    yield makeFrame(step++, 'dequeue', 'running', 4, `dequeue() => ${taken}.`, createSnapshot('Queue(List)', list), 'dequeue', 0, 0, { head: 0, tail: Math.max(0, list.length - 1) });
   }
-  yield makeFrame(step, 'complete', 'completed', 6, 'Демонстрация Queue(List) завершена.', createSnapshot('Queue(List)', list), 'dequeue');
+  yield makeFrame(step, 'complete', 'completed', 6, 'Демонстрация Queue(List) завершена.', createSnapshot('Queue(List)', list), 'dequeue', undefined, undefined, { head: 0, tail: 0 });
 }
