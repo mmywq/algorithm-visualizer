@@ -3,6 +3,7 @@ import { compareSortsDemo, blockSortDemo, countingSortDemo, radixSortDemo } from
 import { connectedComponentsDemo, dijkstraDemo, mstDemo } from '@/algorithms/graphs';
 import { balancedBstScenario, binomialHeapScenario, bstScenario, hashBlockScenario, hashClosedScenario, hashOpenScenario, heapScenario } from '@/algorithms/structures/extendedStructures';
 import { PlayerControls } from '@/components/player/PlayerControls';
+import { StepTutorPanel } from '@/components/player/StepTutorPanel';
 import { ArrayVisualizer } from '@/components/visualizers/arrays/ArrayVisualizer';
 import { GraphVisualizer } from '@/components/visualizers/graphs/GraphVisualizer';
 import { StructureVisualizer } from '@/components/visualizers/structures/StructureVisualizer';
@@ -31,20 +32,37 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
   const status = useAlgorithmPlayerStore((state) => state.status);
 
   useEffect(() => {
-    loadAlgorithm(generatorFactory());
+    const generator = generatorFactory();
+    const first = generator.next();
+    if (first.done) {
+    loadAlgorithm(generator);
+  } else {
+    loadAlgorithm(generator, { initialFrame: first.value });
+  }
   }, [generatorFactory, loadAlgorithm]);
 
   const frame = currentFrame;
+  const theory = getTheoryByTitle(title, mode);
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6">
-      <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
-        <h1 className="text-3xl font-bold text-white">{title}</h1>
+    <div className="flex w-full flex-col gap-6">
+      <section className="rounded-3xl border border-app bg-surface p-6">
+        <h1 className="text-3xl font-bold text-app-primary">{title}</h1>
       </section>
 
-      {mode === 'array' && <ArrayVisualizer frame={isArrayFrame(frame) ? frame : null} />}
-      {mode === 'graph' && <GraphVisualizer frame={isGraphFrame(frame) ? frame : null} graph={isGraphFrame(frame) ? frame.data : { nodes: [], edges: [] }} />}
-      {mode === 'structure' && <StructureVisualizer frame={isStructureFrame(frame) ? frame : null} />}
+      <section className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
+        <div>
+          {mode === 'array' && <ArrayVisualizer frame={isArrayFrame(frame) ? frame : null} />}
+          {mode === 'graph' && <GraphVisualizer frame={isGraphFrame(frame) ? frame : null} graph={isGraphFrame(frame) ? frame.data : { nodes: [], edges: [] }} />}
+          {mode === 'structure' && <StructureVisualizer frame={isStructureFrame(frame) ? frame : null} />}
+        </div>
+        <StepTutorPanel
+          complexity={theory.complexity}
+          frame={frame}
+          title={theory.description}
+          useCases={theory.useCases}
+        />
+      </section>
 
       <PlayerControls
         canStepBackward={currentIndex > 0}
@@ -54,7 +72,15 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
         onPause={pause}
         onPlay={play}
         onPrevStep={prevStep}
-        onReset={() => loadAlgorithm(generatorFactory())}
+        onReset={() => {
+          const generator = generatorFactory();
+          const first = generator.next();
+          if (first.done) {
+    loadAlgorithm(generator);
+  } else {
+    loadAlgorithm(generator, { initialFrame: first.value });
+  }
+        }}
         onSpeedChange={setPlaybackSpeed}
         playbackSpeedMs={playbackSpeedMs}
         status={status}
@@ -67,6 +93,54 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
 const isArrayFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | null): frame is ArrayAlgorithmFrame => frame?.domain === 'array' && Array.isArray(frame.data) && frame.data.every((item) => typeof item === 'object' && item !== null && 'value' in item);
 const isGraphFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | null): frame is GraphAlgorithmFrame => frame?.domain === 'graph';
 const isStructureFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | null): frame is StructureAlgorithmFrame => frame?.domain === 'array' && typeof frame.data === 'object' && frame.data !== null && 'cells' in frame.data;
+
+const getTheoryByTitle = (title: string, mode: Mode): { description: string; complexity: string; useCases: readonly string[] } => {
+  if (title.includes('Двоичное дерево поиска')) {
+    return {
+      description: 'BST хранит ключи так, что слева меньше, справа больше. Это ускоряет поиск, вставку и удаление по сравнению с линейным списком.',
+      complexity: 'Поиск/вставка/удаление: O(h), в среднем O(log n)',
+      useCases: ['Индексные структуры', 'Поддержка отсортированного множества', 'Поиск диапазонов'],
+    };
+  }
+
+  if (title.includes('хеш-таблицы')) {
+    return {
+      description: 'Хеш-таблица вычисляет индекс корзины по ключу. Коллизии решаются цепочками, пробированием или блочными схемами.',
+      complexity: 'В среднем O(1), в худшем O(n)',
+      useCases: ['Словари и кэш', 'Проверка принадлежности', 'Подсчёт частот'],
+    };
+  }
+
+  if (title.includes('Куча')) {
+    return {
+      description: 'Куча — полное бинарное дерево с инвариантом приоритета. Корень хранит минимум/максимум.',
+      complexity: 'insert/extract: O(log n), peek: O(1)',
+      useCases: ['Очередь с приоритетом', 'Планировщики задач', 'Алгоритм Дейкстры/Прима'],
+    };
+  }
+
+  if (mode === 'graph') {
+    return {
+      description: 'Графовые алгоритмы анализируют вершины и связи между ними: обход, поиск путей, связность и остовы.',
+      complexity: 'Часто O(V + E), зависит от задачи',
+      useCases: ['Маршрутизация', 'Социальные графы', 'Сетевой анализ'],
+    };
+  }
+
+  if (mode === 'array') {
+    return {
+      description: 'Алгоритмы сортировки упорядочивают данные для ускорения поиска, агрегации и аналитики.',
+      complexity: 'От O(n) до O(n log n) и O(n²)',
+      useCases: ['Подготовка к бинарному поиску', 'Сравнение наборов', 'Обработка данных'],
+    };
+  }
+
+  return {
+    description: 'Пошаговое объяснение текущего алгоритма.',
+    complexity: 'Зависит от операций',
+    useCases: ['Обучение структурам данных', 'Понимание инвариантов'],
+  };
+};
 
 export const algorithmRouteRegistry = {
   '/trees/bst': { title: 'Двоичное дерево поиска', mode: 'structure' as const, generatorFactory: bstScenario },

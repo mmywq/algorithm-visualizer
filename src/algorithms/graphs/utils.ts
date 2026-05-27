@@ -36,6 +36,7 @@ export const createGraphFrame = (
   activeIds,
   pseudocode: { line: pseudocodeLine },
   message,
+  description: message,
   meta,
 });
 

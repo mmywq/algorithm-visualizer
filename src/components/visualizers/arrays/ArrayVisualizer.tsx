@@ -13,26 +13,26 @@ export function ArrayVisualizer({ frame }: ArrayVisualizerProps) {
   const maxValue = Math.max(...items.map((item) => item.value), 1);
 
   return (
-    <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 shadow-2xl shadow-cyan-950/20">
+    <section className="rounded-3xl border border-app bg-surface p-6 shadow-2xl shadow-slate-950/10">
       <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.28em] text-cyan-300">
-            Array Visualizer
+            Визуализация массива
           </p>
-          <h2 className="mt-2 text-2xl font-bold text-slate-50">Сортировка массива</h2>
+          <h2 className="mt-2 text-2xl font-bold text-app-primary">Сортировка массива</h2>
         </div>
-        <div className="rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-sm text-slate-300">
+        <div className="rounded-2xl border border-app bg-surface px-4 py-3 text-sm text-app-muted">
           Строка псевдокода: <span className="font-semibold text-cyan-200">{frame?.pseudocode.line ?? '—'}</span>
         </div>
       </div>
 
-      <div className="flex min-h-[320px] items-end justify-center gap-3 rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
+      <div className="flex min-h-[320px] items-end justify-center gap-3 rounded-2xl border border-app bg-surface p-5">
         {items.map((item, index) => (
           <ArrayBar frame={frame} index={index} item={item} key={item.id} maxValue={maxValue} />
         ))}
       </div>
 
-      <p className="mt-5 min-h-12 rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-sm leading-6 text-slate-300">
+      <p className="mt-5 min-h-12 rounded-2xl border border-app bg-surface px-4 py-3 text-sm leading-6 text-app-muted">
         {frame?.message ?? 'Загрузите алгоритм, чтобы увидеть пошаговую визуализацию.'}
       </p>
     </section>

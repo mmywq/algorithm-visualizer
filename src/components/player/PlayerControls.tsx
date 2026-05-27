@@ -33,13 +33,13 @@ export function PlayerControls({
   const isRunning = status === 'running';
 
   return (
-    <section className="rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-lg shadow-slate-950/30">
+    <section className="rounded-2xl border border-app bg-surface p-5 shadow-lg shadow-slate-950/20">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="text-sm font-medium uppercase tracking-[0.24em] text-cyan-300">
-            Player
+          <p className="text-sm font-medium uppercase tracking-[0.24em] text-accent">
+            Плеер
           </p>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-1 text-sm text-app-muted">
             Кадр {currentIndex < 0 ? 0 : currentIndex + 1} из {totalFrames}
           </p>
         </div>
@@ -65,7 +65,7 @@ export function PlayerControls({
         </div>
       </div>
 
-      <label className="mt-5 block text-sm text-slate-300">
+      <label className="mt-5 block text-sm text-app-muted">
         Скорость: {playbackSpeedMs} ms
         <input
           className="mt-2 w-full accent-cyan-400"
