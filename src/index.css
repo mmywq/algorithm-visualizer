@@ -46,6 +46,20 @@ body {
     background: var(--app-accent);
   }
 
+  .control-input {
+    @apply h-10 rounded-xl border px-3 text-sm outline-none transition;
+    border-color: var(--app-border);
+    background: var(--app-surface);
+    color: var(--app-primary);
+  }
+
+  .app-panel {
+    @apply rounded-3xl border p-6;
+    border-color: var(--app-border);
+    background: var(--app-surface);
+  }
+
+
   .bg-app { background: var(--app-bg); }
   .bg-surface { background: var(--app-surface); }
   .border-app { border-color: var(--app-border); }

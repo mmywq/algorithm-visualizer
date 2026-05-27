@@ -22,7 +22,7 @@ interface GraphVisualizerProps {
 }
 
 export function GraphVisualizer({ frame, graph, editable = false, onGraphChange }: GraphVisualizerProps) {
-  const sourceGraph = frame?.data ?? graph;
+  const sourceGraph = editable ? graph : (frame?.data ?? graph);
   const nodes = sourceGraph.nodes.map((node) => toReactFlowNode(node, frame));
   const edges = sourceGraph.edges.map((edge) => toReactFlowEdge(edge, frame));
 
@@ -84,7 +84,7 @@ export function GraphVisualizer({ frame, graph, editable = false, onGraphChange 
           <h2 className="mt-2 text-2xl font-bold text-app-primary">Обход графа</h2>
         </div>
         <div className="rounded-2xl border border-app bg-surface px-4 py-3 text-sm text-app-muted">
-          Строка псевдокода: <span className="font-semibold text-violet-200">{frame?.pseudocode.line ?? '—'}</span>
+          Активная строка псевдокода: <span className="font-semibold text-violet-200">{frame?.pseudocode.line ?? '—'}</span>
         </div>
       </div>
 

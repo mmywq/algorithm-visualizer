@@ -14,6 +14,7 @@ export interface StructureAlgorithmMeta extends Record<string, unknown> {
   readonly operation: 'push' | 'pop' | 'enqueue' | 'dequeue' | 'index';
   readonly pointerIndex?: number;
   readonly activeIndex?: number;
+  readonly pointers?: Readonly<Record<string, number>>;
 }
 
 export type StructureAlgorithmFrame = AlgorithmFrame<StructureSnapshot, StructureAlgorithmMeta>;
