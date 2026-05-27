@@ -3,7 +3,7 @@ import { bfs, dfs } from '@/algorithms/graphs';
 import { PlayerControls } from '@/components/player/PlayerControls';
 import { loadGraphPresets, loadSettings, removeGraphPreset, renameGraphPreset, saveGraphPreset, saveSettings } from '@/lib/storage';
 import { useAlgorithmPlayerStore } from '@/stores';
-import type { AlgorithmFrame, GraphAlgorithmFrame, GraphSnapshot, NodeId } from '@/types';
+import type { AlgorithmFrame, GraphAlgorithmFrame, GraphEdge, GraphSnapshot, NodeId } from '@/types';
 import { GraphVisualizer } from './GraphVisualizer';
 
 type GraphAlgorithmKey = 'bfs' | 'dfs';
@@ -49,6 +49,9 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
   const [presetName, setPresetName] = useState('');
   const [renamePresetState, setRenamePresetState] = useState<{ id: string; name: string } | null>(null);
   const [newNodeLabel, setNewNodeLabel] = useState('');
+  const [newNodeLinks, setNewNodeLinks] = useState('');
+  const [randomNodesCount, setRandomNodesCount] = useState(8);
+  const [randomDensity, setRandomDensity] = useState(0.3);
 
   const currentFrame = useAlgorithmPlayerStore((state) => state.currentFrame);
   const currentIndex = useAlgorithmPlayerStore((state) => state.currentIndex);
@@ -95,18 +98,62 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
       return;
     }
 
+    const targets = newNodeLinks.split(',').map((v) => v.trim()).filter((v) => v.length > 0);
+    if (targets.some((target) => graph.nodes.some((node) => node.id === target) === false)) {
+      setGraphInputError('В поле связей есть вершины, которых нет в графе.');
+      return;
+    }
+
+    const nodes = applyForceLayout([...graph.nodes, { id, label: id, position: { x: 120 + graph.nodes.length * 80, y: 160 }, payload: {} }]);
+    const existing = new Set(graph.edges.map((edge) => [edge.source, edge.target].sort().join('--')));
+    const extraEdges = targets
+      .filter((target) => target !== id)
+      .filter((target) => existing.has([id, target].sort().join('--')) === false)
+      .map((target) => ({ id: `${id}-${target}`, source: id, target, directed: false, payload: {} }));
+
     setGraphInputError(null);
     setNewNodeLabel('');
-    setGraph({
-      ...graph,
-      nodes: [...graph.nodes, { id, label: id, position: { x: 120 + graph.nodes.length * 80, y: 160 }, payload: {} }],
-    });
+    setNewNodeLinks('');
+    setGraph({ nodes, edges: [...graph.edges, ...extraEdges] });
   };
 
   const removeNode = (nodeId: NodeId): void => {
     const nodes = graph.nodes.filter((node) => node.id !== nodeId);
     const edges = graph.edges.filter((edge) => edge.source !== nodeId && edge.target !== nodeId);
     setGraph({ nodes, edges });
+  };
+
+
+  const generateRandomGraph = (): void => {
+    const count = Math.max(2, Math.min(24, Math.floor(randomNodesCount)));
+    const density = Math.max(0, Math.min(1, randomDensity));
+    const labels = Array.from({ length: count }, (_, i) => `V${i + 1}`);
+    const edges: GraphEdge[] = [];
+    const edgeSet = new Set<string>();
+
+    for (let i = 1; i < count; i += 1) {
+      const parent = Math.floor(Math.random() * i);
+      const source = labels[parent]!;
+      const target = labels[i]!;
+      edges.push({ id: `${source}-${target}`, source, target, directed: false, payload: {} });
+      edgeSet.add([source, target].sort().join('--'));
+    }
+
+    for (let i = 0; i < count; i += 1) {
+      for (let j = i + 1; j < count; j += 1) {
+        if (Math.random() > density) continue;
+        const a = labels[i]!; const b = labels[j]!;
+        const key = [a,b].sort().join('--');
+        if (edgeSet.has(key)) continue;
+        edgeSet.add(key);
+        edges.push({ id: `${a}-${b}`, source: a, target: b, directed: false, payload: {} });
+      }
+    }
+
+    const nodes = applyForceLayout(labels.map((id, index) => ({ id, label: id, position: { x: 120 + index * 10, y: 120 + index * 10 }, payload: {} })));
+    const nextGraph = { nodes, edges };
+    setGraph(nextGraph);
+    setStartNodeId(nodes[0]?.id ?? 'V1');
   };
 
   const clearGraph = (): void => {
@@ -179,8 +226,12 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
 
           <div className="flex flex-wrap gap-2">
             <input className="h-10 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" onChange={(event) => setNewNodeLabel(event.target.value)} placeholder="Метка новой вершины" value={newNodeLabel} />
+            <input className="h-10 w-52 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" onChange={(event) => setNewNodeLinks(event.target.value)} placeholder="Связи: A,B,C" value={newNodeLinks} />
             <button className="control-button" onClick={addNode} type="button">Добавить узел</button>
             <button className="control-button" onClick={clearGraph} type="button">Очистить граф</button>
+            <input className="h-10 w-24 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" type="number" min={2} max={24} value={randomNodesCount} onChange={(event) => setRandomNodesCount(Number(event.target.value))} placeholder="Вершин" />
+            <input className="h-10 w-28 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" type="number" min={0} max={1} step={0.05} value={randomDensity} onChange={(event) => setRandomDensity(Number(event.target.value))} placeholder="Плотность" />
+            <button className="control-button" onClick={generateRandomGraph} type="button">Сгенерировать случайный граф</button>
             <button
               className="control-button"
               onClick={() => {
@@ -264,6 +315,16 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
             <button className="control-button" onClick={applyAdjacencyInput} type="button">Применить граф</button>
             {graphInputError !== null && <span className="text-xs text-rose-300">{graphInputError}</span>}
           </div>
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-app bg-surface p-3 text-sm text-app-muted">
+          <p className="font-semibold text-app-primary">Псевдокод {selectedAlgorithm.toUpperCase()}</p>
+          {(selectedAlgorithm === 'bfs'
+            ? ['поместить стартовую вершину в очередь и отметить посещённой', 'пока очередь не пуста:', '  извлечь вершину u из очереди', '  для каждого соседа v вершины u:', '    если v не посещена, отметить и добавить в очередь']
+            : ['поместить стартовую вершину в стек и отметить посещённой', 'пока стек не пуст:', '  снять вершину u со стека', '  для каждого соседа v вершины u:', '    если v не посещена, отметить и поместить в стек'])
+            .map((line, index) => (
+              <p key={line} className={graphFrame?.pseudocode.line === index + 1 ? 'text-violet-200 font-semibold' : ''}>{index + 1}. {line}</p>
+            ))}
         </div>
       </section>
 
@@ -524,3 +585,28 @@ function StatCard({ label, value }: StatCardProps) {
     </div>
   );
 }
+
+
+const applyForceLayout = (nodes: GraphSnapshot['nodes']): GraphSnapshot['nodes'] => {
+  const width = 820;
+  const height = 420;
+  const points = nodes.map((node, index) => ({ ...node, position: { x: 120 + (index % 8) * 80, y: 80 + Math.floor(index / 8) * 90 } }));
+
+  for (let iter = 0; iter < 90; iter += 1) {
+    for (let i = 0; i < points.length; i += 1) {
+      for (let j = i + 1; j < points.length; j += 1) {
+        const a = points[i]!; const b = points[j]!;
+        const dx = b.position.x - a.position.x; const dy = b.position.y - a.position.y;
+        const dist = Math.max(20, Math.hypot(dx, dy));
+        const force = 2600 / (dist * dist);
+        const fx = (dx / dist) * force; const fy = (dy / dist) * force;
+        a.position.x -= fx; a.position.y -= fy; b.position.x += fx; b.position.y += fy;
+      }
+    }
+    for (const node of points) {
+      node.position.x = Math.min(width, Math.max(20, node.position.x));
+      node.position.y = Math.min(height, Math.max(20, node.position.y));
+    }
+  }
+  return points;
+};
