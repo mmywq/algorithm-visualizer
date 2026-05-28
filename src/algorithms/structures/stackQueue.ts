@@ -46,7 +46,7 @@ export function* stackArrayDemo({ values, capacity = 8 }: DemoInput): Generator<
   for (const value of values) {
     top += 1;
     storage[top] = value;
-    yield makeFrame(step++, 'push', 'running', 2, `Добавляем значение ${value} в вершину стека: указатель top смещается на одну позицию вправо.`, createSnapshot('Стек (массив)', storage), 'push', top, top, { top: -1 });
+    yield makeFrame(step++, 'push', 'running', 2, `Добавляем значение ${value} в вершину стека: указатель top смещается на одну позицию вправо.`, createSnapshot('Стек (массив)', storage), 'push', top, top, { top });
   }
   while (top >= 0) {
     const popped = storage[top];
@@ -65,18 +65,18 @@ export function* queueArrayDemo({ values, capacity = 10 }: DemoInput): Generator
 
   for (const value of values) {
     storage[tail] = value;
-    yield makeFrame(step++, 'enqueue', 'running', 2, `Добавляем значение ${value} в хвост очереди: элемент встаёт после текущего tail.`, createSnapshot('Очередь (массив)', storage), 'enqueue', tail, tail, { head: 0, tail: 0 });
+    yield makeFrame(step++, 'enqueue', 'running', 2, `Добавляем значение ${value} в хвост очереди: элемент встаёт после текущего tail.`, createSnapshot('Очередь (массив)', storage), 'enqueue', tail, tail, { head, tail });
     tail += 1;
   }
 
   while (head < tail) {
     const taken = storage[head];
     storage[head] = null;
-    yield makeFrame(step++, 'dequeue', 'running', 4, `Извлекаем элемент ${taken} из головы очереди: указатель head смещается вправо.`, createSnapshot('Очередь (массив)', storage), 'dequeue', head + 1, head, { head: head + 1, tail });
+    yield makeFrame(step++, 'dequeue', 'running', 4, `Извлекаем элемент ${taken} из головы очереди: указатель head смещается вправо.`, createSnapshot('Очередь (массив)', storage), 'dequeue', head + 1, head, { head: head + 1, tail: Math.max(head + 1, tail - 1) });
     head += 1;
   }
 
-  yield makeFrame(step, 'complete', 'completed', 6, 'Демонстрация Очередь (массив) завершена.', createSnapshot('Очередь (массив)', storage), 'dequeue', undefined, undefined, { head: 0, tail: 0 });
+  yield makeFrame(step, 'complete', 'completed', 6, 'Демонстрация Очередь (массив) завершена.', createSnapshot('Очередь (массив)', storage), 'dequeue', undefined, undefined, { head: -1, tail: -1 });
 }
 
 export function* indexingDemo({ values }: DemoInput): Generator<StructureAlgorithmFrame, void, unknown> {
@@ -114,5 +114,5 @@ export function* queueListDemo({ values }: DemoInput): Generator<StructureAlgori
     const taken = list.shift();
     yield makeFrame(step++, 'dequeue', 'running', 4, `Извлекаем элемент ${taken} из головы очереди: указатель head смещается вправо.`, createSnapshot('Очередь (список)', list), 'dequeue', 0, 0, { head: 0, tail: Math.max(0, list.length - 1) });
   }
-  yield makeFrame(step, 'complete', 'completed', 6, 'Демонстрация Очередь (список) завершена.', createSnapshot('Очередь (список)', list), 'dequeue', undefined, undefined, { head: 0, tail: 0 });
+  yield makeFrame(step, 'complete', 'completed', 6, 'Демонстрация Очередь (список) завершена.', createSnapshot('Очередь (список)', list), 'dequeue', undefined, undefined, { head: -1, tail: -1 });
 }

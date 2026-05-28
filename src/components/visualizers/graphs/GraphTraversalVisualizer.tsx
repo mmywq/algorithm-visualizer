@@ -133,6 +133,19 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
     commitGraph({ nodes, edges: [...graph.edges, ...extraEdges] });
   };
 
+
+  const addNodeAtPosition = (position: { readonly x: number; readonly y: number }): void => {
+    if (graph.nodes.length >= 24) {
+      setGraphInputError('Слишком большой граф: максимум 24 вершины.');
+      return;
+    }
+
+    const id = createNextNodeId(graph);
+    const nextNode = { id, label: id, position, payload: {} };
+    commitGraph({ nodes: [...graph.nodes, nextNode], edges: graph.edges });
+    setStartNodeId(graph.nodes.length === 0 ? id : startNodeId);
+  };
+
   const removeNode = (nodeId: NodeId): void => {
     const nodes = graph.nodes.filter((node) => node.id !== nodeId);
     const edges = graph.edges.filter((edge) => edge.source !== nodeId && edge.target !== nodeId);
@@ -185,7 +198,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
   };
 
   const applyMatrixInput = (): void => {
-    const parsed = graphFromMatrix(matrixNodeLabels, matrixRows);
+    const parsed = graphFromMatrix(matrixNodeLabels, matrixRows, graph);
     if (parsed === null) {
       setGraphInputError('Некорректная матрица смежности: нужны уникальные метки и квадратная таблица из 0/1.');
       return;
@@ -193,24 +206,35 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
     applyParsedGraph(parsed);
   };
 
-  const applyParsedGraph = (parsed: GraphSnapshot): void => {
+  const applyParsedGraph = (parsed: GraphSnapshot, options: { readonly relayout?: boolean } = {}): void => {
     if (parsed.nodes.length > 24) {
       setGraphInputError('Слишком большой граф: максимум 24 вершины, чтобы визуализация оставалась читаемой.');
       return;
     }
-    commitGraph({ ...parsed, nodes: applyForceLayout(parsed.nodes, parsed.edges) });
+    commitGraph({ ...parsed, nodes: options.relayout === false ? parsed.nodes : applyForceLayout(parsed.nodes, parsed.edges) });
     if (parsed.nodes.some((node) => node.id === startNodeId) === false) {
       setStartNodeId(parsed.nodes[0]?.id ?? 'A');
     }
   };
 
   const updateMatrixCell = (rowIndex: number, columnIndex: number, value: number): void => {
-    setMatrixRows((rows) => rows.map((row, r) => row.map((cell, c) => {
+    const labels = parseMatrixLabels(matrixNodeLabels);
+    const baseRows = resizeMatrixRows(matrixRows, labels.length);
+    const nextRows = baseRows.map((row, r) => row.map((cell, c) => {
       if ((r === rowIndex && c === columnIndex) || (r === columnIndex && c === rowIndex)) {
         return value;
       }
       return cell;
-    })));
+    }));
+
+    setMatrixRows(nextRows);
+    const parsed = graphFromMatrix(matrixNodeLabels, nextRows, graph);
+    if (parsed === null) {
+      setGraphInputError('Матрица пока некорректна: проверьте метки вершин и размер таблицы.');
+      return;
+    }
+
+    applyParsedGraph(parsed, { relayout: false });
   };
 
   const resetToBaseGraph = (): void => {
@@ -337,7 +361,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
         )}
       </section>
 
-      <GraphVisualizer editable frame={graphFrame} graph={graph} onGraphChange={commitGraph} />
+      <GraphVisualizer editable frame={graphFrame} graph={graph} onAddNodeAt={addNodeAtPosition} onGraphChange={commitGraph} />
 
       <section className="grid gap-4 lg:grid-cols-2">
         <div className="app-panel">
@@ -349,7 +373,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
 
         <div className="app-panel">
           <h2 className="text-xl font-semibold text-app-primary">Матрица смежности</h2>
-          <p className="mt-2 text-sm text-app-muted">Строка и столбец — вершины. 1 означает связь, 0 — связи нет. Для неориентированного графа таблица зеркальная.</p>
+          <p className="mt-2 text-sm text-app-muted">Строка и столбец — вершины. 1 означает связь, 0 — связи нет. Для неориентированного графа таблица зеркальная. Клик по ячейке сразу перестраивает граф.</p>
           <input className="control-input mt-3 w-full" onChange={(event) => setMatrixNodeLabels(event.target.value)} placeholder="Метки вершин: A,B,C,D" value={matrixNodeLabels} />
           <AdjacencyMatrixEditor labelsSource={matrixNodeLabels} rows={matrixRows} onCellChange={updateMatrixCell} />
           <button className="control-button mt-3" onClick={applyMatrixInput} type="button">Применить матрицу</button>
@@ -458,8 +482,9 @@ const parseAdjacencyList = (source: string): GraphSnapshot | null => {
   return { nodes: applyForceLayout(nodes, edges), edges };
 };
 
-const graphFromMatrix = (labelsSource: string, matrix: readonly (readonly number[])[]): GraphSnapshot | null => {
-  const labels = labelsSource.split(',').map((label) => label.trim()).filter((label) => label.length > 0);
+const graphFromMatrix = (labelsSource: string, matrix: readonly (readonly number[])[], previousGraph?: GraphSnapshot): GraphSnapshot | null => {
+  const labels = parseMatrixLabels(labelsSource);
+  const sizedMatrix = resizeMatrixRows(matrix, labels.length);
   if (labels.length < 2 || labels.length > 24 || new Set(labels).size !== labels.length) {
     return null;
   }
@@ -468,7 +493,7 @@ const graphFromMatrix = (labelsSource: string, matrix: readonly (readonly number
     return null;
   }
 
-  if (matrix.length !== labels.length || matrix.some((row) => row.length !== labels.length)) {
+  if (sizedMatrix.length !== labels.length || sizedMatrix.some((row) => row.length !== labels.length)) {
     return null;
   }
 
@@ -477,7 +502,7 @@ const graphFromMatrix = (labelsSource: string, matrix: readonly (readonly number
 
   for (let i = 0; i < labels.length; i += 1) {
     for (let j = 0; j < labels.length; j += 1) {
-      const value = matrix[i]?.[j];
+      const value = sizedMatrix[i]?.[j];
       if (value !== 0 && value !== 1) {
         return null;
       }
@@ -497,8 +522,9 @@ const graphFromMatrix = (labelsSource: string, matrix: readonly (readonly number
     }
   }
 
-  const nodes = labels.map((label) => ({ id: label, label, position: { x: 420, y: 220 }, payload: {} }));
-  return { nodes: applyForceLayout(nodes, edges), edges };
+  const previousPositions = new Map(previousGraph?.nodes.map((node) => [node.id, node.position]) ?? []);
+  const nodes = labels.map((label) => ({ id: label, label, position: previousPositions.get(label) ?? { x: 420, y: 220 }, payload: {} }));
+  return { nodes: previousGraph === undefined ? applyForceLayout(nodes, edges) : nodes, edges };
 };
 
 const createNextNodeId = (graph: GraphSnapshot): string => {
@@ -603,7 +629,8 @@ interface AdjacencyMatrixEditorProps {
 }
 
 function AdjacencyMatrixEditor({ labelsSource, rows, onCellChange }: AdjacencyMatrixEditorProps) {
-  const labels = labelsSource.split(',').map((label) => label.trim()).filter((label) => label.length > 0);
+  const labels = parseMatrixLabels(labelsSource);
+  const sizedRows = resizeMatrixRows(rows, labels.length);
 
   if (labels.length === 0) {
     return <p className="mt-3 text-sm text-rose-300">Введите метки вершин через запятую.</p>;
@@ -623,7 +650,7 @@ function AdjacencyMatrixEditor({ labelsSource, rows, onCellChange }: AdjacencyMa
             <tr key={rowLabel}>
               <th className="border border-slate-800 bg-slate-950/70 p-2 text-app-primary">{rowLabel}</th>
               {labels.map((columnLabel, columnIndex) => {
-                const value = rows[rowIndex]?.[columnIndex] ?? 0;
+                const value = sizedRows[rowIndex]?.[columnIndex] ?? 0;
                 return (
                   <td className="border border-slate-800 p-1" key={`${rowLabel}-${columnLabel}`}>
                     <button
@@ -644,6 +671,15 @@ function AdjacencyMatrixEditor({ labelsSource, rows, onCellChange }: AdjacencyMa
     </div>
   );
 }
+
+
+const parseMatrixLabels = (labelsSource: string): string[] =>
+  labelsSource.split(',').map((label) => label.trim()).filter((label) => label.length > 0);
+
+const resizeMatrixRows = (rows: readonly (readonly number[])[], size: number): number[][] =>
+  Array.from({ length: size }, (_, rowIndex) =>
+    Array.from({ length: size }, (_, columnIndex) => rowIndex === columnIndex ? 0 : rows[rowIndex]?.[columnIndex] === 1 ? 1 : 0),
+  );
 
 const applyForceLayout = (nodes: GraphSnapshot['nodes'], edges: readonly GraphEdge[] = []): GraphSnapshot['nodes'] => {
   if (nodes.length === 0) {

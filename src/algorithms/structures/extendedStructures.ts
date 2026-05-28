@@ -22,6 +22,7 @@ const frame = (
   operation: StructureAlgorithmFrame['meta']['operation'],
   pseudocodeLine: number,
   activeIndex?: number,
+  extraMeta: Partial<StructureAlgorithmFrame['meta']> = {},
 ): StructureAlgorithmFrame => ({
   step,
   domain: 'tree',
@@ -34,6 +35,7 @@ const frame = (
   description: message,
   meta: {
     operation,
+    ...extraMeta,
     ...(activeIndex === undefined ? {} : { activeIndex, pointerIndex: activeIndex }),
   },
 });
@@ -132,17 +134,17 @@ export function* hashOpenScenario(inputValues?: readonly number[]): Generator<St
   let step = 0;
   const tableSize = 5;
 
-  yield frame(step++, 'initial', 'running', snapshot('Хеш-таблица: цепочки', inserted), `Начинаем с пустой хеш-таблицы. Индекс корзины считаем как h(key) mod ${tableSize}; при коллизии добавляем ключ в цепочку выбранной корзины.`, 'index', 1);
+  yield frame(step++, 'initial', 'running', snapshot('Хеш-таблица: цепочки', inserted), `Начинаем с пустой хеш-таблицы. Индекс корзины считаем как h(key) mod ${tableSize}; при коллизии добавляем ключ в цепочку выбранной корзины.`, 'index', 1, undefined, { tableSize });
 
   for (const value of values) {
     const bucketIndex = Math.abs(value) % tableSize;
     const bucketValues = inserted.filter((candidate) => candidate !== null && Math.abs(candidate) % tableSize === bucketIndex);
-    yield frame(step++, 'inspect', 'running', snapshot('Хеш-таблица: цепочки', inserted), `Ключ ${value}: h(${value}) mod ${tableSize} = ${bucketIndex}. В корзине уже ${bucketValues.length === 0 ? 'нет элементов' : `есть цепочка [${bucketValues.join(' → ')}]`}.`, 'index', 2, bucketIndex);
+    yield frame(step++, 'inspect', 'running', snapshot('Хеш-таблица: цепочки', inserted), `Ключ ${value}: h(${value}) mod ${tableSize} = ${bucketIndex}. В корзине уже ${bucketValues.length === 0 ? 'нет элементов' : `есть цепочка [${bucketValues.join(' → ')}]`}.`, 'index', 2, bucketIndex, { tableSize, bucketIndex });
     inserted.push(value);
-    yield frame(step++, 'push', 'running', snapshot('Хеш-таблица: цепочки', inserted), `Вставляем ${value} в корзину ${bucketIndex}${bucketValues.length > 0 ? ' в конец цепочки коллизий' : ''}. Теперь поиск ${value} начнётся сразу с этой корзины, а не со всей таблицы.`, 'index', 3, inserted.length - 1);
+    yield frame(step++, 'push', 'running', snapshot('Хеш-таблица: цепочки', inserted), `Вставляем ${value} в корзину ${bucketIndex}${bucketValues.length > 0 ? ' в конец цепочки коллизий' : ''}. Теперь поиск ${value} начнётся сразу с этой корзины, а не со всей таблицы.`, 'index', 3, inserted.length - 1, { tableSize, bucketIndex });
   }
 
-  yield frame(step, 'complete', 'completed', snapshot('Хеш-таблица: цепочки', inserted), `Построение хеш-таблицы с цепочками завершено. Размещено ключей: ${inserted.length}. Коллизии видны как цепочки внутри одной корзины.`, 'index', 4);
+  yield frame(step, 'complete', 'completed', snapshot('Хеш-таблица: цепочки', inserted), `Построение хеш-таблицы с цепочками завершено. Размещено ключей: ${inserted.length}. Коллизии видны как цепочки внутри одной корзины.`, 'index', 4, undefined, { tableSize });
 }
 
 export function* hashClosedScenario(inputValues?: readonly number[]): Generator<StructureAlgorithmFrame, void, unknown> {
@@ -151,30 +153,30 @@ export function* hashClosedScenario(inputValues?: readonly number[]): Generator<
   const cells: Array<number | null> = Array.from({ length: tableSize }, () => null);
   let step = 0;
 
-  yield frame(step++, 'initial', 'running', snapshot('Хеш-таблица: открытая адресация', cells), `Начинаем с пустой таблицы на ${tableSize} ячеек. Открытая адресация хранит ключ прямо в массиве; при коллизии ищем следующую свободную ячейку линейным пробированием.`, 'index', 1);
+  yield frame(step++, 'initial', 'running', snapshot('Хеш-таблица: открытая адресация', cells), `Начинаем с пустой таблицы на ${tableSize} ячеек. Открытая адресация хранит ключ прямо в массиве; при коллизии ищем следующую свободную ячейку линейным пробированием.`, 'index', 1, undefined, { tableSize });
 
   for (const value of values) {
     const startIndex = Math.abs(value) % tableSize;
-    yield frame(step++, 'inspect', 'running', snapshot('Хеш-таблица: открытая адресация', cells), `Ключ ${value}: начальная позиция h(${value}) mod ${tableSize} = ${startIndex}. Проверяем ячейку ${startIndex}.`, 'index', 2, startIndex);
+    yield frame(step++, 'inspect', 'running', snapshot('Хеш-таблица: открытая адресация', cells), `Ключ ${value}: начальная позиция h(${value}) mod ${tableSize} = ${startIndex}. Проверяем ячейку ${startIndex}.`, 'index', 2, startIndex, { tableSize, bucketIndex: startIndex });
 
     let probe = startIndex;
     let attempts = 0;
     while (cells[probe] !== null && attempts < tableSize) {
-      yield frame(step++, 'compare', 'running', snapshot('Хеш-таблица: открытая адресация', cells), `Коллизия: ячейка ${probe} уже содержит ${cells[probe]}. Сдвигаемся на следующую позицию: (${probe} + 1) mod ${tableSize}.`, 'index', 3, probe);
+      yield frame(step++, 'compare', 'running', snapshot('Хеш-таблица: открытая адресация', cells), `Коллизия: ячейка ${probe} уже содержит ${cells[probe]}. Сдвигаемся на следующую позицию: (${probe} + 1) mod ${tableSize}.`, 'index', 3, probe, { tableSize, bucketIndex: probe });
       probe = (probe + 1) % tableSize;
       attempts += 1;
     }
 
     if (attempts >= tableSize) {
-      yield frame(step++, 'inspect', 'running', snapshot('Хеш-таблица: открытая адресация', cells), `Таблица заполнена: ключ ${value} вставить нельзя без расширения таблицы.`, 'index', 5);
+      yield frame(step++, 'inspect', 'running', snapshot('Хеш-таблица: открытая адресация', cells), `Таблица заполнена: ключ ${value} вставить нельзя без расширения таблицы.`, 'index', 5, undefined, { tableSize });
       continue;
     }
 
     cells[probe] = value;
-    yield frame(step++, 'push', 'running', snapshot('Хеш-таблица: открытая адресация', cells), `Вставляем ${value} в ячейку ${probe}. Количество проб для этого ключа: ${attempts + 1}.`, 'index', 4, probe);
+    yield frame(step++, 'push', 'running', snapshot('Хеш-таблица: открытая адресация', cells), `Вставляем ${value} в ячейку ${probe}. Количество проб для этого ключа: ${attempts + 1}.`, 'index', 4, probe, { tableSize, bucketIndex: probe });
   }
 
-  yield frame(step, 'complete', 'completed', snapshot('Хеш-таблица: открытая адресация', cells), 'Построение хеш-таблицы с открытой адресацией завершено: все доступные ключи размещены прямо в ячейках таблицы.', 'index', 5);
+  yield frame(step, 'complete', 'completed', snapshot('Хеш-таблица: открытая адресация', cells), 'Построение хеш-таблицы с открытой адресацией завершено: все доступные ключи размещены прямо в ячейках таблицы.', 'index', 5, undefined, { tableSize });
 }
 
 export function* hashBlockScenario(inputValues?: readonly number[]): Generator<StructureAlgorithmFrame, void, unknown> {
@@ -185,27 +187,27 @@ export function* hashBlockScenario(inputValues?: readonly number[]): Generator<S
   const overflow: number[] = [];
   let step = 0;
 
-  yield frame(step++, 'initial', 'running', snapshot('Хеш-таблица: блочная адресация', cells), `Таблица разделена на ${blockCount} блоков по ${blockSize} ячейки. h(key) выбирает блок, а внутри блока ищем свободное место; при переполнении используем overflow-блок.`, 'index', 1);
+  yield frame(step++, 'initial', 'running', snapshot('Хеш-таблица: блочная адресация', cells), `Таблица разделена на ${blockCount} блоков по ${blockSize} ячейки. h(key) выбирает блок, а внутри блока ищем свободное место; при переполнении используем overflow-блок.`, 'index', 1, undefined, { tableSize: blockCount, blockSize, overflowStartIndex: cells.length });
 
   for (const value of values) {
     const blockIndex = Math.abs(value) % blockCount;
     const start = blockIndex * blockSize;
     const end = start + blockSize;
-    yield frame(step++, 'inspect', 'running', snapshot('Хеш-таблица: блочная адресация', cells), `Ключ ${value}: h(${value}) mod ${blockCount} = ${blockIndex}. Проверяем блок ${blockIndex}, ячейки ${start}..${end - 1}.`, 'index', 2, start);
+    yield frame(step++, 'inspect', 'running', snapshot('Хеш-таблица: блочная адресация', cells), `Ключ ${value}: h(${value}) mod ${blockCount} = ${blockIndex}. Проверяем блок ${blockIndex}, ячейки ${start}..${end - 1}.`, 'index', 2, start, { tableSize: blockCount, bucketIndex: blockIndex, blockSize, overflowStartIndex: cells.length });
 
     const freeOffset = cells.slice(start, end).findIndex((cell) => cell === null);
     if (freeOffset === -1) {
       overflow.push(value);
-      yield frame(step++, 'push', 'running', snapshot('Хеш-таблица: блочная адресация', [...cells, ...overflow]), `Блок ${blockIndex} заполнен, поэтому ${value} уходит в overflow-область. Overflow сейчас: [${overflow.join(', ')}].`, 'index', 4, cells.length + overflow.length - 1);
+      yield frame(step++, 'push', 'running', snapshot('Хеш-таблица: блочная адресация', [...cells, ...overflow]), `Блок ${blockIndex} заполнен, поэтому ${value} уходит в overflow-область. Overflow сейчас: [${overflow.join(', ')}].`, 'index', 4, cells.length + overflow.length - 1, { tableSize: blockCount, bucketIndex: blockIndex, blockSize, overflowStartIndex: cells.length });
       continue;
     }
 
     const targetIndex = start + freeOffset;
     cells[targetIndex] = value;
-    yield frame(step++, 'push', 'running', snapshot('Хеш-таблица: блочная адресация', [...cells, ...overflow]), `Вставляем ${value} в блок ${blockIndex}, ячейку ${targetIndex}. Локальность блока сохраняет поиск коротким.`, 'index', 3, targetIndex);
+    yield frame(step++, 'push', 'running', snapshot('Хеш-таблица: блочная адресация', [...cells, ...overflow]), `Вставляем ${value} в блок ${blockIndex}, ячейку ${targetIndex}. Локальность блока сохраняет поиск коротким.`, 'index', 3, targetIndex, { tableSize: blockCount, bucketIndex: blockIndex, blockSize, overflowStartIndex: cells.length });
   }
 
-  yield frame(step, 'complete', 'completed', snapshot('Хеш-таблица: блочная адресация', [...cells, ...overflow]), `Блочная хеш-таблица построена. Основная область содержит ${cells.filter((cell) => cell !== null).length} ключей, overflow — ${overflow.length}.`, 'index', 5);
+  yield frame(step, 'complete', 'completed', snapshot('Хеш-таблица: блочная адресация', [...cells, ...overflow]), `Блочная хеш-таблица построена. Основная область содержит ${cells.filter((cell) => cell !== null).length} ключей, overflow — ${overflow.length}.`, 'index', 5, undefined, { tableSize: blockCount, blockSize, overflowStartIndex: cells.length });
 }
 
 export function* heapScenario(inputValues?: readonly number[]): Generator<StructureAlgorithmFrame, void, unknown> {

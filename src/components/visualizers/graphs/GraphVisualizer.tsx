@@ -8,10 +8,12 @@ import ReactFlow, {
   type Connection,
   type Edge,
   type EdgeChange,
+  type OnInit,
   type Node,
   type NodeChange,
 } from 'reactflow';
-import type { GraphAlgorithmFrame, GraphEdge, GraphNode, GraphSnapshot } from '@/types';
+import { useState, type MouseEvent } from 'react';
+import type { GraphAlgorithmFrame, GraphEdge, GraphNode, GraphPosition, GraphSnapshot } from '@/types';
 import 'reactflow/dist/style.css';
 
 interface GraphVisualizerProps {
@@ -19,9 +21,11 @@ interface GraphVisualizerProps {
   readonly graph: GraphSnapshot;
   readonly editable?: boolean;
   readonly onGraphChange?: (graph: GraphSnapshot) => void;
+  readonly onAddNodeAt?: (position: GraphPosition) => void;
 }
 
-export function GraphVisualizer({ frame, graph, editable = false, onGraphChange }: GraphVisualizerProps) {
+export function GraphVisualizer({ frame, graph, editable = false, onAddNodeAt, onGraphChange }: GraphVisualizerProps) {
+  const [projectFlowPosition, setProjectFlowPosition] = useState<((position: GraphPosition) => GraphPosition) | null>(null);
   const sourceGraph = editable ? graph : (frame?.data ?? graph);
   const nodes = sourceGraph.nodes.map((node) => toReactFlowNode(node, frame));
   const edges = sourceGraph.edges.map((edge) => toReactFlowEdge(edge, frame));
@@ -42,6 +46,30 @@ export function GraphVisualizer({ frame, graph, editable = false, onGraphChange 
 
     const nextEdges = applyEdgeChanges(changes, edges).map((edge) => fromReactFlowEdge(edge));
     onGraphChange({ nodes: sourceGraph.nodes, edges: nextEdges });
+  };
+
+
+  const onPaneDoubleClick = (event: MouseEvent<Element>): void => {
+    if (editable !== true || onAddNodeAt === undefined) {
+      return;
+    }
+
+    if (event.target instanceof HTMLElement && event.target.closest('.react-flow__node, .react-flow__edge, .react-flow__controls') !== null) {
+      return;
+    }
+
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const screenPosition = {
+      x: event.clientX - bounds.left,
+      y: event.clientY - bounds.top,
+    };
+
+    onAddNodeAt(projectFlowPosition?.(screenPosition) ?? screenPosition);
+  };
+
+
+  const onInit: OnInit = (instance): void => {
+    setProjectFlowPosition(() => (position: GraphPosition): GraphPosition => instance.project(position));
   };
 
   const onConnect = (connection: Connection): void => {
@@ -97,9 +125,14 @@ export function GraphVisualizer({ frame, graph, editable = false, onGraphChange 
           nodes={nodes}
           nodesDraggable={editable}
           nodesConnectable={editable}
+          onInit={onInit}
+          edgesFocusable={editable}
+          edgesUpdatable={editable}
+          elementsSelectable={editable}
           onConnect={onConnect}
           onEdgesChange={onEdgesChange}
           onNodesChange={onNodesChange}
+          onDoubleClick={onPaneDoubleClick}
           panOnDrag
           preventScrolling
         >
@@ -112,7 +145,10 @@ export function GraphVisualizer({ frame, graph, editable = false, onGraphChange 
         <p className="min-h-12 rounded-2xl border border-app bg-surface px-4 py-3 text-sm leading-6 text-app-muted">
           {frame?.message ?? 'Загрузите BFS или DFS, чтобы увидеть пошаговый обход графа.'}
         </p>
-        <GraphLegend />
+        <div className="space-y-3">
+          <GraphLegend />
+          <GraphStatePanel frame={frame} />
+        </div>
       </div>
     </section>
   );
@@ -126,7 +162,38 @@ function GraphLegend() {
       <LegendItem color="bg-emerald-400" label="посещена" />
       <LegendItem color="bg-cyan-400" label="граница обхода" />
       <LegendItem color="bg-slate-400" label="обычная вершина" />
-      <div className="mt-2 text-[11px] text-app-muted">В режиме редактирования можно двигать узлы, удалять связи и создавать новые.</div>
+      <LegendItem color="bg-emerald-500" label="пройденное ребро" />
+      <LegendItem color="bg-violet-500" label="активное ребро" />
+      <div className="mt-2 text-[11px] text-app-muted">В режиме редактирования можно двигать узлы, соединять их мышкой, выделять/удалять связи и дважды кликнуть по пустому месту для новой вершины; координаты учитывают zoom/pan.</div>
+    </div>
+  );
+}
+
+
+function GraphStatePanel({ frame }: { readonly frame: GraphAlgorithmFrame | null }) {
+  if (frame === null) {
+    return (
+      <div className="rounded-2xl border border-app bg-surface px-4 py-3 text-xs text-app-muted">
+        <div className="font-semibold uppercase tracking-[0.18em] text-app-muted">Состояние</div>
+        <p className="mt-2">Запустите алгоритм, чтобы увидеть очередь/стек, посещённые вершины и выбранные рёбра.</p>
+      </div>
+    );
+  }
+
+  const visited = frame.meta.visitedNodeIds.length > 0 ? frame.meta.visitedNodeIds.join(', ') : '—';
+  const frontier = frame.meta.frontierNodeIds.length > 0 ? frame.meta.frontierNodeIds.join(', ') : '—';
+  const traversed = frame.meta.traversedEdgeIds.length > 0 ? frame.meta.traversedEdgeIds.join(', ') : '—';
+
+  return (
+    <div className="rounded-2xl border border-app bg-surface px-4 py-3 text-xs text-app-muted">
+      <div className="font-semibold uppercase tracking-[0.18em] text-app-muted">Состояние шага</div>
+      <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+        <dt className="text-slate-400">Старт</dt><dd className="text-app-primary">{frame.meta.startNodeId}</dd>
+        <dt className="text-slate-400">Текущая</dt><dd className="text-app-primary">{frame.meta.currentNodeId ?? '—'}</dd>
+        <dt className="text-slate-400">Frontier</dt><dd>{frontier}</dd>
+        <dt className="text-slate-400">Посещены</dt><dd>{visited}</dd>
+        <dt className="text-slate-400">Рёбра</dt><dd>{traversed}</dd>
+      </dl>
     </div>
   );
 }
@@ -151,7 +218,9 @@ const toReactFlowNode = (node: GraphNode, frame: GraphAlgorithmFrame | null): No
   return {
     id: node.id,
     data: { label: node.label },
+    deletable: true,
     position: node.position,
+    selectable: true,
     style: {
       width: 64,
       height: 64,
@@ -179,6 +248,7 @@ const toReactFlowEdge = (edge: GraphEdge, frame: GraphAlgorithmFrame | null): Ed
     source: edge.source,
     target: edge.target,
     animated: isActive,
+    deletable: true,
     ...(edge.weight === undefined ? {} : { label: edge.weight.toString() }),
     data: { directed: edge.directed, weight: edge.weight },
     ...(edge.directed ? { markerEnd: { type: MarkerType.ArrowClosed, color } } : {}),

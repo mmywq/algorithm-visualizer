@@ -8,7 +8,9 @@ import type { AlgorithmFrame, StructureAlgorithmFrame } from '@/types';
 
 type DemoKey = 'stack-array' | 'stack-list' | 'queue-array' | 'queue-list' | 'indexing';
 
+const MIN_VALUE = -100;
 const MAX_VALUE = 100;
+const MAX_INPUT_SIZE = 12;
 
 const theoryByDemo: Record<DemoKey, { title: string; description: string; complexity: string; example: string }> = {
   'stack-array': {
@@ -81,20 +83,46 @@ export function StructuresPage({ initialDemo = 'stack-array' }: StructuresPagePr
   const stepsHistory = useMemo(() => frames.map((stepFrame) => stepFrame.description ?? stepFrame.message), [frames]);
 
   const applyManualValues = () => {
-    const parsed = manualInput.split(',').map((item) => item.trim()).filter(Boolean).map(Number);
-    if (parsed.length < 2 || parsed.some((value) => Number.isFinite(value) === false || Number.isInteger(value) === false)) {
+    const rawValues = manualInput.split(',').map((item) => item.trim()).filter(Boolean);
+    if (rawValues.length < 2) {
       setInputError('Введите минимум 2 целых числа через запятую.');
       return;
     }
+    if (rawValues.length > MAX_INPUT_SIZE) {
+      setInputError(`Слишком много значений: максимум ${MAX_INPUT_SIZE}.`);
+      return;
+    }
+
+    const parsed: number[] = [];
+    for (const rawValue of rawValues) {
+      if (/^-?\d+$/.test(rawValue) === false) {
+        setInputError(`Недопустимое значение «${rawValue}». Используйте только целые числа.`);
+        return;
+      }
+      const value = Number(rawValue);
+      if (value < MIN_VALUE || value > MAX_VALUE) {
+        setInputError(`Число ${value} вне диапазона ${MIN_VALUE}…${MAX_VALUE}.`);
+        return;
+      }
+      parsed.push(value);
+    }
+
+    if (new Set(parsed).size === 1) {
+      setInputError('Все значения одинаковые. Такой набор корректен, но плохо показывает работу указателей; добавьте отличающееся число.');
+      return;
+    }
+
     setInputError(null);
     setValues(parsed);
+    setManualInput(parsed.join(', '));
   };
 
   const randomizeValues = () => {
     const size = Math.max(4, Math.min(10, values.length));
-    const next = Array.from({ length: size }, () => Math.floor(Math.random() * (2 * MAX_VALUE + 1)) - MAX_VALUE);
+    const next = Array.from({ length: size }, () => Math.floor(Math.random() * (MAX_VALUE - MIN_VALUE + 1)) + MIN_VALUE);
     setValues(next);
     setManualInput(next.join(', '));
+    setInputError(null);
   };
 
   return (
@@ -111,10 +139,11 @@ export function StructuresPage({ initialDemo = 'stack-array' }: StructuresPagePr
 
         <div className="mt-4 grid gap-3 rounded-2xl border border-app bg-surface p-4">
           <div className="flex gap-2">
-            <input className="control-input w-full" value={manualInput} onChange={(event) => setManualInput(event.target.value)} placeholder="Введите числа через запятую" />
+            <input className="control-input w-full" value={manualInput} onChange={(event) => setManualInput(event.target.value)} placeholder="Введите числа через запятую: 8, -3, 5" />
             <button className="control-button" onClick={applyManualValues} type="button">Применить</button>
-            <button className="control-button" onClick={randomizeValues} type="button">Случайные значения (до 100)</button>
+            <button className="control-button" onClick={randomizeValues} type="button">Случайные −100…100</button>
           </div>
+          <p className="text-xs text-slate-400">Диапазон значений: от {MIN_VALUE} до {MAX_VALUE}. Пустой ввод, текст и одинаковые значения вроде 0, 0, 0 не запускаются.</p>
           {inputError && <p className="text-sm text-rose-300">{inputError}</p>}
           <div className="flex flex-wrap gap-2">
             <input className="control-input" value={presetName} onChange={(event) => setPresetName(event.target.value)} placeholder="Имя пресета" />
@@ -141,7 +170,7 @@ export function StructuresPage({ initialDemo = 'stack-array' }: StructuresPagePr
         <section className="app-panel">
           <h3 className="text-xl font-semibold text-app-primary">Полный список выполненных шагов</h3>
           <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-app-muted">
-            {stepsHistory.map((entry) => (<li key={entry}>{entry}</li>))}
+            {stepsHistory.map((entry, index) => (<li key={`${index}-${entry}`}>{entry}</li>))}
           </ol>
         </section>
       )}
@@ -182,7 +211,7 @@ const runDemo = (demoKey: DemoKey, values: readonly number[], loadAlgorithm: Ret
 const isStructureAlgorithmFrame = (
   frame: AlgorithmFrame<unknown, Record<string, unknown>> | null,
 ): frame is StructureAlgorithmFrame =>
-  frame?.domain === 'array' &&
+  (frame?.domain === 'array' || frame?.domain === 'tree') &&
   typeof frame.data === 'object' &&
   frame.data !== null &&
   'cells' in frame.data;
