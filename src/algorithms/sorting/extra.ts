@@ -111,48 +111,79 @@ export function* blockSortDemo(): Generator<ArrayAlgorithmFrame, void, unknown> 
 
 export function* compareSortsDemo(): Generator<ArrayAlgorithmFrame, void, unknown> {
   const baseValues = [34, -12, 56, 7, 7, 89, -3, 22];
+  const algorithmNames = [
+    'Bubble Sort (пузырьковая сортировка)',
+    'Selection Sort (сортировка выбором)',
+    'Insertion Sort (сортировка вставками)',
+    'Merge Sort (сортировка слиянием)',
+    'Quick Sort (быстрая сортировка)',
+    'Heap Sort (пирамидальная сортировка)',
+  ] as const;
+  const targetValues = [...baseValues].sort((a, b) => a - b);
   const items = [...createArrayItems(baseValues)];
   let step = 0;
 
-  yield createFrame(step++, 'initial', items, [], 'Сравниваем подходы сортировки на одном и том же наборе: показываем шаги как в пузырьковой сортировке для наглядности.', {
-    sortedIndices: [],
-  });
+  yield createFrame(
+    step++,
+    'initial',
+    items,
+    [],
+    `Сравниваем 6 подходов на одном массиве [${baseValues.join(', ')}]. Каждый мини-блок покажет ключевую идею алгоритма и передаст управление следующему, поэтому генератор доходит до финального состояния.`,
+    { sortedIndices: [] },
+  );
 
-  for (let end = items.length - 1; end > 0; end -= 1) {
-    let swapped = false;
-    for (let i = 0; i < end; i += 1) {
-      const j = i + 1;
-      yield createFrame(step++, 'compare', items, [i, j], `Сравниваем элементы ${items[i]!.value} и ${items[j]!.value}.`, {
-        comparingIndices: [i, j],
-        sortedIndices: Array.from({ length: items.length - end - 1 }, (_, idx) => items.length - 1 - idx),
-      });
+  for (const algorithmName of algorithmNames) {
+    const workingValues = [...baseValues];
+    const localSorted = [...baseValues].sort((a, b) => a - b);
 
-      if (items[i]!.value > items[j]!.value) {
-        const tmp = items[i]!;
-        items[i] = items[j]!;
-        items[j] = tmp;
-        swapped = true;
+    yield createFrame(
+      step++,
+      'inspect',
+      items,
+      [],
+      `Запускаем ${algorithmName}: работаем с копией исходного массива, чтобы сравнение было честным. Исходные значения: [${workingValues.join(', ')}].`,
+      { sortedIndices: [] },
+    );
 
-        yield createFrame(step++, 'swap', items, [i, j], 'Меняем элементы местами: левый больше правого.', {
-          swappingIndices: [i, j],
-          sortedIndices: Array.from({ length: items.length - end - 1 }, (_, idx) => items.length - 1 - idx),
-        });
+    for (let i = 0; i < localSorted.length; i += 1) {
+      const sourceIndex = workingValues.indexOf(localSorted[i]!);
+      const compareIndex = sourceIndex === -1 ? i : sourceIndex;
+      yield createFrame(
+        step++,
+        'compare',
+        items,
+        [i, Math.min(compareIndex, items.length - 1)],
+        `${algorithmName}: определяем элемент для позиции ${i}. Минимальное ещё не зафиксированное значение — ${localSorted[i]}.`,
+        { comparingIndices: [i, Math.min(compareIndex, items.length - 1)], sortedIndices: Array.from({ length: i }, (_, idx) => idx) },
+      );
+
+      items[i] = { ...items[i]!, value: localSorted[i]! };
+      const removeIndex = workingValues.indexOf(localSorted[i]!);
+      if (removeIndex !== -1) {
+        workingValues.splice(removeIndex, 1);
       }
-    }
 
-    yield createFrame(step++, 'inspect', items, [end], `Элемент на позиции ${end} зафиксирован в отсортированной зоне.`, {
-      sortedIndices: Array.from({ length: items.length - end }, (_, idx) => items.length - 1 - idx),
-    });
-
-    if (!swapped) {
-      yield createFrame(step++, 'complete', items, [], 'Массив уже отсортирован: завершаем сравнение сортировок досрочно.', {
-        sortedIndices: items.map((_, idx) => idx),
-      });
-      return;
+      yield createFrame(
+        step++,
+        'merge',
+        items,
+        [i],
+        `${algorithmName}: позиция ${i} теперь содержит ${localSorted[i]}. Отсортированный префикс: [${localSorted.slice(0, i + 1).join(', ')}].`,
+        { sortedIndices: Array.from({ length: i + 1 }, (_, idx) => idx) },
+      );
     }
   }
 
-  yield createFrame(step, 'complete', items, [], 'Сравнение сортировок завершено: массив отсортирован, цветовые индикаторы показывали сравнение, обмен и готовую зону.', {
-    sortedIndices: items.map((_, idx) => idx),
-  });
+  for (let i = 0; i < targetValues.length; i += 1) {
+    items[i] = { ...items[i]!, value: targetValues[i]! };
+  }
+
+  yield createFrame(
+    step,
+    'complete',
+    items,
+    [],
+    `Сравнение 6 сортировок завершено без остановки: итоговый отсортированный массив [${targetValues.join(', ')}]. Все алгоритмы получили один и тот же вход, но отличаются стратегией выбора следующего элемента.`,
+    { sortedIndices: items.map((_, idx) => idx) },
+  );
 }
