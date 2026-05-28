@@ -15,6 +15,11 @@ export interface StructureAlgorithmMeta extends Record<string, unknown> {
   readonly pointerIndex?: number;
   readonly activeIndex?: number;
   readonly pointers?: Readonly<Record<string, number>>;
+  readonly tableSize?: number;
+  readonly bucketIndex?: number;
+  readonly blockSize?: number;
+  readonly overflowStartIndex?: number;
 }
+
 
 export type StructureAlgorithmFrame = AlgorithmFrame<StructureSnapshot, StructureAlgorithmMeta>;

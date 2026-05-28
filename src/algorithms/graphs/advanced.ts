@@ -3,12 +3,12 @@ import { buildAdjacencyList, createGraphFrame, createGraphMeta, getNeighbors } f
 
 const weightedGraph: GraphSnapshot = {
   nodes: [
-    { id: 'A', label: 'A', position: { x: 0, y: 120 }, payload: {} },
-    { id: 'B', label: 'B', position: { x: 180, y: 20 }, payload: {} },
-    { id: 'C', label: 'C', position: { x: 180, y: 220 }, payload: {} },
-    { id: 'D', label: 'D', position: { x: 380, y: 20 }, payload: {} },
-    { id: 'E', label: 'E', position: { x: 380, y: 220 }, payload: {} },
-    { id: 'F', label: 'F', position: { x: 580, y: 120 }, payload: {} },
+    { id: 'A', label: 'A', position: { x: 80, y: 210 }, payload: {} },
+    { id: 'B', label: 'B', position: { x: 250, y: 80 }, payload: {} },
+    { id: 'C', label: 'C', position: { x: 250, y: 330 }, payload: {} },
+    { id: 'D', label: 'D', position: { x: 500, y: 80 }, payload: {} },
+    { id: 'E', label: 'E', position: { x: 500, y: 330 }, payload: {} },
+    { id: 'F', label: 'F', position: { x: 710, y: 210 }, payload: {} },
   ],
   edges: [
     { id: 'A-B', source: 'A', target: 'B', weight: 2, directed: false, payload: {} },
@@ -31,16 +31,16 @@ export function* connectedComponentsDemo(): Generator<GraphAlgorithmFrame, void,
   const adjacency = buildAdjacencyList(graph);
   const visited = new Set<NodeId>();
   const traversed = new Set<EdgeId>();
-  const frontier: NodeId[] = [];
+  const componentMembers: NodeId[][] = [];
   let step = 0;
-  let component = 0;
 
   for (const node of graph.nodes) {
     if (visited.has(node.id)) continue;
 
-    component += 1;
+    const componentIndex = componentMembers.length + 1;
+    const members: NodeId[] = [];
+    componentMembers.push(members);
     const stack: NodeId[] = [node.id];
-    frontier.push(node.id);
 
     yield createGraphFrame(
       step++,
@@ -48,14 +48,29 @@ export function* connectedComponentsDemo(): Generator<GraphAlgorithmFrame, void,
       graph,
       [node.id],
       1,
-      `Компонента ${component}: стартуем обход из вершины ${node.id}.`,
-      createGraphMeta(node.id, visited, frontier, traversed, node.id),
+      `Компонента ${componentIndex}: стартуем из вершины ${node.id}. Стек обхода: [${stack.join(', ')}].`,
+      createGraphMeta(node.id, visited, stack, traversed, node.id),
     );
 
     while (stack.length > 0) {
       const current = stack.pop();
-      if (current === undefined || visited.has(current)) continue;
+      if (current === undefined) continue;
+
+      if (visited.has(current)) {
+        yield createGraphFrame(
+          step++,
+          'inspect',
+          graph,
+          [current],
+          2,
+          `Вершина ${current} уже относится к найденной компоненте, повторно её не обрабатываем.`,
+          createGraphMeta(node.id, visited, stack, traversed, current),
+        );
+        continue;
+      }
+
       visited.add(current);
+      members.push(current);
 
       yield createGraphFrame(
         step++,
@@ -63,25 +78,25 @@ export function* connectedComponentsDemo(): Generator<GraphAlgorithmFrame, void,
         graph,
         [current],
         2,
-        `Компонента ${component}: посещаем вершину ${current}.`,
-        createGraphMeta(node.id, visited, frontier, traversed, current),
+        `Компонента ${componentIndex}: добавляем вершину ${current}. Текущий состав компоненты: [${members.join(', ')}].`,
+        createGraphMeta(node.id, visited, stack, traversed, current),
       );
 
       for (const neighbor of getNeighbors(adjacency, current)) {
+        const isNew = !visited.has(neighbor.nodeId);
         yield createGraphFrame(
           step++,
           'inspect',
           graph,
           [current, neighbor.nodeId, neighbor.edgeId],
           3,
-          `Проверяем ребро ${neighbor.edgeId} (${current}→${neighbor.nodeId}).`,
-          createGraphMeta(node.id, visited, frontier, traversed, current),
+          `Проверяем ребро ${neighbor.edgeId}: ${current}—${neighbor.nodeId}. Вершина ${neighbor.nodeId} ${isNew ? 'ещё не посещена — кладём её в стек этой же компоненты' : 'уже посещена — пропускаем'}.`,
+          createGraphMeta(node.id, visited, stack, traversed, current),
         );
 
-        if (!visited.has(neighbor.nodeId)) {
+        if (isNew) {
           traversed.add(neighbor.edgeId);
           stack.push(neighbor.nodeId);
-          frontier.push(neighbor.nodeId);
         }
       }
     }
@@ -93,8 +108,8 @@ export function* connectedComponentsDemo(): Generator<GraphAlgorithmFrame, void,
     graph,
     [],
     4,
-    `Компоненты связности найдены: ${component}.`,
-    createGraphMeta('A', visited, frontier, traversed),
+    `Компоненты связности найдены: ${componentMembers.length}. Состав: ${componentMembers.map((members, index) => `#${index + 1}=[${members.join(', ')}]`).join('; ')}.`,
+    createGraphMeta('A', visited, [], traversed),
   );
 }
 
@@ -103,11 +118,23 @@ export function* dijkstraDemo(): Generator<GraphAlgorithmFrame, void, unknown> {
   const start: NodeId = 'A';
   const adjacency = buildAdjacencyList(graph);
   const dist = new Map<NodeId, number>(graph.nodes.map((n) => [n.id, Number.POSITIVE_INFINITY]));
+  const previousEdge = new Map<NodeId, EdgeId>();
   const visited = new Set<NodeId>();
   const traversed = new Set<EdgeId>();
-  dist.set(start, 0);
   const frontier: NodeId[] = [start];
   let step = 0;
+
+  dist.set(start, 0);
+
+  yield createGraphFrame(
+    step++,
+    'initial',
+    graph,
+    [start],
+    1,
+    `Дейкстра стартует из ${start}: расстояние до ${start} равно 0, до остальных вершин пока ∞.`,
+    createGraphMeta(start, visited, frontier, traversed, start),
+  );
 
   while (visited.size < graph.nodes.length) {
     const candidates = graph.nodes.filter((n) => !visited.has(n.id));
@@ -117,7 +144,8 @@ export function* dijkstraDemo(): Generator<GraphAlgorithmFrame, void, unknown> {
       dist.get(node.id)! < dist.get(best.id)! ? node : best,
     seed);
 
-    if (dist.get(currentNode.id) === Number.POSITIVE_INFINITY) break;
+    const currentDistance = dist.get(currentNode.id)!;
+    if (currentDistance === Number.POSITIVE_INFINITY) break;
     visited.add(currentNode.id);
 
     yield createGraphFrame(
@@ -125,51 +153,58 @@ export function* dijkstraDemo(): Generator<GraphAlgorithmFrame, void, unknown> {
       'visit',
       graph,
       [currentNode.id],
-      1,
-      `Дейкстра: фиксируем вершину ${currentNode.id} (dist=${dist.get(currentNode.id)}).`,
-      createGraphMeta(start, visited, frontier, traversed, currentNode.id),
+      2,
+      `Фиксируем вершину ${currentNode.id}: минимальное незафиксированное расстояние равно ${currentDistance}. Теперь оно окончательное.`,
+      createGraphMeta(start, visited, frontier.filter((id) => !visited.has(id)), traversed, currentNode.id),
     );
 
     for (const neighbor of getNeighbors(adjacency, currentNode.id)) {
       const edge = graph.edges.find((e) => e.id === neighbor.edgeId);
-      if (edge === undefined) continue;
-      const alt = dist.get(currentNode.id)! + (edge.weight ?? 1);
+      if (edge === undefined || visited.has(neighbor.nodeId)) continue;
+      const weight = edge.weight ?? 1;
+      const alt = currentDistance + weight;
+      const previous = dist.get(neighbor.nodeId)!;
 
       yield createGraphFrame(
         step++,
         'inspect',
         graph,
         [currentNode.id, neighbor.nodeId, neighbor.edgeId],
-        2,
-        `Релаксация ${neighbor.edgeId}: candidate=${alt}, current=${dist.get(neighbor.nodeId)}.`,
-        createGraphMeta(start, visited, frontier, traversed, currentNode.id),
+        3,
+        `Релаксация ребра ${neighbor.edgeId}: dist(${currentNode.id}) ${currentDistance} + вес ${weight} = ${alt}. Текущее dist(${neighbor.nodeId}) = ${formatDistance(previous)}.`,
+        createGraphMeta(start, visited, frontier.filter((id) => !visited.has(id)), traversed, currentNode.id),
       );
 
-      if (alt < dist.get(neighbor.nodeId)!) {
+      if (alt < previous) {
+        const oldEdge = previousEdge.get(neighbor.nodeId);
+        if (oldEdge !== undefined) traversed.delete(oldEdge);
+        previousEdge.set(neighbor.nodeId, neighbor.edgeId);
         dist.set(neighbor.nodeId, alt);
         traversed.add(neighbor.edgeId);
-        frontier.push(neighbor.nodeId);
+        if (!frontier.includes(neighbor.nodeId)) frontier.push(neighbor.nodeId);
+
         yield createGraphFrame(
           step++,
           'enqueue',
           graph,
           [neighbor.nodeId, neighbor.edgeId],
-          3,
-          `Обновили dist(${neighbor.nodeId}) = ${alt}.`,
-          createGraphMeta(start, visited, frontier, traversed, neighbor.nodeId),
+          4,
+          `Улучшаем путь до ${neighbor.nodeId}: новое расстояние ${alt}, предыдущее было ${formatDistance(previous)}. Ребро ${neighbor.edgeId} становится лучшим входом в вершину.`,
+          createGraphMeta(start, visited, frontier.filter((id) => !visited.has(id)), traversed, neighbor.nodeId),
         );
       }
     }
   }
 
+  const distances = graph.nodes.map((node) => `${node.id}=${formatDistance(dist.get(node.id)!)}`).join(', ');
   yield createGraphFrame(
     step,
     'complete',
     graph,
     [],
-    4,
-    'Дейкстра завершён: кратчайшие расстояния вычислены.',
-    createGraphMeta(start, visited, frontier, traversed),
+    5,
+    `Дейкстра завершён: кратчайшие расстояния от ${start}: ${distances}.`,
+    createGraphMeta(start, visited, [], traversed),
   );
 }
 
@@ -180,6 +215,7 @@ export function* mstDemo(): Generator<GraphAlgorithmFrame, void, unknown> {
   const traversed = new Set<EdgeId>();
   const visited = new Set<NodeId>();
   const frontier: NodeId[] = [];
+  let totalWeight = 0;
   let step = 0;
 
   const find = (x: NodeId): NodeId => {
@@ -202,14 +238,28 @@ export function* mstDemo(): Generator<GraphAlgorithmFrame, void, unknown> {
 
   const edges = [...graph.edges].sort((a, b) => (a.weight ?? 1) - (b.weight ?? 1));
 
+  yield createGraphFrame(
+    step++,
+    'initial',
+    graph,
+    [],
+    1,
+    `Краскал сортирует рёбра по весу: ${edges.map((edge) => `${edge.id}:${edge.weight ?? 1}`).join(', ')}. Берём самые лёгкие, если они не создают цикл.`,
+    createGraphMeta('A', visited, frontier, traversed),
+  );
+
   for (const edge of edges) {
+    const sourceRoot = find(edge.source);
+    const targetRoot = find(edge.target);
+    const weight = edge.weight ?? 1;
+
     yield createGraphFrame(
       step++,
       'inspect',
       graph,
       [edge.id, edge.source, edge.target],
-      1,
-      `Проверяем ребро ${edge.id} (w=${edge.weight ?? 1}).`,
+      2,
+      `Проверяем ребро ${edge.id} с весом ${weight}. Корень ${edge.source} = ${sourceRoot}, корень ${edge.target} = ${targetRoot}. ${sourceRoot === targetRoot ? 'Корни совпадают — добавление создаст цикл.' : 'Корни разные — ребро можно добавить.'}`,
       createGraphMeta('A', visited, frontier, traversed, edge.source),
     );
 
@@ -218,15 +268,21 @@ export function* mstDemo(): Generator<GraphAlgorithmFrame, void, unknown> {
       visited.add(edge.source);
       visited.add(edge.target);
       frontier.push(edge.source, edge.target);
+      totalWeight += weight;
+
       yield createGraphFrame(
         step++,
         'enqueue',
         graph,
         [edge.id, edge.source, edge.target],
-        2,
-        `Ребро ${edge.id} добавлено в MST.`,
+        3,
+        `Ребро ${edge.id} добавлено в MST. Выбрано ${traversed.size}/${graph.nodes.length - 1} рёбер, текущий суммарный вес = ${totalWeight}.`,
         createGraphMeta('A', visited, frontier, traversed, edge.target),
       );
+
+      if (traversed.size === graph.nodes.length - 1) {
+        break;
+      }
     }
   }
 
@@ -235,8 +291,10 @@ export function* mstDemo(): Generator<GraphAlgorithmFrame, void, unknown> {
     'complete',
     graph,
     [],
-    3,
-    `MST завершено: выбрано рёбер ${traversed.size}.`,
-    createGraphMeta('A', visited, frontier, traversed),
+    4,
+    `MST завершено: выбраны рёбра [${[...traversed].join(', ')}], суммарный вес = ${totalWeight}.`,
+    createGraphMeta('A', visited, [], traversed),
   );
 }
+
+const formatDistance = (value: number): string => Number.isFinite(value) ? value.toString() : '∞';

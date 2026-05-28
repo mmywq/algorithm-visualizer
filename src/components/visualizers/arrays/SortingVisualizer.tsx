@@ -10,8 +10,8 @@ import { ArrayVisualizer } from './ArrayVisualizer';
 type SortingAlgorithmKey = 'bubble' | 'merge';
 const FALLBACK_VALUES = [42, 18, 64, 9, 73, 31, 55, 27];
 const MAX_ARRAY_SIZE = 64;
-const MIN_ARRAY_VALUE = -999;
-const MAX_ARRAY_VALUE = 999;
+const MIN_ARRAY_VALUE = -100;
+const MAX_ARRAY_VALUE = 100;
 const algorithmLabels: Record<SortingAlgorithmKey, string> = { bubble: 'Сортировка пузырьком', merge: 'Сортировка слиянием' };
 const pseudocodeByAlgorithm: Record<SortingAlgorithmKey, readonly string[]> = {
   bubble: ['для i = 0..n-1', 'для j = 0..n-i-2', 'если A[j] > A[j+1]', 'обмен(A[j], A[j+1])'],
@@ -30,6 +30,7 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
   const [presets, setPresets] = useState(loadArrayPresets());
   const [presetName, setPresetName] = useState('');
   const [renamePresetState, setRenamePresetState] = useState<{ id: string; name: string } | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
 
   const currentFrame = useAlgorithmPlayerStore((state) => state.currentFrame);
   const currentIndex = useAlgorithmPlayerStore((state) => state.currentIndex);
@@ -46,6 +47,7 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
 
   const arrayFrame = isArrayAlgorithmFrame(currentFrame) ? currentFrame : null;
   const valuesLabel = useMemo(() => values.join(', '), [values]);
+  const stepsHistory = useMemo(() => frames.map((stepFrame) => stepFrame.description ?? stepFrame.message), [frames]);
 
   useEffect(() => {
     loadSortingAlgorithm(selectedAlgorithm, values, loadAlgorithm);
@@ -84,6 +86,10 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
       setInputError('Введите минимум 2 числа через запятую.');
       return;
     }
+    if (new Set(parsed).size === 1) {
+      setInputError('Все значения одинаковые. Такой набор корректен, но не показывает сравнения; добавьте хотя бы одно отличающееся число.');
+      return;
+    }
     if (parsed.length > MAX_ARRAY_SIZE) {
       setInputError(`Максимальный размер массива: ${MAX_ARRAY_SIZE}.`);
       return;
@@ -91,6 +97,7 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
 
     setInputError(null);
     setValues(parsed);
+    setManualInput(parsed.join(', '));
   };
 
   return (
@@ -98,7 +105,10 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
       <section className="app-panel shadow-xl shadow-slate-950/10">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h1 className="mt-2 text-4xl font-bold tracking-tight text-app-primary">Алгоритмы сортировки</h1>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="mt-2 text-4xl font-bold tracking-tight text-app-primary">Алгоритмы сортировки</h1>
+              <button className="control-button" onClick={() => setShowHelp((value) => !value)} type="button">Справка</button>
+            </div>
             <p className="mt-3 max-w-3xl text-app-muted">Выберите алгоритм, задайте входные данные вручную или сгенерируйте случайные значения, затем изучайте каждый шаг.</p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -117,10 +127,11 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
               <input className="control-input w-full" value={manualInput} onChange={(e) => setManualInput(e.target.value)} />
               <button className="control-button" onClick={applyManualValues} type="button">Применить</button>
             </div>
+            <p className="mt-2 text-xs text-slate-400">Введите 2–64 целых числа в диапазоне {MIN_ARRAY_VALUE}…{MAX_ARRAY_VALUE}. Набор одинаковых значений вроде 0, 0, 0 отклоняется как неинформативный.</p>
             {inputError !== null && <p className="mt-2 text-rose-300">{inputError}</p>}
           </div>
           <div className="flex flex-wrap gap-2">
-            <button className="control-button" onClick={() => { const randomValues = generateRandomValues(values.length); setValues(randomValues); setManualInput(randomValues.join(', ')); }} type="button">Случайные значения</button>
+            <button className="control-button" onClick={() => { const randomValues = generateRandomValues(values.length); setValues(randomValues); setManualInput(randomValues.join(', ')); setInputError(null); }} type="button">Случайные −100…100</button>
             <input className="control-input" onChange={(event) => setPresetName(event.target.value)} placeholder="Имя пресета" value={presetName} />
             <button className="control-button" onClick={() => { const name = presetName.trim() || `Набор ${new Date().toLocaleTimeString()}`; saveArrayPreset(name, values); setPresetName(''); setPresets(loadArrayPresets()); }} type="button">Сохранить пресет</button>
           </div>
@@ -136,6 +147,20 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
                 <button className="control-button" onClick={() => { removeArrayPreset(preset.id); setPresets(loadArrayPresets()); }} type="button">Удалить</button>
               </div>
             ))}
+          </div>
+        )}
+
+
+
+        {showHelp && (
+          <div className="mt-4 rounded-2xl border border-app bg-surface p-4 text-sm text-app-muted">
+            <p className="font-semibold text-app-primary">Как пользоваться сортировками</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              <li>Bubble Sort сравнивает соседние элементы и меняет их местами, если левый больше правого.</li>
+              <li>Merge Sort делит массив на части и затем сливает отсортированные подмассивы.</li>
+              <li>Голубой цвет означает сравнение, оранжевый — обмен, зелёный — уже отсортированную область.</li>
+              <li>Случайная генерация не связана с пресетами: она просто заменяет текущий массив новыми значениями.</li>
+            </ul>
           </div>
         )}
 
@@ -169,6 +194,15 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
           </div>
         </aside>
       </div>
+      {status === 'completed' && stepsHistory.length > 0 && (
+        <section className="app-panel">
+          <h3 className="text-xl font-semibold text-app-primary">История шагов сортировки</h3>
+          <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-app-muted">
+            {stepsHistory.map((entry, index) => <li key={`${index}-${entry}`}>{entry}</li>)}
+          </ol>
+        </section>
+      )}
+
       <PlayerControls canStepBackward={currentIndex > 0} canStepForward={status !== 'completed'} currentIndex={currentIndex} onNextStep={nextStep} onPause={pause} onPlay={play} onPrevStep={prevStep} onReset={() => loadSortingAlgorithm(selectedAlgorithm, values, loadAlgorithm)} onSpeedChange={(speed) => { setPlaybackSpeed(speed); setUiPlaybackSpeed(speed); }} playbackSpeedMs={playbackSpeedMs} status={status} totalFrames={frames.length} />
     </div>
   );
