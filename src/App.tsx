@@ -9,6 +9,7 @@ import { StructuresPage } from '@/pages/StructuresPage';
 import { PlannedAlgorithmPage } from '@/pages/PlannedAlgorithmPage';
 import { AlgorithmPage, algorithmRouteRegistry } from '@/pages/AlgorithmPages';
 import { BstPage } from '@/pages/BstPage';
+import { HeapPage } from '@/pages/HeapPage';
 import { useAlgorithmPlayerStore } from '@/stores';
 import { useUiPreferencesStore } from '@/stores';
 
@@ -106,6 +107,10 @@ const renderRoute = (
 
   if (route === '/trees/bst') {
     return <BstPage />;
+  }
+
+  if (route === '/heaps/heap') {
+    return <HeapPage />;
   }
 
   const configuredPage = algorithmRouteRegistry[route as keyof typeof algorithmRouteRegistry];

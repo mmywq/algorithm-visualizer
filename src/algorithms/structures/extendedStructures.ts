@@ -141,10 +141,10 @@ export const hashBlockScenario = () => runScenario({
   ],
 });
 
-export const heapScenario = () => runScenario({
+export const heapScenario = (inputValues?: readonly number[]) => runScenario({
   title: 'Бинарная куча',
   operation: 'push',
-  values: [40, 15, 60, 5, 30, 55],
+  values: inputValues !== undefined && inputValues.length > 0 ? inputValues : [40, 15, 60, 5, 30, 55],
   messages: [
     'Добавляем элемент в конец массива-кучи.',
     'Поднимаем элемент вверх (sift-up), пока не выполнится инвариант кучи.',

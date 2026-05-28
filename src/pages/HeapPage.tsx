@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
-import { bstScenario } from '@/algorithms/structures/extendedStructures';
+import { heapScenario } from '@/algorithms/structures/extendedStructures';
 import { PlayerControls } from '@/components/player/PlayerControls';
 import { StructureVisualizer } from '@/components/visualizers/structures/StructureVisualizer';
 import { loadStructurePresets, saveStructurePreset } from '@/lib/storage';
 import { useAlgorithmPlayerStore } from '@/stores';
 import type { AlgorithmFrame, StructureAlgorithmFrame } from '@/types';
 
-export function BstPage() {
-  const [manualInput, setManualInput] = useState('50, 30, 70, 20, 40, 60, 80');
-  const [values, setValues] = useState<readonly number[]>([50, 30, 70, 20, 40, 60, 80]);
+export function HeapPage() {
+  const [manualInput, setManualInput] = useState('40, 15, 60, 5, 30, 55');
+  const [values, setValues] = useState<readonly number[]>([40, 15, 60, 5, 30, 55]);
   const [inputError, setInputError] = useState<string | null>(null);
   const [presets, setPresets] = useState(loadStructurePresets());
 
@@ -25,7 +25,9 @@ export function BstPage() {
   const status = useAlgorithmPlayerStore((state) => state.status);
 
   useEffect(() => {
-    run(values, loadAlgorithm);
+    const generator = heapScenario(values);
+    const first = generator.next();
+    if (first.done) loadAlgorithm(generator); else loadAlgorithm(generator, { initialFrame: first.value });
   }, [values, loadAlgorithm]);
 
   const frame = isStructureFrame(currentFrame) ? currentFrame : null;
@@ -42,9 +44,7 @@ export function BstPage() {
   };
 
   const randomValues = () => {
-    const set = new Set<number>();
-    while (set.size < 7) set.add(Math.floor(Math.random() * 201) - 100);
-    const next = [...set];
+    const next = Array.from({ length: 7 }, () => Math.floor(Math.random() * 201) - 100);
     setValues(next);
     setManualInput(next.join(', '));
   };
@@ -52,28 +52,17 @@ export function BstPage() {
   return (
     <div className="flex w-full flex-col gap-6">
       <section className="app-panel">
-        <h1 className="text-3xl font-bold text-app-primary">Двоичное дерево поиска (BST)</h1>
-        <p className="mt-2 text-sm text-app-muted">BST (Binary Search Tree, двоичное дерево поиска) — структура, в которой у каждого узла ключи в левом поддереве меньше, а в правом больше либо равны. Поиск, вставка и удаление выполняются через последовательность сравнений от корня вниз.</p>
-        <p className="mt-2 text-sm text-app-muted">Сложность операций: в среднем O(log n), в худшем случае O(n), если дерево вырождается в цепочку.</p>
+        <h1 className="text-3xl font-bold text-app-primary">Бинарная куча (Heap)</h1>
+        <p className="mt-2 text-sm text-app-muted">Куча (heap) — почти полное бинарное дерево. Для min-heap каждый родитель не больше детей, поэтому минимум всегда в корне. Вставка выполняется через sift-up, удаление корня — через sift-down.</p>
+        <p className="mt-2 text-sm text-app-muted">Сложность: вставка и извлечение корня O(log n), просмотр корня O(1).</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <input className="control-input min-w-[360px]" value={manualInput} onChange={(e) => setManualInput(e.target.value)} />
           <button className="control-button" type="button" onClick={applyManual}>Применить</button>
           <button className="control-button" type="button" onClick={randomValues}>Случайные значения (до 100)</button>
-          <button className="control-button" type="button" onClick={() => { saveStructurePreset('BST набор', values); setPresets(loadStructurePresets()); }}>Сохранить пресет</button>
+          <button className="control-button" type="button" onClick={() => { saveStructurePreset('Heap набор', values); setPresets(loadStructurePresets()); }}>Сохранить пресет</button>
         </div>
         {inputError && <p className="mt-2 text-sm text-rose-300">{inputError}</p>}
         {presets.length > 0 && <div className="mt-3 flex flex-wrap gap-2">{presets.slice(0, 6).map((preset) => <button key={preset.id} className="control-button" type="button" onClick={() => { setValues(preset.values); setManualInput(preset.values.join(', ')); }}>{preset.name}</button>)}</div>}
-      </section>
-
-
-
-      <section className="app-panel">
-        <h3 className="text-xl font-semibold text-app-primary">Псевдокод вставки в BST</h3>
-        <div className="mt-3 space-y-1 text-sm text-app-muted">
-          {['если корень пуст, создать корень', 'начать с корня', 'если key < node.key, перейти влево', 'иначе перейти вправо (включая равные ключи)', 'когда найдено пустое место, вставить узел', 'повторять, пока узел не вставлен'].map((line, index) => (
-            <p key={line} className={frame?.pseudocode.line === index + 1 ? 'font-semibold text-cyan-200' : ''}>{index + 1}. {line}</p>
-          ))}
-        </div>
       </section>
 
       <StructureVisualizer frame={frame} />
@@ -85,16 +74,10 @@ export function BstPage() {
         </section>
       )}
 
-      <PlayerControls canStepBackward={currentIndex > 0} canStepForward={status !== 'completed'} currentIndex={currentIndex} onNextStep={nextStep} onPause={pause} onPlay={play} onPrevStep={prevStep} onReset={() => run(values, loadAlgorithm)} onSpeedChange={setPlaybackSpeed} playbackSpeedMs={playbackSpeedMs} status={status} totalFrames={frames.length} />
+      <PlayerControls canStepBackward={currentIndex > 0} canStepForward={status !== 'completed'} currentIndex={currentIndex} onNextStep={nextStep} onPause={pause} onPlay={play} onPrevStep={prevStep} onReset={() => { const g = heapScenario(values); const f = g.next(); if (f.done) loadAlgorithm(g); else loadAlgorithm(g, { initialFrame: f.value }); }} onSpeedChange={setPlaybackSpeed} playbackSpeedMs={playbackSpeedMs} status={status} totalFrames={frames.length} />
     </div>
   );
 }
-
-const run = (values: readonly number[], loadAlgorithm: ReturnType<typeof useAlgorithmPlayerStore.getState>['loadAlgorithm']) => {
-  const generator = bstScenario(values);
-  const first = generator.next();
-  if (first.done) loadAlgorithm(generator); else loadAlgorithm(generator, { initialFrame: first.value });
-};
 
 const isStructureFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | null): frame is StructureAlgorithmFrame =>
   frame?.domain === 'array' && typeof frame.data === 'object' && frame.data !== null && 'cells' in frame.data;
