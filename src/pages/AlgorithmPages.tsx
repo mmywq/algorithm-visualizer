@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { compareSortsDemo, blockSortDemo, countingSortDemo, radixSortDemo } from '@/algorithms/sorting/extra';
 import { connectedComponentsDemo, dijkstraDemo, mstDemo } from '@/algorithms/graphs';
 import { balancedBstScenario, binomialHeapScenario, bstScenario, hashBlockScenario, hashClosedScenario, hashOpenScenario, heapScenario } from '@/algorithms/structures/extendedStructures';
@@ -50,6 +50,7 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
 
   const frame = currentFrame;
   const theory = getTheoryByTitle(title, mode);
+  const stepsHistory = useMemo(() => frames.map((stepFrame) => stepFrame.description ?? stepFrame.message), [frames]);
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -71,6 +72,15 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
           useCases={theory.useCases}
         />
       </section>
+
+      {status === 'completed' && stepsHistory.length > 0 && (
+        <section className="app-panel">
+          <h3 className="text-xl font-semibold text-app-primary">Полный список выполненных шагов</h3>
+          <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-app-muted">
+            {stepsHistory.map((entry) => (<li key={entry}>{entry}</li>))}
+          </ol>
+        </section>
+      )}
 
       <PlayerControls
         canStepBackward={currentIndex > 0}
@@ -119,9 +129,9 @@ const getTheoryByTitle = (title: string, mode: Mode): TheoryContent => {
 
   if (title.includes('хеш-таблицы')) {
     return {
-      description: 'Хеш-таблица вычисляет индекс корзины по ключу. Коллизии решаются цепочками, пробированием или блочными схемами.',
+      description: 'Хеш-таблица (hash table) хранит пары ключ-значение и получает индекс ячейки через хеш-функцию. Коллизия — ситуация, когда разные ключи попадают в одну ячейку. Для обработки используют цепочки, открытую адресацию или блочное размещение.',
       complexity: 'В среднем O(1), в худшем O(n)',
-      useCases: ['Словари и кэш', 'Проверка принадлежности', 'Подсчёт частот'],
+      useCases: ['Словари и кэш', 'Проверка принадлежности', 'Подсчёт частот', 'Ускорение поиска по ключу без полного перебора'],
       pseudocodeLines: [
         'index = hash(key) mod m',
         'если корзина свободна, вставить',
@@ -133,9 +143,9 @@ const getTheoryByTitle = (title: string, mode: Mode): TheoryContent => {
 
   if (title.includes('Куча')) {
     return {
-      description: 'Куча — полное бинарное дерево с инвариантом приоритета. Корень хранит минимум/максимум.',
+      description: 'Куча (heap) — почти полное бинарное дерево, обычно хранимое в массиве. В min-heap ключ родителя не больше ключей детей, поэтому минимум всегда в корне. В max-heap наоборот: в корне максимум.',
       complexity: 'insert/extract: O(log n), peek: O(1)',
-      useCases: ['Очередь с приоритетом', 'Планировщики задач', 'Алгоритм Дейкстры/Прима'],
+      useCases: ['Очередь с приоритетом', 'Планировщики задач', 'Алгоритм Дейкстры/Прима', 'Heap Sort и обработка потока событий'],
       pseudocodeLines: [
         'insert: добавить элемент в конец',
         'sift-up до восстановления инварианта',
@@ -147,7 +157,7 @@ const getTheoryByTitle = (title: string, mode: Mode): TheoryContent => {
 
   if (mode === 'graph') {
     return {
-      description: 'Графовые алгоритмы анализируют вершины и связи между ними: обход, поиск путей, связность и остовы.',
+      description: 'Граф описывает объекты (вершины) и связи между ними (рёбра). Алгоритмы графов позволяют находить маршруты, компоненты связности, кратчайшие пути и минимальные остовы.',
       complexity: 'Часто O(V + E), зависит от задачи',
       useCases: ['Маршрутизация', 'Социальные графы', 'Сетевой анализ'],
       pseudocodeLines: [
@@ -161,7 +171,7 @@ const getTheoryByTitle = (title: string, mode: Mode): TheoryContent => {
 
   if (mode === 'array') {
     return {
-      description: 'Алгоритмы сортировки упорядочивают данные для ускорения поиска, агрегации и аналитики.',
+      description: 'Сортировка упорядочивает элементы по ключу сравнения. После сортировки ускоряются поиск, группировка, слияние наборов и многие этапы обработки данных.',
       complexity: 'От O(n) до O(n log n) и O(n²)',
       useCases: ['Подготовка к бинарному поиску', 'Сравнение наборов', 'Обработка данных'],
       pseudocodeLines: [

@@ -47,6 +47,22 @@ export function* mergeSort(values: readonly number[]): Generator<ArrayAlgorithmF
     { auxiliaryArray: values },
   );
 
+
+  if (isSorted(items, 0, items.length - 1)) {
+    yield createFrame(
+      step,
+      'complete',
+      items,
+      [],
+      mergeSortPseudocode.complete,
+      'Массив уже отсортирован. Merge Sort завершён досрочно.',
+      {
+        auxiliaryArray: items.map((item) => item.value),
+        sortedIndices: getAllIndices(items),
+      },
+    );
+    return;
+  }
   yield* sortRange(items, 0, items.length - 1, () => step++);
 
   yield createFrame(
@@ -106,6 +122,19 @@ function* sortRange(
     { auxiliaryArray: items.map((item) => item.value) },
   );
   yield* sortRange(items, middle + 1, right, nextStep);
+
+  if (items[middle]!.value <= items[middle + 1]!.value) {
+    yield createFrame(
+      nextStep(),
+      'inspect',
+      items,
+      getRangeIndices(left, right),
+      mergeSortPseudocode.mergeStart,
+      `Диапазон [${left}, ${right}] уже упорядочен, слияние не требуется.`,
+      { auxiliaryArray: items.slice(left, right + 1).map((item) => item.value) },
+    );
+    return;
+  }
 
   yield* merge(items, left, middle, right, nextStep);
 }
@@ -224,4 +253,12 @@ const getRangeIndices = (left: number, right: number): readonly number[] => {
   }
 
   return Array.from({ length: right - left + 1 }, (_, offset) => left + offset);
+};
+
+
+const isSorted = (items: readonly ArrayItem[], left: number, right: number): boolean => {
+  for (let i = left + 1; i <= right; i += 1) {
+    if (items[i - 1]!.value > items[i]!.value) return false;
+  }
+  return true;
 };

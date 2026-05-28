@@ -10,7 +10,7 @@ const MAX_BAR_HEIGHT_PX = 260;
 
 export function ArrayVisualizer({ frame }: ArrayVisualizerProps) {
   const items = frame?.data ?? [];
-  const maxValue = Math.max(...items.map((item) => item.value), 1);
+  const maxValue = Math.max(...items.map((item) => Math.abs(item.value)), 1);
 
   return (
     <section className="rounded-3xl border border-app bg-surface p-6 shadow-2xl shadow-slate-950/10">
@@ -35,6 +35,12 @@ export function ArrayVisualizer({ frame }: ArrayVisualizerProps) {
       <p className="mt-5 min-h-12 rounded-2xl border border-app bg-surface px-4 py-3 text-sm leading-6 text-app-muted">
         {frame?.message ?? 'Загрузите алгоритм, чтобы увидеть пошаговую визуализацию.'}
       </p>
+
+      <div className="mt-3 flex flex-wrap gap-3 text-xs text-app-muted">
+        <Legend color="#06b6d4" label="сравнение" />
+        <Legend color="#f97316" label="обмен" />
+        <Legend color="#10b981" label="отсортировано" />
+      </div>
     </section>
   );
 }
@@ -47,7 +53,7 @@ interface ArrayBarProps {
 }
 
 function ArrayBar({ frame, index, item, maxValue }: ArrayBarProps) {
-  const height = Math.max(MIN_BAR_HEIGHT_PX, (item.value / maxValue) * MAX_BAR_HEIGHT_PX);
+  const height = Math.max(MIN_BAR_HEIGHT_PX, (Math.abs(item.value) / maxValue) * MAX_BAR_HEIGHT_PX);
   const tone = getBarTone(frame, index);
 
   return (
@@ -97,3 +103,8 @@ const getBarTone = (frame: ArrayAlgorithmFrame | null, index: number) => {
     shadow: '0 0 0 rgba(0, 0, 0, 0)',
   };
 };
+
+
+function Legend({ color, label }: { color: string; label: string }) {
+  return (<span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />{label}</span>);
+}
