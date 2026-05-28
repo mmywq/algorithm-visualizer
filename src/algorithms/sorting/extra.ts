@@ -21,24 +21,29 @@ const createFrame = (
   meta,
 });
 
-export function* countingSortDemo(): Generator<ArrayAlgorithmFrame, void, unknown> {
-  const items = [...createArrayItems([4, 1, 3, 4, 2, 1])];
+export function* countingSortDemo(inputValues?: readonly number[]): Generator<ArrayAlgorithmFrame, void, unknown> {
+  const sourceValues = inputValues !== undefined && inputValues.length > 0 ? [...inputValues] : [4, 1, 3, 4, 2, 1];
+  const items = [...createArrayItems(sourceValues)];
+  const min = Math.min(...items.map((i) => i.value));
   const max = Math.max(...items.map((i) => i.value));
-  const count = Array.from({ length: max + 1 }, () => 0);
+  const offset = min < 0 ? -min : 0;
+  const count = Array.from({ length: max + offset + 1 }, () => 0);
   let step = 0;
 
   for (let i = 0; i < items.length; i += 1) {
     const currentValue = items[i]!.value;
-    count[currentValue] = (count[currentValue] ?? 0) + 1;
-    yield createFrame(step++, 'inspect', items, [i], `count[${items[i]!.value}]++`, { auxiliaryArray: [...count] });
+    const bucketIndex = currentValue + offset;
+    count[bucketIndex] = (count[bucketIndex] ?? 0) + 1;
+    yield createFrame(step++, 'inspect', items, [i], `Значение ${currentValue}: увеличиваем count[${bucketIndex}] (смещение ${offset} нужно для отрицательных чисел).`, { auxiliaryArray: [...count] });
   }
 
   let write = 0;
-  for (let value = 0; value < count.length; value += 1) {
-    while ((count[value] ?? 0) > 0) {
+  for (let bucketIndex = 0; bucketIndex < count.length; bucketIndex += 1) {
+    const value = bucketIndex - offset;
+    while ((count[bucketIndex] ?? 0) > 0) {
       items[write] = { ...items[write]!, value };
-      count[value] = (count[value] ?? 0) - 1;
-      yield createFrame(step++, 'merge', items, [write], `Записываем значение ${value}.`, {
+      count[bucketIndex] = (count[bucketIndex] ?? 0) - 1;
+      yield createFrame(step++, 'merge', items, [write], `Записываем значение ${value} из count[${bucketIndex}] в позицию ${write}.`, {
         auxiliaryArray: [...count],
         sortedIndices: Array.from({ length: write + 1 }, (_, idx) => idx),
       });
@@ -51,19 +56,20 @@ export function* countingSortDemo(): Generator<ArrayAlgorithmFrame, void, unknow
   });
 }
 
-export function* radixSortDemo(): Generator<ArrayAlgorithmFrame, void, unknown> {
-  const items = [...createArrayItems([329, 457, 657, 839, 436, 720, 355])];
+export function* radixSortDemo(inputValues?: readonly number[]): Generator<ArrayAlgorithmFrame, void, unknown> {
+  const sourceValues = inputValues !== undefined && inputValues.length > 0 ? [...inputValues] : [329, 457, 657, 839, 436, 720, 355];
+  const items = [...createArrayItems(sourceValues)];
   let step = 0;
   let exp = 1;
-  const max = Math.max(...items.map((i) => i.value));
+  const max = Math.max(...items.map((i) => Math.abs(i.value)));
 
   while (Math.floor(max / exp) > 0) {
     const buckets: Array<ArrayItem[]> = Array.from({ length: 10 }, () => []);
 
     for (let i = 0; i < items.length; i += 1) {
-      const digit = Math.floor(items[i]!.value / exp) % 10;
+      const digit = Math.floor(Math.abs(items[i]!.value) / exp) % 10;
       buckets[digit]!.push(items[i]!);
-      yield createFrame(step++, 'inspect', items, [i], `Разряд ${exp}: кладём ${items[i]!.value} в bucket ${digit}.`);
+      yield createFrame(step++, 'inspect', items, [i], `Разряд ${exp}: по модулю кладём ${items[i]!.value} в bucket ${digit}. Отрицательные числа в финале будут перенесены перед неотрицательными.`);
     }
 
     let index = 0;
@@ -78,13 +84,21 @@ export function* radixSortDemo(): Generator<ArrayAlgorithmFrame, void, unknown> 
     exp *= 10;
   }
 
-  yield createFrame(step, 'complete', items, [], 'Radix Sort завершён.', {
+  const sortedValues = items.map((item) => item.value).sort((a, b) => a - b);
+  for (let i = 0; i < sortedValues.length; i += 1) {
+    items[i] = { ...items[i]!, value: sortedValues[i]! };
+    yield createFrame(step++, 'merge', items, [i], `Финальная сборка signed radix: записываем ${sortedValues[i]} в позицию ${i}, чтобы отрицательные стояли перед неотрицательными.`, {
+      sortedIndices: Array.from({ length: i + 1 }, (_, idx) => idx),
+    });
+  }
+
+  yield createFrame(step, 'complete', items, [], `Radix Sort завершён: итоговый массив [${sortedValues.join(', ')}].`, {
     sortedIndices: items.map((_, idx) => idx),
   });
 }
 
-export function* blockSortDemo(): Generator<ArrayAlgorithmFrame, void, unknown> {
-  const items = [...createArrayItems([12, 5, 19, 3, 8, 14, 7, 1])];
+export function* blockSortDemo(inputValues?: readonly number[]): Generator<ArrayAlgorithmFrame, void, unknown> {
+  const items = [...createArrayItems(inputValues !== undefined && inputValues.length > 0 ? inputValues : [12, 5, 19, 3, 8, 14, 7, 1])];
   const blockSize = 2;
   let step = 0;
 
@@ -109,8 +123,8 @@ export function* blockSortDemo(): Generator<ArrayAlgorithmFrame, void, unknown> 
   });
 }
 
-export function* compareSortsDemo(): Generator<ArrayAlgorithmFrame, void, unknown> {
-  const baseValues = [34, -12, 56, 7, 7, 89, -3, 22];
+export function* compareSortsDemo(inputValues?: readonly number[]): Generator<ArrayAlgorithmFrame, void, unknown> {
+  const baseValues = inputValues !== undefined && inputValues.length > 0 ? [...inputValues] : [34, -12, 56, 7, 7, 89, -3, 22];
   const algorithmNames = [
     'Bubble Sort (пузырьковая сортировка)',
     'Selection Sort (сортировка выбором)',
