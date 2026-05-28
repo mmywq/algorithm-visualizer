@@ -10,8 +10,8 @@ import { ArrayVisualizer } from './ArrayVisualizer';
 type SortingAlgorithmKey = 'bubble' | 'merge';
 const FALLBACK_VALUES = [42, 18, 64, 9, 73, 31, 55, 27];
 const MAX_ARRAY_SIZE = 64;
-const MIN_ARRAY_VALUE = -999;
-const MAX_ARRAY_VALUE = 999;
+const MIN_ARRAY_VALUE = -100;
+const MAX_ARRAY_VALUE = 100;
 const algorithmLabels: Record<SortingAlgorithmKey, string> = { bubble: 'Сортировка пузырьком', merge: 'Сортировка слиянием' };
 const pseudocodeByAlgorithm: Record<SortingAlgorithmKey, readonly string[]> = {
   bubble: ['для i = 0..n-1', 'для j = 0..n-i-2', 'если A[j] > A[j+1]', 'обмен(A[j], A[j+1])'],
@@ -84,6 +84,10 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
       setInputError('Введите минимум 2 числа через запятую.');
       return;
     }
+    if (new Set(parsed).size === 1) {
+      setInputError('Все значения одинаковые. Такой набор корректен, но не показывает сравнения; добавьте хотя бы одно отличающееся число.');
+      return;
+    }
     if (parsed.length > MAX_ARRAY_SIZE) {
       setInputError(`Максимальный размер массива: ${MAX_ARRAY_SIZE}.`);
       return;
@@ -120,7 +124,7 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
             {inputError !== null && <p className="mt-2 text-rose-300">{inputError}</p>}
           </div>
           <div className="flex flex-wrap gap-2">
-            <button className="control-button" onClick={() => { const randomValues = generateRandomValues(values.length); setValues(randomValues); setManualInput(randomValues.join(', ')); }} type="button">Случайные значения</button>
+            <button className="control-button" onClick={() => { const randomValues = generateRandomValues(values.length); setValues(randomValues); setManualInput(randomValues.join(', ')); }} type="button">Случайные −100…100</button>
             <input className="control-input" onChange={(event) => setPresetName(event.target.value)} placeholder="Имя пресета" value={presetName} />
             <button className="control-button" onClick={() => { const name = presetName.trim() || `Набор ${new Date().toLocaleTimeString()}`; saveArrayPreset(name, values); setPresetName(''); setPresets(loadArrayPresets()); }} type="button">Сохранить пресет</button>
           </div>
