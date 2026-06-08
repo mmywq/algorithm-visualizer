@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import { bfs, dfs } from '@/algorithms/graphs';
 import { PlayerControls } from '@/components/player/PlayerControls';
 import { loadGraphPresets, loadSettings, removeGraphPreset, renameGraphPreset, saveGraphPreset, saveSettings } from '@/lib/storage';
@@ -9,18 +9,18 @@ import { GraphVisualizer } from './GraphVisualizer';
 type GraphAlgorithmKey = 'bfs' | 'dfs';
 
 const algorithmLabels: Record<GraphAlgorithmKey, string> = {
-  bfs: 'Поиск в ширину (BFS)',
-  dfs: 'Поиск в глубину (DFS)',
+  bfs: 'Обход по слоям — поиск в ширину (BFS)',
+  dfs: 'Обход вглубь — поиск в глубину (DFS)',
 };
 
 const baseGraph: GraphSnapshot = {
   nodes: [
-    { id: 'A', label: 'A', position: { x: 0, y: 120 }, payload: {} },
-    { id: 'B', label: 'B', position: { x: 180, y: 20 }, payload: {} },
-    { id: 'C', label: 'C', position: { x: 180, y: 220 }, payload: {} },
-    { id: 'D', label: 'D', position: { x: 380, y: 20 }, payload: {} },
-    { id: 'E', label: 'E', position: { x: 380, y: 220 }, payload: {} },
-    { id: 'F', label: 'F', position: { x: 580, y: 120 }, payload: {} },
+    { id: 'A', label: 'A', position: { x: 80, y: 190 }, payload: {} },
+    { id: 'B', label: 'B', position: { x: 260, y: 80 }, payload: {} },
+    { id: 'C', label: 'C', position: { x: 260, y: 300 }, payload: {} },
+    { id: 'D', label: 'D', position: { x: 500, y: 90 }, payload: {} },
+    { id: 'E', label: 'E', position: { x: 500, y: 300 }, payload: {} },
+    { id: 'F', label: 'F', position: { x: 700, y: 190 }, payload: {} },
   ],
   edges: [
     { id: 'A-B', source: 'A', target: 'B', directed: false, payload: {} },
@@ -40,11 +40,11 @@ interface GraphTraversalVisualizerProps {
 export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTraversalVisualizerProps) {
   const [selectedAlgorithm, setSelectedAlgorithm] = useState<GraphAlgorithmKey>('bfs');
   const [startNodeId, setStartNodeId] = useState<NodeId>(defaultStartNodeId);
-  const [graph, setGraph] = useState<GraphSnapshot>(baseGraph);
+  const [graph, setGraph] = useState<GraphSnapshot>(() => normalizeGraph(baseGraph));
   const [presets, setPresets] = useState(loadGraphPresets());
-  const [adjacencyInput, setAdjacencyInput] = useState('A:B,C\nB:D,E\nC:E\nD:F\nE:F');
-  const [inputMode, setInputMode] = useState<'list' | 'matrix'>('list');
-  const [matrixNodeLabels, setMatrixNodeLabels] = useState('A,B,C,D,E,F');
+  const [adjacencyInput, setAdjacencyInput] = useState(toAdjacencyListText(baseGraph));
+  const [matrixRows, setMatrixRows] = useState<number[][]>(() => toAdjacencyMatrix(baseGraph).matrix);
+  const [matrixNodeLabels, setMatrixNodeLabels] = useState(toAdjacencyMatrix(baseGraph).labels.join(','));
   const [graphInputError, setGraphInputError] = useState<string | null>(null);
   const [presetName, setPresetName] = useState('');
   const [renamePresetState, setRenamePresetState] = useState<{ id: string; name: string } | null>(null);
@@ -67,12 +67,23 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
 
   const graphFrame = isGraphAlgorithmFrame(currentFrame) ? currentFrame : null;
   const graphStats = getGraphStats(graph);
+  const completedStepHistory = useMemo(
+    () => frames.filter(isGraphAlgorithmFrame).map((frame) => frame.description ?? frame.message),
+    [frames],
+  );
 
   useEffect(() => {
     loadGraphAlgorithm(selectedAlgorithm, graph, startNodeId, loadAlgorithm);
     const settings = loadSettings();
     saveSettings({ ...settings, lastGraphStartNodeId: startNodeId, playbackSpeedMs });
   }, [graph, loadAlgorithm, playbackSpeedMs, selectedAlgorithm, startNodeId]);
+
+  useEffect(() => {
+    const matrix = toAdjacencyMatrix(graph);
+    setAdjacencyInput(toAdjacencyListText(graph));
+    setMatrixNodeLabels(matrix.labels.join(','));
+    setMatrixRows(matrix.matrix);
+  }, [graph]);
 
   useEffect(() => {
     if (graph.nodes.some((node) => node.id === startNodeId)) {
@@ -85,12 +96,18 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
     }
   }, [graph.nodes, startNodeId]);
 
+  const commitGraph = (nextGraph: GraphSnapshot): void => {
+    const normalized = normalizeGraph(nextGraph);
+    setGraph(normalized);
+    setGraphInputError(null);
+  };
+
   const addNode = (): void => {
     const candidate = newNodeLabel.trim();
     const id = candidate.length > 0 ? candidate : createNextNodeId(graph);
 
     if (/^[A-Za-z0-9_-]+$/.test(id) === false) {
-      setGraphInputError('Метка новой вершины содержит недопустимые символы.');
+      setGraphInputError('Метка новой вершины содержит недопустимые символы. Разрешены буквы, цифры, _ и -.');
       return;
     }
     if (graph.nodes.some((node) => node.id === id)) {
@@ -120,7 +137,39 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
   const removeNode = (nodeId: NodeId): void => {
     const nodes = graph.nodes.filter((node) => node.id !== nodeId);
     const edges = graph.edges.filter((edge) => edge.source !== nodeId && edge.target !== nodeId);
-    setGraph({ nodes, edges });
+    commitGraph({ nodes, edges });
+  };
+
+  const generateRandomGraph = (): void => {
+    const count = Math.max(2, Math.min(24, Number.isFinite(randomNodesCount) ? Math.floor(randomNodesCount) : 8));
+    const density = Math.max(0, Math.min(1, Number.isFinite(randomDensity) ? randomDensity : 0.3));
+    const labels = Array.from({ length: count }, (_, i) => `V${i + 1}`);
+    const edges: GraphEdge[] = [];
+    const edgeSet = new Set<string>();
+
+    for (let i = 1; i < count; i += 1) {
+      const parent = Math.floor(Math.random() * i);
+      const source = labels[parent]!;
+      const target = labels[i]!;
+      edges.push({ id: `${source}-${target}`, source, target, directed: false, payload: {} });
+      edgeSet.add(edgeKey(source, target));
+    }
+
+    for (let i = 0; i < count; i += 1) {
+      for (let j = i + 1; j < count; j += 1) {
+        if (Math.random() > density) continue;
+        const a = labels[i]!;
+        const b = labels[j]!;
+        const key = edgeKey(a, b);
+        if (edgeSet.has(key)) continue;
+        edgeSet.add(key);
+        edges.push({ id: `${a}-${b}`, source: a, target: b, directed: false, payload: {} });
+      }
+    }
+
+    const nodes = applyForceLayout(labels.map((id) => ({ id, label: id, position: { x: 420, y: 220 }, payload: {} })), edges);
+    commitGraph({ nodes, edges });
+    setStartNodeId(nodes[0]?.id ?? 'V1');
   };
 
 
@@ -157,28 +206,61 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
   };
 
   const clearGraph = (): void => {
-    setGraph({ nodes: [], edges: [] });
+    commitGraph({ nodes: [], edges: [] });
   };
 
-  const applyAdjacencyInput = (): void => {
-    const parsed = inputMode === 'list'
-      ? parseAdjacencyList(adjacencyInput)
-      : parseAdjacencyMatrix(adjacencyInput, matrixNodeLabels);
+  const applyAdjacencyListInput = (): void => {
+    const parsed = parseAdjacencyList(adjacencyInput);
     if (parsed === null) {
-      setGraphInputError(inputMode === 'list'
-        ? 'Некорректный формат списка смежности. Пример: A:B,C'
-        : 'Некорректная матрица смежности. Проверьте размер и значения 0/1.');
+      setGraphInputError('Некорректный формат списка смежности. Пример: A:B,C. Пустой граф не запускается.');
       return;
     }
+    applyParsedGraph(parsed);
+  };
+
+  const applyMatrixInput = (): void => {
+    const parsed = graphFromMatrix(matrixNodeLabels, matrixRows, graph);
+    if (parsed === null) {
+      setGraphInputError('Некорректная матрица смежности: нужны уникальные метки и квадратная таблица из 0/1.');
+      return;
+    }
+    applyParsedGraph(parsed);
+  };
+
+  const applyParsedGraph = (parsed: GraphSnapshot, options: { readonly relayout?: boolean } = {}): void => {
     if (parsed.nodes.length > 24) {
-      setGraphInputError('Слишком большой граф: максимум 24 вершины.');
+      setGraphInputError('Слишком большой граф: максимум 24 вершины, чтобы визуализация оставалась читаемой.');
       return;
     }
-    setGraphInputError(null);
-    setGraph(parsed);
+    commitGraph({ ...parsed, nodes: options.relayout === false ? parsed.nodes : applyForceLayout(parsed.nodes, parsed.edges) });
     if (parsed.nodes.some((node) => node.id === startNodeId) === false) {
       setStartNodeId(parsed.nodes[0]?.id ?? 'A');
     }
+  };
+
+  const updateMatrixCell = (rowIndex: number, columnIndex: number, value: number): void => {
+    const labels = parseMatrixLabels(matrixNodeLabels);
+    const baseRows = resizeMatrixRows(matrixRows, labels.length);
+    const nextRows = baseRows.map((row, r) => row.map((cell, c) => {
+      if ((r === rowIndex && c === columnIndex) || (r === columnIndex && c === rowIndex)) {
+        return value;
+      }
+      return cell;
+    }));
+
+    setMatrixRows(nextRows);
+    const parsed = graphFromMatrix(matrixNodeLabels, nextRows, graph);
+    if (parsed === null) {
+      setGraphInputError('Матрица пока некорректна: проверьте метки вершин и размер таблицы.');
+      return;
+    }
+
+    applyParsedGraph(parsed, { relayout: false });
+  };
+
+  const resetToBaseGraph = (): void => {
+    commitGraph(baseGraph);
+    setStartNodeId('A');
   };
 
   return (
@@ -186,18 +268,17 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
       <section className="app-panel shadow-xl shadow-slate-950/20">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-violet-300">Раздел графов</p>
-            <h1 className="mt-2 text-4xl font-bold tracking-tight text-app-primary">UI для графов</h1>
+            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-violet-300">Графы без страха</p>
+            <h1 className="mt-2 text-4xl font-bold tracking-tight text-app-primary">Обход графа: пошаговая сеть</h1>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-app-muted">
+              Вершины — это объекты, рёбра — связи между ними. Перетащите вершины мышкой, соедините две вершины линией на холсте или измените список/матрицу — все представления синхронизируются автоматически.
+            </p>
           </div>
 
           <div className="flex flex-wrap gap-2">
             {(['bfs', 'dfs'] as const).map((algorithmKey) => (
               <button
-                className={
-                  algorithmKey === selectedAlgorithm
-                    ? 'control-button control-button-primary'
-                    : 'control-button'
-                }
+                className={algorithmKey === selectedAlgorithm ? 'control-button control-button-primary' : 'control-button'}
                 key={algorithmKey}
                 onClick={() => setSelectedAlgorithm(algorithmKey)}
                 type="button"
@@ -208,20 +289,20 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
           </div>
         </div>
 
-        <div className="mt-5 flex flex-col gap-3 md:flex-row md:items-center">
-          <label className="block max-w-xs text-sm text-app-muted">
-            Стартовая вершина
+        <div className="mt-5 grid gap-4 xl:grid-cols-[300px_1fr]">
+          <label className="block text-sm text-app-muted">
+            Стартовая вершина обхода
             <select
               className="mt-2 w-full rounded-xl border border-app bg-slate-950 px-3 py-2 text-app-primary outline-none transition focus:border-violet-400"
+              disabled={graph.nodes.length === 0}
               onChange={(event: ChangeEvent<HTMLSelectElement>) => setStartNodeId(event.target.value)}
               value={startNodeId}
             >
               {graph.nodes.map((node) => (
-                <option key={node.id} value={node.id}>
-                  {node.label}
-                </option>
+                <option key={node.id} value={node.id}>{node.label}</option>
               ))}
             </select>
+            <span className="mt-2 block text-xs text-slate-400">BFS использует очередь (первым пришёл — первым обработан), DFS использует стек (последним пришёл — первым обработан).</span>
           </label>
 
           <div className="flex flex-wrap gap-2">
@@ -252,16 +333,27 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
           <StatCard label="Вершин" value={graphStats.nodes.toString()} />
           <StatCard label="Рёбер" value={graphStats.edges.toString()} />
           <StatCard label="Плотность" value={graphStats.density} />
-          <StatCard label="Компонент (оценка)" value={graphStats.componentsEstimate.toString()} />
+          <StatCard label="Компонент связности" value={graphStats.componentsEstimate.toString()} />
         </div>
+
+        {graph.nodes.length > 0 && (
+          <div className="mt-3 rounded-2xl border border-app bg-surface p-3">
+            <p className="text-sm font-semibold text-app-primary">Удаление вершин</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {graph.nodes.map((node) => (
+                <button className="control-button" key={node.id} onClick={() => removeNode(node.id)} type="button">
+                  Удалить {node.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {presets.length > 0 && (
           <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-            {presets.slice(0, 5).map((preset) => (
+            {presets.slice(0, 6).map((preset) => (
               <div className="flex items-center gap-2" key={preset.id}>
-                <button className="control-button flex-1" onClick={() => setGraph(preset.graph)} type="button">
-                  {preset.name}
-                </button>
+                <button className="control-button flex-1" onClick={() => commitGraph(preset.graph)} type="button">{preset.name}</button>
                 <button className="control-button" onClick={() => setRenamePresetState({ id: preset.id, name: preset.name })} type="button">Переим.</button>
                 <button className="control-button" onClick={() => { removeGraphPreset(preset.id); setPresets(loadGraphPresets()); }} type="button">Удалить</button>
               </div>
@@ -277,26 +369,17 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
             <button className="control-button" onClick={() => setRenamePresetState(null)} type="button">Отмена</button>
           </div>
         )}
+      </section>
 
-        {graph.nodes.length > 0 && (
-          <div className="mt-3 rounded-2xl border border-app bg-surface p-3">
-            <p className="text-sm text-app-muted">Удаление вершин</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {graph.nodes.map((node) => (
-                <button className="control-button" key={node.id} onClick={() => removeNode(node.id)} type="button">
-                  Удалить {node.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+      <GraphVisualizer editable frame={graphFrame} graph={graph} onAddNodeAt={addNodeAtPosition} onGraphChange={commitGraph} />
 
-        <div className="mt-4 rounded-2xl border border-app bg-surface p-3">
-          <p className="text-sm text-app-muted">Пользовательский ввод графа</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <button className={inputMode === 'list' ? 'control-button control-button-primary' : 'control-button'} onClick={() => setInputMode('list')} type="button">Список смежности</button>
-            <button className={inputMode === 'matrix' ? 'control-button control-button-primary' : 'control-button'} onClick={() => setInputMode('matrix')} type="button">Матрица смежности</button>
-          </div>
+      <section className="grid gap-4 lg:grid-cols-2">
+        <div className="app-panel">
+          <h2 className="text-xl font-semibold text-app-primary">Список смежности</h2>
+          <p className="mt-2 text-sm text-app-muted">Каждая строка означает: вершина слева соединена с вершинами справа. Например, <code>A:B,C</code> — у A есть рёбра к B и C.</p>
+          <textarea className="mt-3 h-40 w-full rounded-xl border border-app bg-surface p-3 font-mono text-sm text-app-primary" onChange={(event) => setAdjacencyInput(event.target.value)} value={adjacencyInput} />
+          <button className="control-button mt-3" onClick={applyAdjacencyListInput} type="button">Применить список смежности</button>
+        </div>
 
           {inputMode === 'matrix' && (
             <input
@@ -338,6 +421,15 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
           <li>Сложность обеих стратегий: <strong>O(V + E)</strong>, где V — вершины, E — рёбра.</li>
         </ul>
       </section>
+
+      {status === 'completed' && completedStepHistory.length > 0 && (
+        <section className="app-panel">
+          <h3 className="text-xl font-semibold text-app-primary">История шагов обхода</h3>
+          <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-app-muted">
+            {completedStepHistory.map((entry, index) => <li key={`${index}-${entry}`}>{entry}</li>)}
+          </ol>
+        </section>
+      )}
 
       <PlayerControls
         canStepBackward={currentIndex > 0}
@@ -382,10 +474,7 @@ const isGraphAlgorithmFrame = (
   'edges' in frame.data;
 
 const parseAdjacencyList = (source: string): GraphSnapshot | null => {
-  const lines = source
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
+  const lines = source.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
 
   if (lines.length === 0) {
     return null;
@@ -393,10 +482,11 @@ const parseAdjacencyList = (source: string): GraphSnapshot | null => {
 
   const nodeSet = new Set<string>();
   const edgeKeySet = new Set<string>();
-  const edges: Array<GraphSnapshot['edges'][number]> = [];
+  const edges: GraphEdge[] = [];
 
   for (const line of lines) {
-    const [rawNode, rawTargets = ''] = line.split(':');
+    const [rawNode, ...rest] = line.split(':');
+    const rawTargets = rest.join(':');
     const node = rawNode?.trim();
     if (node === undefined || /^[A-Za-z0-9_-]+$/.test(node) === false) {
       return null;
@@ -410,29 +500,24 @@ const parseAdjacencyList = (source: string): GraphSnapshot | null => {
       }
       nodeSet.add(target);
 
-      const edgeKey = [node, target].sort().join('--');
-      if (edgeKeySet.has(edgeKey)) {
+      const key = edgeKey(node, target);
+      if (edgeKeySet.has(key)) {
         continue;
       }
 
-      edgeKeySet.add(edgeKey);
+      edgeKeySet.add(key);
       edges.push({ id: `${node}-${target}`, source: node, target, directed: false, payload: {} });
     }
   }
 
-  const nodes = [...nodeSet].map((id, index) => ({
-    id,
-    label: id,
-    position: { x: 90 + (index % 6) * 120, y: 80 + Math.floor(index / 6) * 120 },
-    payload: {},
-  }));
-
-  return { nodes, edges };
+  const nodes = [...nodeSet].map((id) => ({ id, label: id, position: { x: 420, y: 220 }, payload: {} }));
+  return { nodes: applyForceLayout(nodes, edges), edges };
 };
 
-const parseAdjacencyMatrix = (source: string, labelsSource: string): GraphSnapshot | null => {
-  const labels = labelsSource.split(',').map((label) => label.trim()).filter((label) => label.length > 0);
-  if (labels.length < 2 || labels.length > 24) {
+const graphFromMatrix = (labelsSource: string, matrix: readonly (readonly number[])[], previousGraph?: GraphSnapshot): GraphSnapshot | null => {
+  const labels = parseMatrixLabels(labelsSource);
+  const sizedMatrix = resizeMatrixRows(matrix, labels.length);
+  if (labels.length < 2 || labels.length > 24 || new Set(labels).size !== labels.length) {
     return null;
   }
 
@@ -440,49 +525,38 @@ const parseAdjacencyMatrix = (source: string, labelsSource: string): GraphSnapsh
     return null;
   }
 
-  const rows = source.split('\n').map((row) => row.trim()).filter((row) => row.length > 0);
-  if (rows.length !== labels.length) {
+  if (sizedMatrix.length !== labels.length || sizedMatrix.some((row) => row.length !== labels.length)) {
     return null;
   }
 
-  const matrix = rows.map((row) => row.split(/\s+/));
-  if (matrix.some((row) => row.length !== labels.length)) {
-    return null;
-  }
-
+  const edges: GraphEdge[] = [];
   const edgeKeySet = new Set<string>();
-  const edges: Array<GraphSnapshot['edges'][number]> = [];
 
   for (let i = 0; i < labels.length; i += 1) {
     for (let j = 0; j < labels.length; j += 1) {
-      const value = matrix[i]?.[j];
-      if (value !== '0' && value !== '1') {
+      const value = sizedMatrix[i]?.[j];
+      if (value !== 0 && value !== 1) {
         return null;
       }
-      if (value === '0' || i === j) {
+      if (value === 0 || i === j) {
         continue;
       }
 
-      const sourceNode = labels[i]!;
-      const targetNode = labels[j]!;
-      const edgeKey = [sourceNode, targetNode].sort().join('--');
-      if (edgeKeySet.has(edgeKey)) {
+      const source = labels[i]!;
+      const target = labels[j]!;
+      const key = edgeKey(source, target);
+      if (edgeKeySet.has(key)) {
         continue;
       }
 
-      edgeKeySet.add(edgeKey);
-      edges.push({ id: `${sourceNode}-${targetNode}`, source: sourceNode, target: targetNode, directed: false, payload: {} });
+      edgeKeySet.add(key);
+      edges.push({ id: `${source}-${target}`, source, target, directed: false, payload: {} });
     }
   }
 
-  const nodes = labels.map((label, index) => ({
-    id: label,
-    label,
-    position: { x: 90 + (index % 6) * 120, y: 80 + Math.floor(index / 6) * 120 },
-    payload: {},
-  }));
-
-  return { nodes, edges };
+  const previousPositions = new Map(previousGraph?.nodes.map((node) => [node.id, node.position]) ?? []);
+  const nodes = labels.map((label) => ({ id: label, label, position: previousPositions.get(label) ?? { x: 420, y: 220 }, payload: {} }));
+  return { nodes: previousGraph === undefined ? applyForceLayout(nodes, edges) : nodes, edges };
 };
 
 const createNextNodeId = (graph: GraphSnapshot): string => {
@@ -507,7 +581,7 @@ const createNextNodeId = (graph: GraphSnapshot): string => {
     }
   }
 
-  return `Узел-${Date.now()}`;
+  return `Node-${Date.now()}`;
 };
 
 const getGraphStats = (graph: GraphSnapshot) => {
@@ -517,13 +591,11 @@ const getGraphStats = (graph: GraphSnapshot) => {
   const densityValue = edges / maxUndirectedEdges;
   const density = Number.isFinite(densityValue) ? densityValue.toFixed(2) : '0.00';
 
-  const componentsEstimate = estimateComponents(graph);
-
   return {
     nodes,
     edges,
     density,
-    componentsEstimate,
+    componentsEstimate: estimateComponents(graph),
   };
 };
 
@@ -538,16 +610,16 @@ const estimateComponents = (graph: GraphSnapshot): number => {
   }
   for (const edge of graph.edges) {
     adjacency.get(edge.source)?.push(edge.target);
-    adjacency.get(edge.target)?.push(edge.source);
+    if (!edge.directed) {
+      adjacency.get(edge.target)?.push(edge.source);
+    }
   }
 
   const visited = new Set<NodeId>();
   let count = 0;
 
   for (const node of graph.nodes) {
-    if (visited.has(node.id)) {
-      continue;
-    }
+    if (visited.has(node.id)) continue;
 
     count += 1;
     const stack: NodeId[] = [node.id];
@@ -555,14 +627,10 @@ const estimateComponents = (graph: GraphSnapshot): number => {
 
     while (stack.length > 0) {
       const current = stack.pop();
-      if (current === undefined) {
-        continue;
-      }
+      if (current === undefined) continue;
 
       for (const neighbor of adjacency.get(current) ?? []) {
-        if (visited.has(neighbor)) {
-          continue;
-        }
+        if (visited.has(neighbor)) continue;
         visited.add(neighbor);
         stack.push(neighbor);
       }

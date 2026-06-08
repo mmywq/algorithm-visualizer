@@ -46,7 +46,7 @@ export function* bfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
     graph,
     [startNodeId],
     bfsPseudocode.initial,
-    `Добавляем стартовую вершину ${startNodeId} в очередь BFS.`,
+    `Старт: отмечаем вершину ${startNodeId} как найденную и кладём её в очередь. Очередь сейчас: [${queue.join(', ')}].`,
     createGraphMeta(startNodeId, visitedNodeIds, queue, traversedEdgeIds, startNodeId),
   );
 
@@ -63,7 +63,7 @@ export function* bfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
       graph,
       [currentNodeId],
       bfsPseudocode.dequeue,
-      `Извлекаем вершину ${currentNodeId} из очереди.`,
+      `Берём из начала очереди вершину ${currentNodeId}. Осталось в очереди: [${queue.join(', ') || 'пусто'}].`,
       createGraphMeta(startNodeId, visitedNodeIds, queue, traversedEdgeIds, currentNodeId),
     );
 
@@ -73,7 +73,7 @@ export function* bfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
       graph,
       [currentNodeId],
       bfsPseudocode.visit,
-      `Посещаем вершину ${currentNodeId}.`,
+      `Обрабатываем вершину ${currentNodeId}. Посещённые вершины: [${[...visitedNodeIds].join(', ')}].`,
       createGraphMeta(startNodeId, visitedNodeIds, queue, traversedEdgeIds, currentNodeId),
     );
 
@@ -112,7 +112,7 @@ export function* bfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
     graph,
     [],
     bfsPseudocode.complete,
-    'BFS завершён: все достижимые вершины посещены.',
+    `BFS завершён: из вершины ${startNodeId} достижимы ${visitedNodeIds.size} верш.: [${[...visitedNodeIds].join(', ')}]. Очередь пуста, обход успешен.`,
     createGraphMeta(startNodeId, visitedNodeIds, queue, traversedEdgeIds),
   );
 }

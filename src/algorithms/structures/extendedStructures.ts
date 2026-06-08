@@ -22,9 +22,10 @@ const frame = (
   operation: StructureAlgorithmFrame['meta']['operation'],
   pseudocodeLine: number,
   activeIndex?: number,
+  extraMeta: Partial<StructureAlgorithmFrame['meta']> = {},
 ): StructureAlgorithmFrame => ({
   step,
-  domain: 'array',
+  domain: 'tree',
   phase,
   status,
   data,
@@ -34,6 +35,7 @@ const frame = (
   description: message,
   meta: {
     operation,
+    ...extraMeta,
     ...(activeIndex === undefined ? {} : { activeIndex, pointerIndex: activeIndex }),
   },
 });
@@ -94,52 +96,30 @@ export function* bstScenario(inputValues?: readonly number[]): Generator<Structu
 }
 
 
-export const balancedBstScenario = () => runScenario({
-  title: 'Сбалансированное BST',
-  operation: 'index',
-  values: [30, 20, 40, 10, 25, 35, 50],
-  messages: [
-    'Вставляем ключи как в BST, но после каждой вставки проверяем баланс высот.',
-    'Если разность высот поддеревьев выходит за пределы {-1,0,1}, требуется балансировка.',
-    'Случай LL/RR: применяем одиночный поворот.',
-    'Случай LR/RL: применяем двойной поворот.',
-    'После поворотов структура снова обеспечивает логарифмическую высоту.',
-  ],
-  pseudocodeLines: [1, 2, 3, 4, 5],
-});
+  yield frame(step++, 'initial', 'running', snapshot('Дерево BST', cells), `BST — это двоичное дерево поиска: для каждого узла все ключи слева меньше, справа больше. Начинаем с пустого дерева. Порядок вставки: ${insertionOrder.join(', ')}.`, 'index', 1);
 
-export const hashOpenScenario = () => runScenario({
-  title: 'Хеш-таблица: цепочки',
-  operation: 'index',
-  values: [12, 22, 32, 42, 52],
-  messages: [
-    'Вычисляем индекс корзины: h(key) mod m.',
-    'Если корзина занята, добавляем элемент в связный список этой корзины.',
-    'Поиск проходит по элементам одной корзины, а не всей таблицы.',
-  ],
-});
+  for (const value of insertionOrder) {
+    let index = 0;
+    while (cells[index] !== null) {
+      const current = cells[index]!;
+      const goLeft = value < current;
+      yield frame(step++, 'inspect', 'running', snapshot('Дерево BST', cells), `Сравниваем ${value} с узлом ${current}: ${goLeft ? `${value} < ${current}, идём влево` : `${value} ≥ ${current}, идём вправо`}.`, 'index', 2, index);
+      index = goLeft ? 2 * index + 1 : 2 * index + 2;
+      if (index >= cells.length) {
+        yield frame(step++, 'inspect', 'running', snapshot('Дерево BST', cells), `Глубина дерева превысила текущую сетку визуализации. Вставка ${value} пропущена, чтобы сохранить наглядность.`, 'index', 5);
+        index = -1;
+        break;
+      }
+    }
 
-export const hashClosedScenario = () => runScenario({
-  title: 'Хеш-таблица: открытая адресация',
-  operation: 'index',
-  values: [15, 25, 35, 45, 55],
-  messages: [
-    'Вычисляем начальную позицию: h(key).',
-    'При коллизии пробируем следующие позиции (линейно/квадратично/двойным хешем).',
-    'Вставляем элемент в первую найденную свободную ячейку.',
-  ],
-});
+    if (index >= 0) {
+      cells[index] = value;
+      yield frame(step++, 'push', 'running', snapshot('Дерево BST', cells), `Вставляем ${value} в позицию узла. Свойство BST сохранено: левое поддерево меньше, правое больше.`, 'index', 4, index);
+    }
+  }
 
-export const hashBlockScenario = () => runScenario({
-  title: 'Хеш-таблица: блочная адресация',
-  operation: 'index',
-  values: [11, 21, 31, 41, 51],
-  messages: [
-    'Хешируем ключ и определяем номер блока таблицы.',
-    'Заполняем ячейки выбранного блока по локальным правилам размещения.',
-    'Если блок переполнен, переходим к связанному overflow-блоку.',
-  ],
-});
+  yield frame(step, 'complete', 'completed', snapshot('Дерево BST', cells), 'Построение BST завершено. Теперь можно проследить путь поиска любого ключа через последовательность сравнений от корня.', 'index', 6);
+}
 
 export const heapScenario = (inputValues?: readonly number[]) => runScenario({
   title: 'Бинарная куча',

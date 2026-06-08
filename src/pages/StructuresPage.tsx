@@ -182,7 +182,7 @@ const runDemo = (demoKey: DemoKey, values: readonly number[], loadAlgorithm: Ret
 const isStructureAlgorithmFrame = (
   frame: AlgorithmFrame<unknown, Record<string, unknown>> | null,
 ): frame is StructureAlgorithmFrame =>
-  frame?.domain === 'array' &&
+  (frame?.domain === 'array' || frame?.domain === 'tree') &&
   typeof frame.data === 'object' &&
   frame.data !== null &&
   'cells' in frame.data;

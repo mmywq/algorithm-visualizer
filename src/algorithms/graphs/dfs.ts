@@ -46,7 +46,7 @@ export function* dfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
     graph,
     [startNodeId],
     dfsPseudocode.initial,
-    `Кладём стартовую вершину ${startNodeId} в стек DFS.`,
+    `Старт: отмечаем вершину ${startNodeId} как найденную и кладём её в стек. Стек сейчас: [${stack.join(', ')}].`,
     createGraphMeta(startNodeId, visitedNodeIds, stack, traversedEdgeIds, startNodeId),
   );
 
@@ -63,7 +63,7 @@ export function* dfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
       graph,
       [currentNodeId],
       dfsPseudocode.pop,
-      `Снимаем вершину ${currentNodeId} со стека.`,
+      `Снимаем с вершины стека ${currentNodeId}. В стеке осталось: [${stack.join(', ') || 'пусто'}].`,
       createGraphMeta(startNodeId, visitedNodeIds, stack, traversedEdgeIds, currentNodeId),
     );
 
@@ -73,7 +73,7 @@ export function* dfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
       graph,
       [currentNodeId],
       dfsPseudocode.visit,
-      `Посещаем вершину ${currentNodeId}.`,
+      `Обрабатываем вершину ${currentNodeId}. Посещённые вершины: [${[...visitedNodeIds].join(', ')}].`,
       createGraphMeta(startNodeId, visitedNodeIds, stack, traversedEdgeIds, currentNodeId),
     );
 
@@ -114,7 +114,7 @@ export function* dfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
     graph,
     [],
     dfsPseudocode.complete,
-    'DFS завершён: все достижимые вершины посещены.',
+    `DFS завершён: из вершины ${startNodeId} достижимы ${visitedNodeIds.size} верш.: [${[...visitedNodeIds].join(', ')}]. Стек пуст, обход успешен.`,
     createGraphMeta(startNodeId, visitedNodeIds, stack, traversedEdgeIds),
   );
 }

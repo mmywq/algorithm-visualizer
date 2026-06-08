@@ -1,4 +1,5 @@
-import type { StructureAlgorithmFrame } from '@/types';
+import type { ReactNode } from 'react';
+import type { StructureAlgorithmFrame, StructureCell } from '@/types';
 
 interface StructureVisualizerProps {
   readonly frame: StructureAlgorithmFrame | null;
@@ -6,6 +7,7 @@ interface StructureVisualizerProps {
 
 export function StructureVisualizer({ frame }: StructureVisualizerProps) {
   const snapshot = frame?.data;
+  const isHashTable = snapshot?.label.includes('Хеш-таблица') === true;
   const isTreeLike =
     snapshot?.label.includes('BST') === true ||
     snapshot?.label.includes('куча') === true ||
@@ -57,7 +59,30 @@ export function StructureVisualizer({ frame }: StructureVisualizerProps) {
                 {cell.value ?? '·'}
               </div>
             </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function LinearCells({ frame }: { readonly frame: StructureAlgorithmFrame | null }) {
+  return (
+    <div className="mt-4 flex flex-wrap gap-3">
+      {frame?.data.cells.map((cell, index) => (
+        <div className="relative" key={cell.id}>
+          {Object.entries(frame?.meta.pointers ?? {}).filter(([, pointerIndex]) => pointerIndex === index).map(([label]) => (
+            <div className="absolute -top-5 left-1/2 -translate-x-1/2 rounded bg-violet-500 px-1.5 py-0.5 text-[10px] font-semibold text-white" key={label}>{label}</div>
           ))}
+          <div
+            className={
+              frame?.meta.activeIndex === index
+                ? 'h-16 w-16 rounded-xl border border-violet-300 bg-violet-500/30 text-center leading-[4rem] text-violet-100'
+                : 'h-16 w-16 rounded-xl border border-slate-700 bg-slate-950 text-center leading-[4rem] text-slate-200'
+            }
+          >
+            {cell.value ?? '·'}
+          </div>
         </div>
       )}
       <p className="mt-4 text-slate-300">{frame?.message ?? 'Запустите плеер для демонстрации.'}</p>
@@ -155,3 +180,6 @@ const getTreeLevelCount = (cellCount: number): number => {
   if (cellCount <= 0) return 1;
   return Math.floor(Math.log2(cellCount)) + 1;
 };
+
+const getTableSize = (frame: StructureAlgorithmFrame | null, fallback: number): number =>
+  typeof frame?.meta.tableSize === 'number' && frame.meta.tableSize > 0 ? frame.meta.tableSize : fallback;
