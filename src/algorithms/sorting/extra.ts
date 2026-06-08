@@ -1,4 +1,4 @@
-import type { ArrayAlgorithmFrame, ArrayAlgorithmMeta, ArrayItem } from '@/types';
+import type { ArrayAlgorithmFrame, ArrayAlgorithmMeta, ArrayItem, SortComparisonRow } from '@/types';
 import { cloneArraySnapshot, createArrayItems, getArrayItemIds } from '@/algorithms/arrays/utils';
 
 const createFrame = (
@@ -143,27 +143,38 @@ export function* compareSortsDemo(inputValues?: readonly number[]): Generator<Ar
     `Сравниваем 6 сортировок на одном наборе [${baseValues.join(', ')}]. Для каждой строки считаем сравнения, перестановки/записи и показываем итоговый массив; завершение будет только после всех шести алгоритмов.`,
   );
 
+  const comparisonRows: SortComparisonRow[] = [];
   for (const result of algorithms) {
+    comparisonRows.push(toComparisonRow(result));
     yield createFrame(
       step++,
       'inspect',
       createArrayItems(result.sorted),
       [],
       `${result.name}: ${result.explanation} Итог [${result.sorted.join(', ')}], сравнений ${result.comparisons}, записей/обменов ${result.writes}.`,
-      { sortedIndices: result.sorted.map((_, index) => index), auxiliaryArray: [result.comparisons, result.writes] },
+      { sortedIndices: result.sorted.map((_, index) => index), auxiliaryArray: [result.comparisons, result.writes], comparisonRows: [...comparisonRows] },
     );
   }
 
   const fastest = algorithms.reduce((best, current) => current.comparisons + current.writes < best.comparisons + best.writes ? current : best, algorithms[0]!);
+  const finalRows = algorithms.map((result) => ({ ...toComparisonRow(result), isBest: result.name === fastest.name }));
   yield createFrame(
     step,
     'complete',
     createArrayItems(fastest.sorted),
     [],
     `Сравнение 6 сортировок завершено. На этом наборе меньше всего операций у «${fastest.name}»: сравнений ${fastest.comparisons}, записей/обменов ${fastest.writes}. Все алгоритмы дали одинаковый отсортированный результат [${fastest.sorted.join(', ')}].`,
-    { sortedIndices: fastest.sorted.map((_, index) => index) },
+    { sortedIndices: fastest.sorted.map((_, index) => index), comparisonRows: finalRows },
   );
 }
+
+const toComparisonRow = (result: SortSimulationResult): SortComparisonRow => ({
+  name: result.name,
+  idea: result.explanation,
+  sortedValues: result.sorted,
+  comparisons: result.comparisons,
+  writes: result.writes,
+});
 
 interface SortSimulationResult {
   readonly name: string;
