@@ -14,6 +14,7 @@ export type {
   ArrayItemId,
   ArrayPreset,
   ArraySnapshot,
+  SortComparisonRow,
 } from './array';
 export type {
   EdgeId,

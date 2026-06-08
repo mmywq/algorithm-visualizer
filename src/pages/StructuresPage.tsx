@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { indexingDemo, queueArrayDemo, queueListDemo, stackArrayDemo, stackListDemo } from '@/algorithms/structures';
 import { PlayerControls } from '@/components/player/PlayerControls';
+import { StepTutorPanel } from '@/components/player/StepTutorPanel';
 import { StructureVisualizer } from '@/components/visualizers/structures/StructureVisualizer';
 import { loadStructurePresets, removeStructurePreset, renameStructurePreset, saveStructurePreset } from '@/lib/storage';
 import { useAlgorithmPlayerStore } from '@/stores';
@@ -8,38 +9,46 @@ import type { AlgorithmFrame, StructureAlgorithmFrame } from '@/types';
 
 type DemoKey = 'stack-array' | 'stack-list' | 'queue-array' | 'queue-list' | 'indexing';
 
+const MIN_VALUE = -100;
 const MAX_VALUE = 100;
+const MIN_VALUES = 2;
+const MAX_VALUES = 16;
 
-const theoryByDemo: Record<DemoKey, { title: string; description: string; complexity: string; example: string }> = {
+const theoryByDemo: Record<DemoKey, { title: string; description: string; complexity: string; useCases: readonly string[]; pseudocodeLines: readonly string[] }> = {
   'stack-array': {
     title: 'Стек на массиве (LIFO)',
     description: 'Стек — структура данных с принципом «последним пришёл — первым вышел». Операция push добавляет элемент в вершину, pop снимает элемент с вершины. Все действия происходят только с концом структуры.',
-    complexity: 'push/pop: O(1)',
-    example: 'Пример: push(10), push(20), pop() вернёт 20.',
+    complexity: 'push/pop: O(1), просмотр всех элементов: O(n)',
+    useCases: ['Отмена действий в редакторе', 'Проверка скобочных последовательностей', 'Стек вызовов функций', 'Обход графа/дерева в глубину'],
+    pseudocodeLines: ['создать массив фиксированной ёмкости', 'push: увеличить top и записать значение', 'читать/показывать только вершину top', 'pop: взять a[top] и очистить ячейку', 'уменьшить top', 'завершить, когда стек пуст'],
   },
   'stack-list': {
     title: 'Стек на связном списке',
     description: 'В списковой реализации вершина стека — это голова списка. Добавление и удаление в голову выполняются за константное время и не требуют сдвига элементов.',
-    complexity: 'push/pop: O(1)',
-    example: 'Пример: head=7 -> 5 -> 3. После pop() head станет 5.',
+    complexity: 'push/pop: O(1), память O(n) на узлы и ссылки',
+    useCases: ['Стек без заранее заданной ёмкости', 'История переходов', 'Рекурсивные обходы', 'Сценарии с частыми добавлениями в начало'],
+    pseudocodeLines: ['head указывает на вершину стека', 'push: создать новый узел', 'связать новый узел со старым head', 'pop: снять head', 'переставить head на следующий узел', 'завершить, когда head пуст'],
   },
   'queue-array': {
     title: 'Очередь на массиве (FIFO)',
     description: 'Очередь работает по принципу «первым пришёл — первым вышел». Элемент добавляется в хвост (tail), удаляется из головы (head). Для наглядности используются два указателя: head и tail.',
-    complexity: 'enqueue/dequeue: O(1)',
-    example: 'Пример: enqueue(4), enqueue(9), dequeue() вернёт 4.',
+    complexity: 'enqueue/dequeue: O(1), просмотр всех элементов: O(n)',
+    useCases: ['Планировщики задач', 'Буферы сообщений', 'BFS — поиск в ширину', 'Обработка событий в порядке поступления'],
+    pseudocodeLines: ['head показывает первый элемент очереди', 'tail показывает позицию вставки', 'enqueue: записать значение в tail', 'dequeue: взять значение из head', 'сдвинуть head вправо', 'завершить, когда head догнал tail'],
   },
   'queue-list': {
     title: 'Очередь на связном списке',
     description: 'Очередь хранит ссылки на голову и хвост списка. Это позволяет добавлять в конец и удалять из начала без линейных сдвигов.',
-    complexity: 'enqueue/dequeue: O(1)',
-    example: 'Пример: head=2 -> 8 -> 6, tail=6. После dequeue() head станет 8.',
+    complexity: 'enqueue/dequeue: O(1), память O(n) на узлы и ссылки',
+    useCases: ['Очереди неизвестного заранее размера', 'Потоки задач', 'Очередь печати/запросов', 'Моделирование процессов FIFO'],
+    pseudocodeLines: ['head — начало очереди, tail — конец', 'enqueue: добавить новый узел после tail', 'обновить tail', 'dequeue: взять узел head', 'переставить head на следующий узел', 'если очередь пуста, сбросить tail'],
   },
   indexing: {
     title: 'Индексирование массива',
     description: 'Индексирование — доступ к элементу по его позиции. В массивах это базовая операция: по индексу i мы мгновенно получаем a[i], потому что адрес ячейки вычисляется по формуле смещения.',
-    complexity: 'доступ по индексу: O(1)',
-    example: 'Пример: a=[11, 20, 35], тогда a[1] = 20.',
+    complexity: 'доступ по индексу: O(1), последовательный просмотр: O(n)',
+    useCases: ['Массивы и таблицы', 'Быстрый доступ по позиции', 'Базовая модель памяти', 'Подготовка к поиску и сортировкам'],
+    pseudocodeLines: ['хранить базовый адрес массива', 'выбрать индекс i', 'адрес = base + i × размер_элемента', 'прочитать a[i]', 'перейти к следующему индексу', 'завершить после последней позиции'],
   },
 };
 
@@ -81,18 +90,18 @@ export function StructuresPage({ initialDemo = 'stack-array' }: StructuresPagePr
   const stepsHistory = useMemo(() => frames.map((stepFrame) => stepFrame.description ?? stepFrame.message), [frames]);
 
   const applyManualValues = () => {
-    const parsed = manualInput.split(',').map((item) => item.trim()).filter(Boolean).map(Number);
-    if (parsed.length < 2 || parsed.some((value) => Number.isFinite(value) === false || Number.isInteger(value) === false)) {
-      setInputError('Введите минимум 2 целых числа через запятую.');
+    const parsed = parseStructureValues(manualInput);
+    if (!parsed.ok) {
+      setInputError(parsed.error);
       return;
     }
     setInputError(null);
-    setValues(parsed);
+    setValues(parsed.values);
   };
 
   const randomizeValues = () => {
     const size = Math.max(4, Math.min(10, values.length));
-    const next = Array.from({ length: size }, () => Math.floor(Math.random() * (2 * MAX_VALUE + 1)) - MAX_VALUE);
+    const next = Array.from({ length: size }, () => Math.floor(Math.random() * (MAX_VALUE - MIN_VALUE + 1)) + MIN_VALUE);
     setValues(next);
     setManualInput(next.join(', '));
   };
@@ -124,18 +133,21 @@ export function StructuresPage({ initialDemo = 'stack-array' }: StructuresPagePr
           {renamePresetState && <div className="flex items-center gap-2"><input className="control-input" value={renamePresetState.name} onChange={(event) => setRenamePresetState({ ...renamePresetState, name: event.target.value })} /><button className="control-button" type="button" onClick={() => { renameStructurePreset(renamePresetState.id, renamePresetState.name); setRenamePresetState(null); setPresets(loadStructurePresets()); }}>Сохранить</button></div>}
         </div>
 
-        <div className="mt-4 rounded-2xl border border-app bg-surface p-4 text-sm">
-          <h2 className="text-lg font-semibold text-app-primary">{theoryByDemo[demoKey].title}</h2>
-          <p className="mt-2 text-app-muted">{theoryByDemo[demoKey].description}</p>
-          <p className="mt-2 text-app-muted"><strong>Сложность:</strong> {theoryByDemo[demoKey].complexity}</p>
-          <p className="mt-2 text-app-muted"><strong>Пример:</strong> {theoryByDemo[demoKey].example}</p>
-          <p className="mt-2 text-app-muted"><strong>Пояснение текущего шага:</strong> {frame?.description ?? frame?.message ?? 'Запустите плеер для пошагового разбора.'}</p>
-        </div>
+        <p className="mt-3 text-xs text-app-muted">Диапазон значений: от {MIN_VALUE} до {MAX_VALUE}. Набор из одинаковых чисел не запускается, потому что он плохо показывает отличие операций.</p>
 
-      {showHelp && <div className="mt-4 rounded-2xl border border-app bg-surface p-4 text-sm text-app-muted"><p className="font-semibold text-app-primary">Как пользоваться</p><ul className="mt-2 list-disc space-y-1 pl-5"><li>Выберите структуру кнопками сверху.</li><li>Введите свои значения или используйте пресеты/рандом.</li><li>Запустите анимацию через кнопки плеера: шаг назад/вперёд, авто-проигрывание.</li><li>Следите за указателями head/tail/top/i и пояснением шага.</li></ul><button className="control-button mt-3" type="button" onClick={() => setShowHelp(false)}>Закрыть</button></div>}
+      {showHelp && <div className="mt-4 rounded-2xl border border-app bg-surface p-4 text-sm text-app-muted"><p className="font-semibold text-app-primary">Как пользоваться</p><ul className="mt-2 list-disc space-y-1 pl-5"><li>Выберите структуру кнопками сверху.</li><li>Введите свои значения или используйте пресеты/рандом.</li><li>Запустите анимацию через кнопки плеера: шаг назад/вперёд, авто-проигрывание.</li><li>Следите за русскими подписями указателей head/tail/top/i и пояснением шага.</li></ul><button className="control-button mt-3" type="button" onClick={() => setShowHelp(false)}>Закрыть</button></div>}
       </section>
 
-      <StructureVisualizer frame={frame} />
+      <section className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+        <StructureVisualizer frame={frame} />
+        <StepTutorPanel
+          complexity={theoryByDemo[demoKey].complexity}
+          frame={frame}
+          pseudocodeLines={theoryByDemo[demoKey].pseudocodeLines}
+          title={`${theoryByDemo[demoKey].title}. ${theoryByDemo[demoKey].description}`}
+          useCases={theoryByDemo[demoKey].useCases}
+        />
+      </section>
 
       {status === 'completed' && stepsHistory.length > 0 && (
         <section className="app-panel">
@@ -163,6 +175,35 @@ export function StructuresPage({ initialDemo = 'stack-array' }: StructuresPagePr
     </div>
   );
 }
+
+
+const parseStructureValues = (source: string): { ok: true; values: readonly number[] } | { ok: false; error: string } => {
+  const segments = source.split(',').map((item) => item.trim()).filter((item) => item.length > 0);
+  if (segments.length < MIN_VALUES) {
+    return { ok: false, error: `Введите минимум ${MIN_VALUES} целых числа через запятую.` };
+  }
+  if (segments.length > MAX_VALUES) {
+    return { ok: false, error: `Слишком много значений: максимум ${MAX_VALUES}, чтобы визуализация оставалась читаемой.` };
+  }
+
+  const values: number[] = [];
+  for (const segment of segments) {
+    if (/^-?\d+$/.test(segment) === false) {
+      return { ok: false, error: `Недопустимое значение «${segment}». Используйте только целые числа.` };
+    }
+    const value = Number(segment);
+    if (value < MIN_VALUE || value > MAX_VALUE) {
+      return { ok: false, error: `Число ${value} вне диапазона ${MIN_VALUE}…${MAX_VALUE}.` };
+    }
+    values.push(value);
+  }
+
+  if (new Set(values).size === 1) {
+    return { ok: false, error: 'Все значения одинаковые. Добавьте хотя бы одно отличающееся число, чтобы демонстрация была наглядной.' };
+  }
+
+  return { ok: true, values };
+};
 
 const runDemo = (demoKey: DemoKey, values: readonly number[], loadAlgorithm: ReturnType<typeof useAlgorithmPlayerStore.getState>['loadAlgorithm']) => {
   const generator =

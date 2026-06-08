@@ -9,11 +9,21 @@ export interface ArrayItem {
 
 export type ArraySnapshot = readonly ArrayItem[];
 
+export interface SortComparisonRow {
+  readonly name: string;
+  readonly idea: string;
+  readonly sortedValues: readonly number[];
+  readonly comparisons: number;
+  readonly writes: number;
+  readonly isBest?: boolean;
+}
+
 export interface ArrayAlgorithmMeta extends Record<string, unknown> {
   readonly comparingIndices?: readonly [number, number];
   readonly swappingIndices?: readonly [number, number];
   readonly sortedIndices?: readonly number[];
   readonly auxiliaryArray?: readonly number[];
+  readonly comparisonRows?: readonly SortComparisonRow[];
 }
 
 export type ArrayAlgorithmFrame = AlgorithmFrame<ArraySnapshot, ArrayAlgorithmMeta>;
