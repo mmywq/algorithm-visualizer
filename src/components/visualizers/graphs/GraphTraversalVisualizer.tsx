@@ -117,33 +117,21 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
 
     const targets = newNodeLinks.split(',').map((v) => v.trim()).filter((v) => v.length > 0);
     if (targets.some((target) => graph.nodes.some((node) => node.id === target) === false)) {
-      setGraphInputError('В поле связей есть вершины, которых нет в графе. Пример: A,B,C.');
+      setGraphInputError('В поле связей есть вершины, которых нет в графе.');
       return;
     }
 
-    const nodes = applyForceLayout([...graph.nodes, { id, label: id, position: { x: 120 + graph.nodes.length * 80, y: 160 }, payload: {} }], graph.edges);
-    const existing = new Set(graph.edges.map((edge) => edgeKey(edge.source, edge.target)));
-    const extraEdges: GraphEdge[] = targets
+    const nodes = applyForceLayout([...graph.nodes, { id, label: id, position: { x: 120 + graph.nodes.length * 80, y: 160 }, payload: {} }]);
+    const existing = new Set(graph.edges.map((edge) => [edge.source, edge.target].sort().join('--')));
+    const extraEdges = targets
       .filter((target) => target !== id)
-      .filter((target) => existing.has(edgeKey(id, target)) === false)
+      .filter((target) => existing.has([id, target].sort().join('--')) === false)
       .map((target) => ({ id: `${id}-${target}`, source: id, target, directed: false, payload: {} }));
 
+    setGraphInputError(null);
     setNewNodeLabel('');
     setNewNodeLinks('');
-    commitGraph({ nodes, edges: [...graph.edges, ...extraEdges] });
-  };
-
-
-  const addNodeAtPosition = (position: { readonly x: number; readonly y: number }): void => {
-    if (graph.nodes.length >= 24) {
-      setGraphInputError('Слишком большой граф: максимум 24 вершины.');
-      return;
-    }
-
-    const id = createNextNodeId(graph);
-    const nextNode = { id, label: id, position, payload: {} };
-    commitGraph({ nodes: [...graph.nodes, nextNode], edges: graph.edges });
-    setStartNodeId(graph.nodes.length === 0 ? id : startNodeId);
+    setGraph({ nodes, edges: [...graph.edges, ...extraEdges] });
   };
 
   const removeNode = (nodeId: NodeId): void => {
@@ -181,6 +169,39 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
 
     const nodes = applyForceLayout(labels.map((id) => ({ id, label: id, position: { x: 420, y: 220 }, payload: {} })), edges);
     commitGraph({ nodes, edges });
+    setStartNodeId(nodes[0]?.id ?? 'V1');
+  };
+
+
+  const generateRandomGraph = (): void => {
+    const count = Math.max(2, Math.min(24, Math.floor(randomNodesCount)));
+    const density = Math.max(0, Math.min(1, randomDensity));
+    const labels = Array.from({ length: count }, (_, i) => `V${i + 1}`);
+    const edges: GraphEdge[] = [];
+    const edgeSet = new Set<string>();
+
+    for (let i = 1; i < count; i += 1) {
+      const parent = Math.floor(Math.random() * i);
+      const source = labels[parent]!;
+      const target = labels[i]!;
+      edges.push({ id: `${source}-${target}`, source, target, directed: false, payload: {} });
+      edgeSet.add([source, target].sort().join('--'));
+    }
+
+    for (let i = 0; i < count; i += 1) {
+      for (let j = i + 1; j < count; j += 1) {
+        if (Math.random() > density) continue;
+        const a = labels[i]!; const b = labels[j]!;
+        const key = [a,b].sort().join('--');
+        if (edgeSet.has(key)) continue;
+        edgeSet.add(key);
+        edges.push({ id: `${a}-${b}`, source: a, target: b, directed: false, payload: {} });
+      }
+    }
+
+    const nodes = applyForceLayout(labels.map((id, index) => ({ id, label: id, position: { x: 120 + index * 10, y: 120 + index * 10 }, payload: {} })));
+    const nextGraph = { nodes, edges };
+    setGraph(nextGraph);
     setStartNodeId(nodes[0]?.id ?? 'V1');
   };
 
@@ -284,38 +305,27 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
             <span className="mt-2 block text-xs text-slate-400">BFS использует очередь (первым пришёл — первым обработан), DFS использует стек (последним пришёл — первым обработан).</span>
           </label>
 
-          <div className="rounded-2xl border border-app bg-surface p-3">
-            <p className="text-sm font-semibold text-app-primary">Единый блок ввода и генерации</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <input className="control-input" onChange={(event) => setNewNodeLabel(event.target.value)} placeholder="Метка новой вершины" value={newNodeLabel} />
-              <input className="h-10 w-52 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" onChange={(event) => setNewNodeLinks(event.target.value)} placeholder="Связи с существующими: A,B" value={newNodeLinks} />
-              <button className="control-button" onClick={addNode} type="button">Добавить вершину</button>
-              <button className="control-button" onClick={resetToBaseGraph} type="button">Вернуть пример</button>
-              <button className="control-button" onClick={clearGraph} type="button">Очистить</button>
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <label className="text-xs text-app-muted">Вершин
-                <input className="ml-2 h-10 w-24 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" type="number" min={2} max={24} value={randomNodesCount} onChange={(event) => setRandomNodesCount(Number(event.target.value))} />
-              </label>
-              <label className="text-xs text-app-muted">Плотность связей
-                <input className="ml-2 h-10 w-28 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" type="number" min={0} max={1} step={0.05} value={randomDensity} onChange={(event) => setRandomDensity(Number(event.target.value))} />
-              </label>
-              <button className="control-button" onClick={generateRandomGraph} type="button">Сгенерировать случайный граф</button>
-              <input className="control-input" onChange={(event) => setPresetName(event.target.value)} placeholder="Имя пресета" value={presetName} />
-              <button
-                className="control-button"
-                onClick={() => {
-                  const name = presetName.trim() || `Граф ${new Date().toLocaleTimeString()}`;
-                  saveGraphPreset(name, graph);
-                  setPresetName('');
-                  setPresets(loadGraphPresets());
-                }}
-                type="button"
-              >
-                Сохранить пресет
-              </button>
-            </div>
-            {graphInputError !== null && <p className="mt-2 text-xs text-rose-300">{graphInputError}</p>}
+          <div className="flex flex-wrap gap-2">
+            <input className="control-input" onChange={(event) => setNewNodeLabel(event.target.value)} placeholder="Метка новой вершины" value={newNodeLabel} />
+            <input className="h-10 w-52 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" onChange={(event) => setNewNodeLinks(event.target.value)} placeholder="Связи: A,B,C" value={newNodeLinks} />
+            <button className="control-button" onClick={addNode} type="button">Добавить узел</button>
+            <button className="control-button" onClick={clearGraph} type="button">Очистить граф</button>
+            <input className="h-10 w-24 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" type="number" min={2} max={24} value={randomNodesCount} onChange={(event) => setRandomNodesCount(Number(event.target.value))} placeholder="Вершин" />
+            <input className="h-10 w-28 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" type="number" min={0} max={1} step={0.05} value={randomDensity} onChange={(event) => setRandomDensity(Number(event.target.value))} placeholder="Плотность" />
+            <button className="control-button" onClick={generateRandomGraph} type="button">Сгенерировать случайный граф</button>
+            <button
+              className="control-button"
+              onClick={() => {
+                const name = presetName.trim() || `Граф ${new Date().toLocaleTimeString()}`;
+                saveGraphPreset(name, graph);
+                setPresetName('');
+                setPresets(loadGraphPresets());
+              }}
+              type="button"
+            >
+              Сохранить пресет
+            </button>
+            <input className="control-input" onChange={(event) => setPresetName(event.target.value)} placeholder="Имя пресета" value={presetName} />
           </div>
         </div>
 
@@ -371,23 +381,45 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
           <button className="control-button mt-3" onClick={applyAdjacencyListInput} type="button">Применить список смежности</button>
         </div>
 
-        <div className="app-panel">
-          <h2 className="text-xl font-semibold text-app-primary">Матрица смежности</h2>
-          <p className="mt-2 text-sm text-app-muted">Строка и столбец — вершины. 1 означает связь, 0 — связи нет. Для неориентированного графа таблица зеркальная. Клик по ячейке сразу перестраивает граф.</p>
-          <input className="control-input mt-3 w-full" onChange={(event) => setMatrixNodeLabels(event.target.value)} placeholder="Метки вершин: A,B,C,D" value={matrixNodeLabels} />
-          <AdjacencyMatrixEditor labelsSource={matrixNodeLabels} rows={matrixRows} onCellChange={updateMatrixCell} />
-          <button className="control-button mt-3" onClick={applyMatrixInput} type="button">Применить матрицу</button>
+          {inputMode === 'matrix' && (
+            <input
+              className="control-input mt-2 w-full"
+              onChange={(event) => setMatrixNodeLabels(event.target.value)}
+              placeholder="Метки вершин (например: A,B,C,D)"
+              value={matrixNodeLabels}
+            />
+          )}
+
+          <p className="mt-2 text-xs text-slate-400">
+            {inputMode === 'list' ? 'Формат: A:B,C' : 'Формат: строки матрицы 0/1 через пробелы, по одной строке на вершину.'}
+          </p>
+          <textarea className="mt-2 h-24 w-full rounded-xl border border-app bg-surface p-2 text-sm text-app-primary" onChange={(event) => setAdjacencyInput(event.target.value)} value={adjacencyInput} />
+          <div className="mt-2 flex items-center gap-2">
+            <button className="control-button" onClick={applyAdjacencyInput} type="button">Применить граф</button>
+            {graphInputError !== null && <span className="text-xs text-rose-300">{graphInputError}</span>}
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-app bg-surface p-3 text-sm text-app-muted">
+          <p className="font-semibold text-app-primary">Псевдокод {selectedAlgorithm.toUpperCase()}</p>
+          {(selectedAlgorithm === 'bfs'
+            ? ['инициализировать очередь и множество посещённых', 'поместить стартовую вершину в очередь', 'извлечь вершину u из очереди и обработать', 'для каждого соседа v вершины u', 'если v не посещена: отметить и добавить в очередь', 'если очередь пуста — обход завершён']
+            : ['инициализировать стек и множество посещённых', 'поместить стартовую вершину в стек', 'снять вершину u со стека и обработать', 'для каждого соседа v вершины u', 'если v не посещена: отметить и поместить в стек', 'если стек пуст — обход завершён'])
+            .map((line, index) => (
+              <p key={line} className={graphFrame?.pseudocode.line === index + 1 ? 'text-violet-200 font-semibold' : ''}>{index + 1}. {line}</p>
+            ))}
         </div>
       </section>
 
+      <GraphVisualizer editable frame={graphFrame} graph={graph} onGraphChange={setGraph} />
+
       <section className="app-panel">
-        <h3 className="text-lg font-semibold text-app-primary">Глубокая теория обходов</h3>
-        <div className="mt-3 space-y-3 text-sm leading-6 text-app-muted">
-          <p><strong className="text-app-primary">BFS (Breadth-First Search, поиск в ширину)</strong> обходит граф слоями: сначала стартовую вершину, затем всех её соседей на расстоянии 1, потом вершины на расстоянии 2 и так далее. Поэтому в невзвешенном графе BFS естественно находит кратчайшее число рёбер до цели.</p>
-          <p><strong className="text-app-primary">DFS (Depth-First Search, поиск в глубину)</strong> идёт по одной ветке как можно дальше, а затем откатывается назад. Это удобно для поиска компонент связности, циклов, топологической сортировки и анализа зависимостей.</p>
-          <p><strong className="text-app-primary">Frontier</strong> — «граница обхода»: вершины, которые уже найдены, но ещё не полностью обработаны. В BFS frontier хранится в очереди, в DFS — в стеке.</p>
-          <p>Сложность обоих обходов — <strong>O(V + E)</strong>, где V — количество вершин, E — количество рёбер: каждая вершина и каждое ребро рассматриваются ограниченное число раз.</p>
-        </div>
+        <h3 className="text-lg font-semibold text-app-primary">Краткая теория обходов</h3>
+        <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-app-muted">
+          <li><strong>BFS</strong> находит кратчайший путь в невзвешенном графе.</li>
+          <li><strong>DFS</strong> удобен для поиска компонент, циклов и топологического анализа.</li>
+          <li>Сложность обеих стратегий: <strong>O(V + E)</strong>, где V — вершины, E — рёбра.</li>
+        </ul>
       </section>
 
       {status === 'completed' && completedStepHistory.length > 0 && (
@@ -622,187 +654,27 @@ function StatCard({ label, value }: StatCardProps) {
   );
 }
 
-interface AdjacencyMatrixEditorProps {
-  readonly labelsSource: string;
-  readonly rows: readonly (readonly number[])[];
-  readonly onCellChange: (rowIndex: number, columnIndex: number, value: number) => void;
-}
 
-function AdjacencyMatrixEditor({ labelsSource, rows, onCellChange }: AdjacencyMatrixEditorProps) {
-  const labels = parseMatrixLabels(labelsSource);
-  const sizedRows = resizeMatrixRows(rows, labels.length);
-
-  if (labels.length === 0) {
-    return <p className="mt-3 text-sm text-rose-300">Введите метки вершин через запятую.</p>;
-  }
-
-  return (
-    <div className="mt-3 overflow-auto rounded-2xl border border-app">
-      <table className="min-w-full border-collapse text-center text-sm">
-        <thead>
-          <tr className="bg-slate-950/70">
-            <th className="border border-slate-800 p-2 text-slate-400">из \\ в</th>
-            {labels.map((label) => <th className="border border-slate-800 p-2 text-app-primary" key={label}>{label}</th>)}
-          </tr>
-        </thead>
-        <tbody>
-          {labels.map((rowLabel, rowIndex) => (
-            <tr key={rowLabel}>
-              <th className="border border-slate-800 bg-slate-950/70 p-2 text-app-primary">{rowLabel}</th>
-              {labels.map((columnLabel, columnIndex) => {
-                const value = sizedRows[rowIndex]?.[columnIndex] ?? 0;
-                return (
-                  <td className="border border-slate-800 p-1" key={`${rowLabel}-${columnLabel}`}>
-                    <button
-                      className={value === 1 ? 'h-9 w-9 rounded-lg bg-emerald-500/25 font-bold text-emerald-200' : 'h-9 w-9 rounded-lg bg-slate-950 text-slate-400'}
-                      disabled={rowIndex === columnIndex}
-                      onClick={() => onCellChange(rowIndex, columnIndex, value === 1 ? 0 : 1)}
-                      type="button"
-                    >
-                      {rowIndex === columnIndex ? '—' : value}
-                    </button>
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-
-const parseMatrixLabels = (labelsSource: string): string[] =>
-  labelsSource.split(',').map((label) => label.trim()).filter((label) => label.length > 0);
-
-const resizeMatrixRows = (rows: readonly (readonly number[])[], size: number): number[][] =>
-  Array.from({ length: size }, (_, rowIndex) =>
-    Array.from({ length: size }, (_, columnIndex) => rowIndex === columnIndex ? 0 : rows[rowIndex]?.[columnIndex] === 1 ? 1 : 0),
-  );
-
-const applyForceLayout = (nodes: GraphSnapshot['nodes'], edges: readonly GraphEdge[] = []): GraphSnapshot['nodes'] => {
-  if (nodes.length === 0) {
-    return [];
-  }
-
+const applyForceLayout = (nodes: GraphSnapshot['nodes']): GraphSnapshot['nodes'] => {
   const width = 820;
-  const height = 440;
-  const centerX = width / 2;
-  const centerY = height / 2;
-  const radius = Math.min(300, Math.max(130, nodes.length * 22));
-  const points = nodes.map((node, index) => {
-    const angle = (2 * Math.PI * index) / nodes.length - Math.PI / 2;
-    return {
-      ...node,
-      position: {
-        x: Number.isFinite(node.position.x) && node.position.x !== 420 ? node.position.x : centerX + Math.cos(angle) * radius,
-        y: Number.isFinite(node.position.y) && node.position.y !== 220 ? node.position.y : centerY + Math.sin(angle) * radius,
-      },
-    };
-  });
-  const indexById = new Map(points.map((node, index) => [node.id, index]));
+  const height = 420;
+  const points = nodes.map((node, index) => ({ ...node, position: { x: 120 + (index % 8) * 80, y: 80 + Math.floor(index / 8) * 90 } }));
 
-  for (let iter = 0; iter < 160; iter += 1) {
+  for (let iter = 0; iter < 90; iter += 1) {
     for (let i = 0; i < points.length; i += 1) {
       for (let j = i + 1; j < points.length; j += 1) {
-        const a = points[i]!;
-        const b = points[j]!;
-        const dx = b.position.x - a.position.x;
-        const dy = b.position.y - a.position.y;
-        const dist = Math.max(24, Math.hypot(dx, dy));
-        const force = 9000 / (dist * dist);
-        const fx = (dx / dist) * force;
-        const fy = (dy / dist) * force;
-        a.position.x -= fx;
-        a.position.y -= fy;
-        b.position.x += fx;
-        b.position.y += fy;
+        const a = points[i]!; const b = points[j]!;
+        const dx = b.position.x - a.position.x; const dy = b.position.y - a.position.y;
+        const dist = Math.max(20, Math.hypot(dx, dy));
+        const force = 2600 / (dist * dist);
+        const fx = (dx / dist) * force; const fy = (dy / dist) * force;
+        a.position.x -= fx; a.position.y -= fy; b.position.x += fx; b.position.y += fy;
       }
     }
-
-    for (const edge of edges) {
-      const sourceIndex = indexById.get(edge.source);
-      const targetIndex = indexById.get(edge.target);
-      if (sourceIndex === undefined || targetIndex === undefined) continue;
-      const source = points[sourceIndex]!;
-      const target = points[targetIndex]!;
-      const dx = target.position.x - source.position.x;
-      const dy = target.position.y - source.position.y;
-      const dist = Math.max(1, Math.hypot(dx, dy));
-      const desired = 150;
-      const force = (dist - desired) * 0.018;
-      const fx = (dx / dist) * force;
-      const fy = (dy / dist) * force;
-      source.position.x += fx;
-      source.position.y += fy;
-      target.position.x -= fx;
-      target.position.y -= fy;
-    }
-
     for (const node of points) {
-      node.position.x += (centerX - node.position.x) * 0.004;
-      node.position.y += (centerY - node.position.y) * 0.004;
-      node.position.x = Math.min(width - 30, Math.max(30, node.position.x));
-      node.position.y = Math.min(height - 30, Math.max(30, node.position.y));
+      node.position.x = Math.min(width, Math.max(20, node.position.x));
+      node.position.y = Math.min(height, Math.max(20, node.position.y));
     }
   }
-
   return points;
 };
-
-const normalizeGraph = (graph: GraphSnapshot): GraphSnapshot => {
-  const nodeIds = new Set(graph.nodes.map((node) => node.id));
-  const seenEdges = new Set<string>();
-  const edges = graph.edges
-    .filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target) && edge.source !== edge.target)
-    .filter((edge) => {
-      const key = edge.directed ? `${edge.source}->${edge.target}` : edgeKey(edge.source, edge.target);
-      if (seenEdges.has(key)) return false;
-      seenEdges.add(key);
-      return true;
-    })
-    .map((edge) => ({ ...edge, id: edge.id || `${edge.source}-${edge.target}`, payload: { ...edge.payload } }));
-
-  return {
-    nodes: graph.nodes.map((node) => ({ ...node, label: node.label || node.id, position: { ...node.position }, payload: { ...node.payload } })),
-    edges,
-  };
-};
-
-const toAdjacencyListText = (graph: GraphSnapshot): string => {
-  const adjacency = new Map<string, string[]>();
-  for (const node of graph.nodes) {
-    adjacency.set(node.id, []);
-  }
-  for (const edge of graph.edges) {
-    adjacency.get(edge.source)?.push(edge.target);
-    if (!edge.directed) {
-      adjacency.get(edge.target)?.push(edge.source);
-    }
-  }
-
-  return graph.nodes
-    .map((node) => `${node.id}:${(adjacency.get(node.id) ?? []).sort((a, b) => a.localeCompare(b, 'ru')).join(',')}`)
-    .join('\n');
-};
-
-const toAdjacencyMatrix = (graph: GraphSnapshot): { labels: string[]; matrix: number[][] } => {
-  const labels = graph.nodes.map((node) => node.id);
-  const indexById = new Map(labels.map((label, index) => [label, index]));
-  const matrix = labels.map(() => labels.map(() => 0));
-
-  for (const edge of graph.edges) {
-    const sourceIndex = indexById.get(edge.source);
-    const targetIndex = indexById.get(edge.target);
-    if (sourceIndex === undefined || targetIndex === undefined) continue;
-    matrix[sourceIndex]![targetIndex] = 1;
-    if (!edge.directed) {
-      matrix[targetIndex]![sourceIndex] = 1;
-    }
-  }
-
-  return { labels, matrix };
-};
-
-const edgeKey = (source: string, target: string): string => [source, target].sort((a, b) => a.localeCompare(b, 'ru')).join('--');

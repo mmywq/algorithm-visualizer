@@ -5,9 +5,16 @@ export interface StructureCell {
   readonly value: number | null;
 }
 
+export interface StructureBucket {
+  readonly id: string;
+  readonly index: number;
+  readonly values: readonly number[];
+}
+
 export interface StructureSnapshot {
   readonly label: string;
   readonly cells: readonly StructureCell[];
+  readonly buckets?: readonly StructureBucket[];
 }
 
 export interface StructureAlgorithmMeta extends Record<string, unknown> {
@@ -15,10 +22,8 @@ export interface StructureAlgorithmMeta extends Record<string, unknown> {
   readonly pointerIndex?: number;
   readonly activeIndex?: number;
   readonly pointers?: Readonly<Record<string, number>>;
-  readonly tableSize?: number;
   readonly bucketIndex?: number;
-  readonly blockSize?: number;
-  readonly overflowStartIndex?: number;
+  readonly key?: number;
 }
 
 

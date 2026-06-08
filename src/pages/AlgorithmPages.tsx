@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { compareSortsDemo, blockSortDemo, countingSortDemo, radixSortDemo } from '@/algorithms/sorting/extra';
 import { connectedComponentsDemo, dijkstraDemo, mstDemo } from '@/algorithms/graphs';
 import { balancedBstScenario, binomialHeapScenario, bstScenario, hashBlockScenario, hashClosedScenario, hashOpenScenario, heapScenario } from '@/algorithms/structures/extendedStructures';
@@ -66,71 +66,6 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
   const frame = currentFrame;
   const theory = getTheoryByTitle(title, mode);
   const stepsHistory = useMemo(() => frames.map((stepFrame) => stepFrame.description ?? stepFrame.message), [frames]);
-
-  const applyValues = (): void => {
-    const result = parseInputValues(manualInput);
-    if (result.ok === false) {
-      setInputError(result.error);
-      return;
-    }
-
-    setInputError(null);
-    setValues(result.values);
-    setManualInput(result.values.join(', '));
-  };
-
-  const randomizeValues = (): void => {
-    const size = Math.min(MAX_INPUT_SIZE, Math.max(MIN_INPUT_SIZE, values.length || 8));
-    const unique = title.includes('Двоичное дерево поиска');
-    const next = createRandomValues(size, unique);
-    setInputError(null);
-    setValues(next);
-    setManualInput(next.join(', '));
-  };
-
-  const savePreset = (): void => {
-    const name = presetName.trim() || `${mode === 'structure' ? 'Структура' : 'Массив'} ${new Date().toLocaleTimeString()}`;
-    if (mode === 'structure') {
-      saveStructurePreset(name, values);
-      setStructurePresets(loadStructurePresets());
-    } else {
-      saveArrayPreset(name, values);
-      setArrayPresets(loadArrayPresets());
-    }
-    setPresetName('');
-  };
-
-  const loadPreset = (preset: ArrayPreset): void => {
-    setValues(preset.values);
-    setManualInput(preset.values.join(', '));
-    setInputError(null);
-  };
-
-  const renamePreset = (): void => {
-    if (renamePresetState === null) return;
-    if (mode === 'structure') {
-      renameStructurePreset(renamePresetState.id, renamePresetState.name);
-      setStructurePresets(loadStructurePresets());
-    } else {
-      renameArrayPreset(renamePresetState.id, renamePresetState.name);
-      setArrayPresets(loadArrayPresets());
-    }
-    setRenamePresetState(null);
-  };
-
-  const removePreset = (id: string): void => {
-    if (mode === 'structure') {
-      removeStructurePreset(id);
-      setStructurePresets(loadStructurePresets());
-    } else {
-      removeArrayPreset(id);
-      setArrayPresets(loadArrayPresets());
-    }
-  };
-
-  const resetAlgorithm = (): void => {
-    loadPageAlgorithm(generatorFactory, canUseNumericInput ? values : undefined, loadAlgorithm);
-  };
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -207,9 +142,9 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
 
       {status === 'completed' && stepsHistory.length > 0 && (
         <section className="app-panel">
-          <h3 className="text-xl font-semibold text-app-primary">История шагов</h3>
+          <h3 className="text-xl font-semibold text-app-primary">Полный список выполненных шагов</h3>
           <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-app-muted">
-            {stepsHistory.map((entry, index) => (<li key={`${index}-${entry}`}>{entry}</li>))}
+            {stepsHistory.map((entry) => (<li key={entry}>{entry}</li>))}
           </ol>
         </section>
       )}
@@ -313,25 +248,35 @@ const getTheoryByTitle = (title: string, mode: Mode): TheoryContent => {
 
   if (title.includes('хеш')) {
     return {
-      description: 'Хеш-таблица (hash table) хранит ключи в корзинах, вычисляя адрес через хеш-функцию h(key). Коллизия — ситуация, когда разные ключи дают один индекс. В цепочках элементы связываются внутри корзины, в открытой адресации ищется другая свободная ячейка, а в блочной адресации сначала заполняется небольшой блок.',
-      complexity: 'В среднем O(1), при плохой хеш-функции или переполнении — O(n)',
-      useCases: ['Словари и кэш', 'Проверка принадлежности', 'Подсчёт частот', 'Индексы по ключу без полного перебора'],
-      pseudocodeLines: ['index = abs(hash(key)) mod tableSize', 'проверить корзину или ячейку', 'если место свободно — вставить', 'если коллизия — применить стратегию разрешения', 'повторить для всех ключей'],
+      description: 'Хеш-таблица (hash table) хранит пары ключ-значение и получает индекс ячейки через хеш-функцию. Коллизия — ситуация, когда разные ключи попадают в одну ячейку. Для обработки используют цепочки, открытую адресацию или блочное размещение.',
+      complexity: 'В среднем O(1), в худшем O(n)',
+      useCases: ['Словари и кэш', 'Проверка принадлежности', 'Подсчёт частот', 'Ускорение поиска по ключу без полного перебора'],
+      pseudocodeLines: [
+        'index = hash(key) mod m',
+        'если корзина свободна, вставить',
+        'иначе разрешить коллизию',
+        'при поиске проверить соответствующий bucket',
+      ],
     };
   }
 
   if (title.includes('Куча')) {
     return {
-      description: 'Куча (heap) — почти полное бинарное дерево, обычно хранимое прямо в массиве. В min-heap родитель не больше детей, поэтому минимум всегда находится в корне. Sift-up («просеивание вверх») поднимает новый элемент после вставки; sift-down («просеивание вниз») используется после удаления корня.',
-      complexity: 'insert/extract: O(log n), peek: O(1), build пошаговыми вставками: O(n log n)',
-      useCases: ['Очередь с приоритетом', 'Планировщики задач', 'Алгоритмы Дейкстры и Прима', 'Heap Sort', 'Обработка событий по приоритету'],
-      pseudocodeLines: ['добавить элемент в конец массива', 'пока родитель больше ребёнка', 'поменять родителя и ребёнка местами', 'продолжить проверку выше', 'корень содержит минимум'],
+      description: 'Куча (heap) — почти полное бинарное дерево, обычно хранимое в массиве. В min-heap ключ родителя не больше ключей детей, поэтому минимум всегда в корне. В max-heap наоборот: в корне максимум.',
+      complexity: 'insert/extract: O(log n), peek: O(1)',
+      useCases: ['Очередь с приоритетом', 'Планировщики задач', 'Алгоритм Дейкстры/Прима', 'Heap Sort и обработка потока событий'],
+      pseudocodeLines: [
+        'insert: добавить элемент в конец',
+        'sift-up до восстановления инварианта',
+        'extract: заменить корень последним элементом',
+        'sift-down до восстановления инварианта',
+      ],
     };
   }
 
   if (mode === 'graph') {
     return {
-      description: 'Граф описывает объекты (вершины) и связи между ними (рёбра). Алгоритмы графов позволяют находить маршруты, компоненты связности, кратчайшие пути и минимальные остовы. Визуализация показывает, какие вершины уже обработаны, какие находятся на границе поиска, и какие рёбра стали частью решения.',
+      description: 'Граф описывает объекты (вершины) и связи между ними (рёбра). Алгоритмы графов позволяют находить маршруты, компоненты связности, кратчайшие пути и минимальные остовы.',
       complexity: 'Часто O(V + E), зависит от задачи',
       useCases: ['Маршрутизация', 'Социальные графы', 'Сетевой анализ', 'Зависимости задач'],
       pseudocodeLines: ['инициализировать структуру frontier', 'добавить стартовую вершину', 'извлечь вершину и обработать', 'для соседей добавить непосещённые', 'завершить при пустой frontier'],
@@ -340,10 +285,15 @@ const getTheoryByTitle = (title: string, mode: Mode): TheoryContent => {
 
   if (mode === 'array') {
     return {
-      description: 'Сортировка упорядочивает элементы по ключу сравнения. Это базовая операция для поиска, объединения данных, дедупликации и ранжирования. Визуализация подсвечивает текущий элемент фиолетовым/голубым, обмены и отсортированную область, чтобы было видно, как локальные сравнения постепенно дают глобальный порядок.',
-      complexity: 'От O(n) до O(n log n) и O(n²), зависит от алгоритма',
-      useCases: ['Подготовка к бинарному поиску', 'Сравнение наборов', 'Обработка таблиц', 'Ранжирование результатов'],
-      pseudocodeLines: ['выбрать стратегию сортировки', 'сравнивать элементы по правилу', 'переставлять/сливать элементы', 'расширять отсортированную область', 'завершить, когда весь массив упорядочен'],
+      description: 'Сортировка упорядочивает элементы по ключу сравнения. После сортировки ускоряются поиск, группировка, слияние наборов и многие этапы обработки данных.',
+      complexity: 'От O(n) до O(n log n) и O(n²)',
+      useCases: ['Подготовка к бинарному поиску', 'Сравнение наборов', 'Обработка данных'],
+      pseudocodeLines: [
+        'выбрать стратегию сортировки',
+        'сравнивать элементы по правилу',
+        'переставлять/сливать элементы',
+        'повторять до полной упорядоченности',
+      ],
     };
   }
 

@@ -131,7 +131,7 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
             {inputError !== null && <p className="mt-2 text-rose-300">{inputError}</p>}
           </div>
           <div className="flex flex-wrap gap-2">
-            <button className="control-button" onClick={() => { const randomValues = generateRandomValues(values.length); setValues(randomValues); setManualInput(randomValues.join(', ')); setInputError(null); }} type="button">Случайные −100…100</button>
+            <button className="control-button" onClick={() => { const randomValues = generateRandomValues(values.length); setValues(randomValues); setManualInput(randomValues.join(', ')); }} type="button">Случайные значения</button>
             <input className="control-input" onChange={(event) => setPresetName(event.target.value)} placeholder="Имя пресета" value={presetName} />
             <button className="control-button" onClick={() => { const name = presetName.trim() || `Набор ${new Date().toLocaleTimeString()}`; saveArrayPreset(name, values); setPresetName(''); setPresets(loadArrayPresets()); }} type="button">Сохранить пресет</button>
           </div>

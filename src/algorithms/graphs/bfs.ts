@@ -84,7 +84,7 @@ export function* bfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
         graph,
         [currentNodeId, neighbor.nodeId, neighbor.edgeId],
         bfsPseudocode.inspectNeighbor,
-        `Смотрим ребро ${currentNodeId}—${neighbor.nodeId}. Вершина ${neighbor.nodeId} ${visitedNodeIds.has(neighbor.nodeId) ? 'уже была найдена, поэтому повторно не добавляем её в очередь' : 'ещё не найдена: добавим её в конец очереди для обхода следующего слоя'}.`,
+        `Проверяем соседа ${neighbor.nodeId} вершины ${currentNodeId}: если он не посещён, добавим в очередь, чтобы обойти граф послойно.`,
         createGraphMeta(startNodeId, visitedNodeIds, queue, traversedEdgeIds, currentNodeId),
       );
 
@@ -99,7 +99,7 @@ export function* bfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
           graph,
           [currentNodeId, neighbor.nodeId, neighbor.edgeId],
           bfsPseudocode.enqueue,
-          `Добавили ${neighbor.nodeId} в очередь. Новая очередь: [${queue.join(', ')}]. Ребро ${currentNodeId}—${neighbor.nodeId} стало частью дерева обхода BFS.`,
+          `Добавляем ${neighbor.nodeId} в очередь: BFS сначала обходит вершины текущего расстояния от старта, затем переходит глубже.`,
           createGraphMeta(startNodeId, visitedNodeIds, queue, traversedEdgeIds, neighbor.nodeId),
         );
       }

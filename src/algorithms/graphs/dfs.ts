@@ -86,7 +86,7 @@ export function* dfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
         graph,
         [currentNodeId, neighbor.nodeId, neighbor.edgeId],
         dfsPseudocode.inspectNeighbor,
-        `Смотрим ребро ${currentNodeId}—${neighbor.nodeId}. Вершина ${neighbor.nodeId} ${visitedNodeIds.has(neighbor.nodeId) ? 'уже была найдена, поэтому в стек её не кладём' : 'ещё не найдена: положим её в стек, чтобы DFS ушёл глубже по этой ветке'}.`,
+        `Проверяем соседа ${neighbor.nodeId} вершины ${currentNodeId}: если он не посещён, углубимся в него раньше остальных.`,
         createGraphMeta(startNodeId, visitedNodeIds, stack, traversedEdgeIds, currentNodeId),
       );
 
@@ -101,7 +101,7 @@ export function* dfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
           graph,
           [currentNodeId, neighbor.nodeId, neighbor.edgeId],
           dfsPseudocode.push,
-          `Положили ${neighbor.nodeId} в стек. Новый стек: [${stack.join(', ')}]. Ребро ${currentNodeId}—${neighbor.nodeId} стало частью дерева обхода DFS.`,
+          `Кладём ${neighbor.nodeId} в стек: DFS выбирает углубление по текущей ветви, а возврат делает позже.`,
           createGraphMeta(startNodeId, visitedNodeIds, stack, traversedEdgeIds, neighbor.nodeId),
         );
       }
