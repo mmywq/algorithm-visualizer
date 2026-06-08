@@ -1,3 +1,5 @@
+import { avlScenario } from './avlTree';
+import { hashBlockAddressingScenario, hashChainingScenario, hashOpenAddressingScenario } from './hashTable';
 import type { StructureAlgorithmFrame, StructureSnapshot } from '@/types';
 
 interface DemoScenario {
@@ -96,30 +98,17 @@ export function* bstScenario(inputValues?: readonly number[]): Generator<Structu
 }
 
 
-  yield frame(step++, 'initial', 'running', snapshot('Дерево BST', cells), `BST — это двоичное дерево поиска: для каждого узла все ключи слева меньше, справа больше. Начинаем с пустого дерева. Порядок вставки: ${insertionOrder.join(', ')}.`, 'index', 1);
+export const balancedBstScenario = (inputValues?: readonly number[]) =>
+  avlScenario(inputValues !== undefined && inputValues.length > 0 ? inputValues : [50, 30, 70, 20, 40, 60, 80]);
 
-  for (const value of insertionOrder) {
-    let index = 0;
-    while (cells[index] !== null) {
-      const current = cells[index]!;
-      const goLeft = value < current;
-      yield frame(step++, 'inspect', 'running', snapshot('Дерево BST', cells), `Сравниваем ${value} с узлом ${current}: ${goLeft ? `${value} < ${current}, идём влево` : `${value} ≥ ${current}, идём вправо`}.`, 'index', 2, index);
-      index = goLeft ? 2 * index + 1 : 2 * index + 2;
-      if (index >= cells.length) {
-        yield frame(step++, 'inspect', 'running', snapshot('Дерево BST', cells), `Глубина дерева превысила текущую сетку визуализации. Вставка ${value} пропущена, чтобы сохранить наглядность.`, 'index', 5);
-        index = -1;
-        break;
-      }
-    }
+export const hashOpenScenario = (inputValues?: readonly number[]) =>
+  hashChainingScenario(inputValues !== undefined && inputValues.length > 0 ? inputValues : [12, 22, 32, 42, 52], 7);
 
-    if (index >= 0) {
-      cells[index] = value;
-      yield frame(step++, 'push', 'running', snapshot('Дерево BST', cells), `Вставляем ${value} в позицию узла. Свойство BST сохранено: левое поддерево меньше, правое больше.`, 'index', 4, index);
-    }
-  }
+export const hashClosedScenario = (inputValues?: readonly number[]) =>
+  hashOpenAddressingScenario(inputValues !== undefined && inputValues.length > 0 ? inputValues : [12, 22, 32, 42, 52], 11);
 
-  yield frame(step, 'complete', 'completed', snapshot('Дерево BST', cells), 'Построение BST завершено. Теперь можно проследить путь поиска любого ключа через последовательность сравнений от корня.', 'index', 6);
-}
+export const hashBlockScenario = (inputValues?: readonly number[]) =>
+  hashBlockAddressingScenario(inputValues !== undefined && inputValues.length > 0 ? inputValues : [12, 22, 32, 42, 52], 5, 2);
 
 export const heapScenario = (inputValues?: readonly number[]) => runScenario({
   title: 'Бинарная куча',

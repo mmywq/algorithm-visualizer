@@ -173,41 +173,19 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
   };
 
 
-  const generateRandomGraph = (): void => {
-    const count = Math.max(2, Math.min(24, Math.floor(randomNodesCount)));
-    const density = Math.max(0, Math.min(1, randomDensity));
-    const labels = Array.from({ length: count }, (_, i) => `V${i + 1}`);
-    const edges: GraphEdge[] = [];
-    const edgeSet = new Set<string>();
-
-    for (let i = 1; i < count; i += 1) {
-      const parent = Math.floor(Math.random() * i);
-      const source = labels[parent]!;
-      const target = labels[i]!;
-      edges.push({ id: `${source}-${target}`, source, target, directed: false, payload: {} });
-      edgeSet.add([source, target].sort().join('--'));
-    }
-
-    for (let i = 0; i < count; i += 1) {
-      for (let j = i + 1; j < count; j += 1) {
-        if (Math.random() > density) continue;
-        const a = labels[i]!; const b = labels[j]!;
-        const key = [a,b].sort().join('--');
-        if (edgeSet.has(key)) continue;
-        edgeSet.add(key);
-        edges.push({ id: `${a}-${b}`, source: a, target: b, directed: false, payload: {} });
-      }
-    }
-
-    const nodes = applyForceLayout(labels.map((id, index) => ({ id, label: id, position: { x: 120 + index * 10, y: 120 + index * 10 }, payload: {} })));
-    const nextGraph = { nodes, edges };
-    setGraph(nextGraph);
-    setStartNodeId(nodes[0]?.id ?? 'V1');
-  };
-
   const clearGraph = (): void => {
     commitGraph({ nodes: [], edges: [] });
   };
+
+  const addNodeAtPosition = (position: { readonly x: number; readonly y: number }): void => {
+    const id = createNextNodeId(graph);
+    commitGraph({
+      nodes: [...graph.nodes, { id, label: id, position, payload: {} }],
+      edges: graph.edges,
+    });
+    setStartNodeId((current) => graph.nodes.length === 0 ? id : current);
+  };
+
 
   const applyAdjacencyListInput = (): void => {
     const parsed = parseAdjacencyList(adjacencyInput);
@@ -263,6 +241,9 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
     setStartNodeId('A');
   };
 
+  const matrixLabels = parseMatrixLabels(matrixNodeLabels);
+  const visibleMatrixRows = resizeMatrixRows(matrixRows, matrixLabels.length);
+
   return (
     <div className="flex w-full flex-col gap-6">
       <section className="app-panel shadow-xl shadow-slate-950/20">
@@ -310,6 +291,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
             <input className="h-10 w-52 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" onChange={(event) => setNewNodeLinks(event.target.value)} placeholder="Связи: A,B,C" value={newNodeLinks} />
             <button className="control-button" onClick={addNode} type="button">Добавить узел</button>
             <button className="control-button" onClick={clearGraph} type="button">Очистить граф</button>
+            <button className="control-button" onClick={resetToBaseGraph} type="button">Сбросить демо-граф</button>
             <input className="h-10 w-24 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" type="number" min={2} max={24} value={randomNodesCount} onChange={(event) => setRandomNodesCount(Number(event.target.value))} placeholder="Вершин" />
             <input className="h-10 w-28 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" type="number" min={0} max={1} step={0.05} value={randomDensity} onChange={(event) => setRandomDensity(Number(event.target.value))} placeholder="Плотность" />
             <button className="control-button" onClick={generateRandomGraph} type="button">Сгенерировать случайный граф</button>
@@ -378,29 +360,57 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
           <h2 className="text-xl font-semibold text-app-primary">Список смежности</h2>
           <p className="mt-2 text-sm text-app-muted">Каждая строка означает: вершина слева соединена с вершинами справа. Например, <code>A:B,C</code> — у A есть рёбра к B и C.</p>
           <textarea className="mt-3 h-40 w-full rounded-xl border border-app bg-surface p-3 font-mono text-sm text-app-primary" onChange={(event) => setAdjacencyInput(event.target.value)} value={adjacencyInput} />
-          <button className="control-button mt-3" onClick={applyAdjacencyListInput} type="button">Применить список смежности</button>
-        </div>
-
-          {inputMode === 'matrix' && (
-            <input
-              className="control-input mt-2 w-full"
-              onChange={(event) => setMatrixNodeLabels(event.target.value)}
-              placeholder="Метки вершин (например: A,B,C,D)"
-              value={matrixNodeLabels}
-            />
-          )}
-
-          <p className="mt-2 text-xs text-slate-400">
-            {inputMode === 'list' ? 'Формат: A:B,C' : 'Формат: строки матрицы 0/1 через пробелы, по одной строке на вершину.'}
-          </p>
-          <textarea className="mt-2 h-24 w-full rounded-xl border border-app bg-surface p-2 text-sm text-app-primary" onChange={(event) => setAdjacencyInput(event.target.value)} value={adjacencyInput} />
-          <div className="mt-2 flex items-center gap-2">
-            <button className="control-button" onClick={applyAdjacencyInput} type="button">Применить граф</button>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button className="control-button" onClick={applyAdjacencyListInput} type="button">Применить список смежности</button>
             {graphInputError !== null && <span className="text-xs text-rose-300">{graphInputError}</span>}
           </div>
         </div>
 
-        <div className="mt-4 rounded-2xl border border-app bg-surface p-3 text-sm text-app-muted">
+        <div className="app-panel">
+          <h2 className="text-xl font-semibold text-app-primary">Матрица смежности</h2>
+          <p className="mt-2 text-sm text-app-muted">Отметьте пересечения вершин, чтобы добавить или удалить неориентированное ребро.</p>
+          <input
+            className="control-input mt-3 w-full"
+            onChange={(event) => {
+              const labels = parseMatrixLabels(event.target.value);
+              setMatrixNodeLabels(event.target.value);
+              setMatrixRows((rows) => resizeMatrixRows(rows, labels.length));
+            }}
+            placeholder="Метки вершин (например: A,B,C,D)"
+            value={matrixNodeLabels}
+          />
+          <div className="mt-3 overflow-x-auto">
+            <table className="min-w-full border-separate border-spacing-1 text-center text-xs text-app-muted">
+              <thead>
+                <tr>
+                  <th className="h-8 w-8" />
+                  {matrixLabels.map((label) => <th className="h-8 w-8 font-semibold text-app-primary" key={label}>{label}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {visibleMatrixRows.map((row, rowIndex) => (
+                  <tr key={matrixLabels[rowIndex] ?? rowIndex}>
+                    <th className="h-8 w-8 font-semibold text-app-primary">{matrixLabels[rowIndex] ?? rowIndex + 1}</th>
+                    {row.map((cell, columnIndex) => (
+                      <td className="h-8 w-8" key={`${rowIndex}-${columnIndex}`}>
+                        <input
+                          aria-label={`Ребро ${matrixLabels[rowIndex] ?? rowIndex + 1} — ${parseMatrixLabels(matrixNodeLabels)[columnIndex] ?? columnIndex + 1}`}
+                          checked={cell === 1}
+                          disabled={rowIndex === columnIndex}
+                          onChange={(event) => updateMatrixCell(rowIndex, columnIndex, event.target.checked ? 1 : 0)}
+                          type="checkbox"
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <button className="control-button mt-3" onClick={applyMatrixInput} type="button">Применить матрицу</button>
+        </div>
+
+        <div className="rounded-2xl border border-app bg-surface p-3 text-sm text-app-muted lg:col-span-2">
           <p className="font-semibold text-app-primary">Псевдокод {selectedAlgorithm.toUpperCase()}</p>
           {(selectedAlgorithm === 'bfs'
             ? ['инициализировать очередь и множество посещённых', 'поместить стартовую вершину в очередь', 'извлечь вершину u из очереди и обработать', 'для каждого соседа v вершины u', 'если v не посещена: отметить и добавить в очередь', 'если очередь пуста — обход завершён']
@@ -410,8 +420,6 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
             ))}
         </div>
       </section>
-
-      <GraphVisualizer editable frame={graphFrame} graph={graph} onGraphChange={setGraph} />
 
       <section className="app-panel">
         <h3 className="text-lg font-semibold text-app-primary">Краткая теория обходов</h3>
@@ -472,6 +480,63 @@ const isGraphAlgorithmFrame = (
   frame.data !== null &&
   'nodes' in frame.data &&
   'edges' in frame.data;
+
+
+const edgeKey = (source: NodeId, target: NodeId): string => [source, target].sort().join('--');
+
+const parseMatrixLabels = (source: string): string[] =>
+  source.split(',').map((label) => label.trim()).filter((label) => label.length > 0);
+
+const resizeMatrixRows = (rows: readonly (readonly number[])[], size: number): number[][] =>
+  Array.from({ length: size }, (_, rowIndex) =>
+    Array.from({ length: size }, (_, columnIndex) => rowIndex === columnIndex ? 0 : rows[rowIndex]?.[columnIndex] ?? 0),
+  );
+
+const toAdjacencyMatrix = (graph: GraphSnapshot): { readonly labels: string[]; readonly matrix: number[][] } => {
+  const labels = graph.nodes.map((node) => node.id);
+  const indexes = new Map(labels.map((label, index) => [label, index]));
+  const matrix = resizeMatrixRows([], labels.length);
+
+  for (const edge of graph.edges) {
+    const sourceIndex = indexes.get(edge.source);
+    const targetIndex = indexes.get(edge.target);
+    if (sourceIndex === undefined || targetIndex === undefined) continue;
+    matrix[sourceIndex]![targetIndex] = 1;
+    if (!edge.directed) matrix[targetIndex]![sourceIndex] = 1;
+  }
+
+  return { labels, matrix };
+};
+
+const toAdjacencyListText = (graph: GraphSnapshot): string => {
+  const adjacency = new Map<NodeId, NodeId[]>();
+  for (const node of graph.nodes) adjacency.set(node.id, []);
+  for (const edge of graph.edges) {
+    adjacency.get(edge.source)?.push(edge.target);
+    if (!edge.directed) adjacency.get(edge.target)?.push(edge.source);
+  }
+
+  return graph.nodes.map((node) => `${node.id}:${(adjacency.get(node.id) ?? []).join(',')}`).join('\n');
+};
+
+const normalizeGraph = (graph: GraphSnapshot): GraphSnapshot => {
+  const seenNodes = new Set<NodeId>();
+  const nodes = graph.nodes.filter((node) => {
+    if (seenNodes.has(node.id)) return false;
+    seenNodes.add(node.id);
+    return true;
+  });
+  const nodeIds = new Set(nodes.map((node) => node.id));
+  const seenEdges = new Set<string>();
+  const edges = graph.edges.filter((edge) => {
+    if (!nodeIds.has(edge.source) || !nodeIds.has(edge.target) || edge.source === edge.target) return false;
+    const key = edge.directed ? `${edge.source}->${edge.target}` : edgeKey(edge.source, edge.target);
+    if (seenEdges.has(key)) return false;
+    seenEdges.add(key);
+    return true;
+  });
+  return { nodes, edges };
+};
 
 const parseAdjacencyList = (source: string): GraphSnapshot | null => {
   const lines = source.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
@@ -655,7 +720,7 @@ function StatCard({ label, value }: StatCardProps) {
 }
 
 
-const applyForceLayout = (nodes: GraphSnapshot['nodes']): GraphSnapshot['nodes'] => {
+const applyForceLayout = (nodes: GraphSnapshot['nodes'], _edges: readonly GraphEdge[] = []): GraphSnapshot['nodes'] => {
   const width = 820;
   const height = 420;
   const points = nodes.map((node, index) => ({ ...node, position: { x: 120 + (index % 8) * 80, y: 80 + Math.floor(index / 8) * 90 } }));
