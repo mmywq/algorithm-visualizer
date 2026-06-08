@@ -16,29 +16,7 @@ export function StructureVisualizer({ frame }: StructureVisualizerProps) {
       <h2 className="text-2xl font-bold text-white">{snapshot?.label ?? 'Визуализация структуры'}</h2>
 
       {snapshot?.buckets !== undefined ? (
-        <div className="mt-4 space-y-2">
-          {snapshot.buckets.map((bucket) => {
-            const isActive = frame?.meta.bucketIndex === bucket.index;
-            return (
-              <div className={isActive ? 'flex items-center gap-3 rounded-2xl border border-cyan-300 bg-cyan-500/10 p-3' : 'flex items-center gap-3 rounded-2xl border border-slate-700 bg-slate-950/70 p-3'} key={bucket.id}>
-                <div className="flex h-12 w-16 items-center justify-center rounded-xl border border-slate-600 bg-slate-900 text-sm font-bold text-slate-200">
-                  {bucket.index}
-                </div>
-                <div className="flex min-h-12 flex-1 flex-wrap items-center gap-2">
-                  {bucket.values.length === 0 ? (
-                    <span className="text-sm text-slate-500">пусто</span>
-                  ) : (
-                    bucket.values.map((value, valueIndex) => (
-                      <span className="rounded-xl border border-cyan-700/60 bg-cyan-500/15 px-3 py-2 text-sm font-semibold text-cyan-100" key={`${bucket.id}-${valueIndex}`}>
-                        {value}
-                      </span>
-                    ))
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <HashTableView frame={frame} />
       ) : isTreeLike ? (
         <TreeView frame={frame} />
       ) : (
@@ -46,7 +24,7 @@ export function StructureVisualizer({ frame }: StructureVisualizerProps) {
           {snapshot?.cells.map((cell, index) => (
             <div className="relative" key={cell.id}>
               {Object.entries(frame?.meta.pointers ?? {}).filter(([, pointerIndex]) => pointerIndex === index).map(([label]) => (
-                <div className="absolute -top-5 left-1/2 -translate-x-1/2 rounded bg-violet-500 px-1.5 py-0.5 text-[10px] font-semibold text-white" key={label}>{label}</div>
+                <PointerBadge label={label} key={label} />
               ))}
               <div
                 className={
@@ -67,6 +45,75 @@ export function StructureVisualizer({ frame }: StructureVisualizerProps) {
   );
 }
 
+
+
+function HashTableView({ frame }: { readonly frame: StructureAlgorithmFrame | null }) {
+  const buckets = frame?.data.buckets ?? [];
+  const activeBucketIndex = frame?.meta.bucketIndex;
+  const activeKey = frame?.meta.key;
+
+  return (
+    <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950/50">
+      <table className="min-w-full border-collapse text-left text-sm text-slate-300">
+        <caption className="px-4 py-3 text-left text-sm leading-6 text-slate-300">
+          Хеш-таблица показана именно как таблица: каждая строка — корзина или блок, слева её индекс, справа содержимое цепочки/ячейки. Активная строка подсвечивается, чтобы было видно, куда попал текущий ключ.
+        </caption>
+        <thead className="bg-slate-900 text-xs uppercase tracking-[0.16em] text-slate-400">
+          <tr>
+            <th className="border-t border-slate-800 px-4 py-3">Индекс</th>
+            <th className="border-t border-slate-800 px-4 py-3">Адресация</th>
+            <th className="border-t border-slate-800 px-4 py-3">Содержимое</th>
+          </tr>
+        </thead>
+        <tbody>
+          {buckets.map((bucket) => {
+            const isActive = activeBucketIndex === bucket.index;
+            return (
+              <tr className={isActive ? 'bg-cyan-500/10 text-cyan-100' : 'odd:bg-slate-900/40'} key={bucket.id}>
+                <th className="border-t border-slate-800 px-4 py-3 font-mono text-base text-slate-100">{bucket.index}</th>
+                <td className="border-t border-slate-800 px-4 py-3">
+                  {isActive && activeKey !== undefined ? `ключ ${activeKey} → строка ${bucket.index}` : 'ожидает ключ'}
+                </td>
+                <td className="border-t border-slate-800 px-4 py-3">
+                  {bucket.values.length === 0 ? (
+                    <span className="text-slate-500">пусто</span>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-2">
+                      {bucket.values.map((value, valueIndex) => (
+                        <span className="inline-flex items-center gap-2" key={`${bucket.id}-${valueIndex}`}>
+                          <span className="rounded-xl border border-cyan-700/60 bg-cyan-500/15 px-3 py-2 font-semibold text-cyan-100">{value}</span>
+                          {valueIndex < bucket.values.length - 1 && <span className="text-slate-500">→</span>}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function PointerBadge({ label }: { readonly label: string }) {
+  return (
+    <div className="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-violet-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+      {getPointerLabel(label)}
+    </div>
+  );
+}
+
+const getPointerLabel = (label: string): string => {
+  const labels: Record<string, string> = {
+    head: 'голова head',
+    tail: 'хвост tail',
+    top: 'вершина top',
+    i: 'индекс i',
+  };
+  return labels[label] ?? label;
+};
 
 function TreeView({ frame }: { readonly frame: StructureAlgorithmFrame | null }) {
   const nodes = buildTreeLayout(frame?.data.cells ?? [], frame?.meta.activeIndex);
