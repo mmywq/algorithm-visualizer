@@ -89,3 +89,46 @@ export const renameGraphPreset = (id: string, name: string): void => {
 
   saveToStorage(STORAGE_KEYS.graphPresets, presets);
 };
+
+export const loadStructurePresets = (): readonly ArrayPreset[] =>
+  loadFromStorage<readonly ArrayPreset[]>(STORAGE_KEYS.structurePresets, []);
+
+export const saveStructurePreset = (name: string, values: readonly number[]): ArrayPreset => {
+  const presets = loadStructurePresets();
+  const timestamp = nowIso();
+
+  const preset: ArrayPreset = {
+    id: `structure-${Date.now()}`,
+    name,
+    values,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  };
+
+  saveToStorage(STORAGE_KEYS.structurePresets, [preset, ...presets].slice(0, 20));
+  return preset;
+};
+
+export const removeStructurePreset = (id: string): void => {
+  const presets = loadStructurePresets().filter((preset) => preset.id !== id);
+  saveToStorage(STORAGE_KEYS.structurePresets, presets);
+};
+
+export const renameStructurePreset = (id: string, name: string): void => {
+  const normalizedName = name.trim();
+  if (normalizedName.length === 0) {
+    return;
+  }
+
+  const presets = loadStructurePresets().map((preset) =>
+    preset.id === id
+      ? {
+          ...preset,
+          name: normalizedName,
+          updatedAt: nowIso(),
+        }
+      : preset,
+  );
+
+  saveToStorage(STORAGE_KEYS.structurePresets, presets);
+};

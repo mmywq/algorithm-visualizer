@@ -86,7 +86,7 @@ export function* dfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
         graph,
         [currentNodeId, neighbor.nodeId, neighbor.edgeId],
         dfsPseudocode.inspectNeighbor,
-        `Проверяем соседа ${neighbor.nodeId} вершины ${currentNodeId}.`,
+        `Проверяем соседа ${neighbor.nodeId} вершины ${currentNodeId}: если он не посещён, углубимся в него раньше остальных.`,
         createGraphMeta(startNodeId, visitedNodeIds, stack, traversedEdgeIds, currentNodeId),
       );
 
@@ -101,7 +101,7 @@ export function* dfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
           graph,
           [currentNodeId, neighbor.nodeId, neighbor.edgeId],
           dfsPseudocode.push,
-          `Сосед ${neighbor.nodeId} ещё не посещён: кладём его в стек.`,
+          `Кладём ${neighbor.nodeId} в стек: DFS выбирает углубление по текущей ветви, а возврат делает позже.`,
           createGraphMeta(startNodeId, visitedNodeIds, stack, traversedEdgeIds, neighbor.nodeId),
         );
       }

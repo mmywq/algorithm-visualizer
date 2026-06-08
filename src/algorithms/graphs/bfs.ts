@@ -84,7 +84,7 @@ export function* bfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
         graph,
         [currentNodeId, neighbor.nodeId, neighbor.edgeId],
         bfsPseudocode.inspectNeighbor,
-        `Проверяем соседа ${neighbor.nodeId} вершины ${currentNodeId}.`,
+        `Проверяем соседа ${neighbor.nodeId} вершины ${currentNodeId}: если он не посещён, добавим в очередь, чтобы обойти граф послойно.`,
         createGraphMeta(startNodeId, visitedNodeIds, queue, traversedEdgeIds, currentNodeId),
       );
 
@@ -99,7 +99,7 @@ export function* bfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
           graph,
           [currentNodeId, neighbor.nodeId, neighbor.edgeId],
           bfsPseudocode.enqueue,
-          `Сосед ${neighbor.nodeId} ещё не посещён: добавляем его в очередь.`,
+          `Добавляем ${neighbor.nodeId} в очередь: BFS сначала обходит вершины текущего расстояния от старта, затем переходит глубже.`,
           createGraphMeta(startNodeId, visitedNodeIds, queue, traversedEdgeIds, neighbor.nodeId),
         );
       }

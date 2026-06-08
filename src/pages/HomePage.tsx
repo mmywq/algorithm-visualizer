@@ -6,7 +6,7 @@ interface HomePageProps {
 
 export function HomePage({ navigate }: HomePageProps) {
   return (
-    <section className="w-full rounded-3xl border border-app bg-surface p-6 shadow-xl shadow-slate-950/10">
+    <section className="w-full app-panel shadow-xl shadow-slate-950/10">
       <h1 className="text-4xl font-bold tracking-tight text-app-primary">Каталог алгоритмов</h1>
       <p className="mt-3 max-w-3xl text-app-muted">
         Выбери категорию и переходи на отдельную страницу алгоритма. Готовые страницы уже имеют плеер

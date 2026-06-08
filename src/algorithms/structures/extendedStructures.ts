@@ -63,20 +63,36 @@ export const queueListScenario = () => runScenario({
   messages: ['Создаём очередь на списке.', 'Добавляем в tail.', 'Удаляем из head.'],
 });
 
-export const bstScenario = () => runScenario({
-  title: 'Дерево BST',
-  operation: 'index',
-  values: [50, 30, 70, 20, 40, 60, 80],
-  messages: [
-    'Формируем двоичное дерево поиска: корень содержит 50.',
-    'Вставка 30: 30 < 50, идём в левое поддерево.',
-    'Вставка 70: 70 > 50, идём в правое поддерево.',
-    'Вставка 20: 20 < 50 и 20 < 30, узел становится левым ребёнком 30.',
-    'Вставка 40: 40 < 50 и 40 > 30, узел становится правым ребёнком 30.',
-    'Поиск 60: 60 > 50, затем 60 < 70 — найден в левом поддереве 70.',
-  ],
-  pseudocodeLines: [1, 2, 3, 4, 5, 6],
-});
+export function* bstScenario(inputValues?: readonly number[]): Generator<StructureAlgorithmFrame, void, unknown> {
+  const insertionOrder = inputValues !== undefined && inputValues.length > 0 ? [...inputValues] : createRandomUniqueValues(7, -100, 100);
+  const cells: Array<number | null> = Array.from({ length: 15 }, () => null);
+  let step = 0;
+
+  yield frame(step++, 'initial', 'running', snapshot('Дерево BST', cells), `BST — это двоичное дерево поиска: для каждого узла все ключи слева меньше, справа больше. Начинаем с пустого дерева. Порядок вставки: ${insertionOrder.join(', ')}.`, 'index', 1);
+
+  for (const value of insertionOrder) {
+    let index = 0;
+    while (cells[index] !== null) {
+      const current = cells[index]!;
+      const goLeft = value < current;
+      yield frame(step++, 'inspect', 'running', snapshot('Дерево BST', cells), `Сравниваем ${value} с узлом ${current}: ${goLeft ? `${value} < ${current}, идём влево` : `${value} ≥ ${current}, идём вправо`}.`, 'index', 2, index);
+      index = goLeft ? 2 * index + 1 : 2 * index + 2;
+      if (index >= cells.length) {
+        yield frame(step++, 'inspect', 'running', snapshot('Дерево BST', cells), `Глубина дерева превысила текущую сетку визуализации. Вставка ${value} пропущена, чтобы сохранить наглядность.`, 'index', 5);
+        index = -1;
+        break;
+      }
+    }
+
+    if (index >= 0) {
+      cells[index] = value;
+      yield frame(step++, 'push', 'running', snapshot('Дерево BST', cells), `Вставляем ${value} в позицию узла. Свойство BST сохранено: левое поддерево меньше, правое больше.`, 'index', 4, index);
+    }
+  }
+
+  yield frame(step, 'complete', 'completed', snapshot('Дерево BST', cells), 'Построение BST завершено. Теперь можно проследить путь поиска любого ключа через последовательность сравнений от корня.', 'index', 6);
+}
+
 
 export const balancedBstScenario = () => runScenario({
   title: 'Сбалансированное BST',
@@ -125,10 +141,10 @@ export const hashBlockScenario = () => runScenario({
   ],
 });
 
-export const heapScenario = () => runScenario({
+export const heapScenario = (inputValues?: readonly number[]) => runScenario({
   title: 'Бинарная куча',
   operation: 'push',
-  values: [40, 15, 60, 5, 30, 55],
+  values: inputValues !== undefined && inputValues.length > 0 ? inputValues : [40, 15, 60, 5, 30, 55],
   messages: [
     'Добавляем элемент в конец массива-кучи.',
     'Поднимаем элемент вверх (sift-up), пока не выполнится инвариант кучи.',
@@ -150,3 +166,12 @@ export const binomialHeapScenario = () => runScenario({
   ],
   pseudocodeLines: [1, 2, 3, 4],
 });
+
+
+const createRandomUniqueValues = (size: number, min: number, max: number): number[] => {
+  const values = new Set<number>();
+  while (values.size < size) {
+    values.add(Math.floor(Math.random() * (max - min + 1)) + min);
+  }
+  return [...values];
+};

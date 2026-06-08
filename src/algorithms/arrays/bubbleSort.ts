@@ -45,7 +45,21 @@ export function* bubbleSort(values: readonly number[]): Generator<ArrayAlgorithm
     { sortedIndices: [] },
   );
 
+  if (isSorted(items)) {
+    yield createFrame(
+      step++,
+      'complete',
+      items,
+      [],
+      bubbleSortPseudocode.complete,
+      'Массив уже отсортирован. Bubble Sort завершён досрочно без лишних проходов.',
+      { sortedIndices: getAllIndices(items) },
+    );
+    return;
+  }
+
   for (let end = items.length - 1; end > 0; end -= 1) {
+    let swapped = false;
     yield createFrame(
       step++,
       'inspect',
@@ -77,6 +91,8 @@ export function* bubbleSort(values: readonly number[]): Generator<ArrayAlgorithm
         items[current] = items[next]!;
         items[next] = currentItem;
 
+        swapped = true;
+
         yield createFrame(
           step++,
           'swap',
@@ -101,6 +117,19 @@ export function* bubbleSort(values: readonly number[]): Generator<ArrayAlgorithm
       `Элемент на позиции ${end} занял окончательное место.`,
       { sortedIndices: getSortedSuffixIndices(items, end - 1) },
     );
+
+    if (!swapped || isSorted(items)) {
+      yield createFrame(
+        step++,
+        'complete',
+        items,
+        [],
+        bubbleSortPseudocode.complete,
+        'Массив уже отсортирован: останавливаем алгоритм досрочно.',
+        { sortedIndices: getAllIndices(items) },
+      );
+      return;
+    }
   }
 
   yield createFrame(
@@ -123,3 +152,6 @@ const getSortedSuffixIndices = (items: ArraySnapshot, currentEnd: number): reado
     .map((_, index) => index)
     .filter((index) => index > currentEnd);
 };
+
+
+const isSorted = (items: readonly ArrayItem[]): boolean => items.every((item, index) => index === 0 || items[index - 1]!.value <= item.value);
