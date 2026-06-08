@@ -24,7 +24,8 @@ interface GraphVisualizerProps {
   readonly onAddNodeAt?: (position: GraphPosition) => void;
 }
 
-export function GraphVisualizer({ frame, graph, editable = false, onGraphChange }: GraphVisualizerProps) {
+export function GraphVisualizer({ frame, graph, editable = false, onGraphChange, onAddNodeAt }: GraphVisualizerProps) {
+  const [projectFlowPosition, setProjectFlowPosition] = useState<((position: GraphPosition) => GraphPosition) | null>(null);
   const sourceGraph = editable ? graph : (frame?.data ?? graph);
   const nodes = sourceGraph.nodes.map((node) => toReactFlowNode(node, frame));
   const edges = sourceGraph.edges.map((edge) => toReactFlowEdge(edge, frame));

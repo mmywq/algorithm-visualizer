@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { compareSortsDemo, blockSortDemo, countingSortDemo, radixSortDemo } from '@/algorithms/sorting/extra';
 import { connectedComponentsDemo, dijkstraDemo, mstDemo } from '@/algorithms/graphs';
 import { balancedBstScenario, binomialHeapScenario, bstScenario, hashBlockScenario, hashClosedScenario, hashOpenScenario, heapScenario } from '@/algorithms/structures/extendedStructures';
@@ -66,6 +66,69 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
   const frame = currentFrame;
   const theory = getTheoryByTitle(title, mode);
   const stepsHistory = useMemo(() => frames.map((stepFrame) => stepFrame.description ?? stepFrame.message), [frames]);
+
+  const resetAlgorithm = (): void => {
+    loadPageAlgorithm(generatorFactory, canUseNumericInput ? values : undefined, loadAlgorithm);
+  };
+
+  const applyValues = (): void => {
+    const parsed = parseInputValues(manualInput);
+    if (!parsed.ok) {
+      setInputError(parsed.error);
+      return;
+    }
+    setInputError(null);
+    setValues(parsed.values);
+  };
+
+  const randomizeValues = (): void => {
+    const nextValues = createRandomValues(Math.min(MAX_INPUT_SIZE, Math.max(8, values.length)), mode === 'structure');
+    setValues(nextValues);
+    setManualInput(nextValues.join(', '));
+    setInputError(null);
+  };
+
+  const refreshPresets = (): void => {
+    setArrayPresets(loadArrayPresets());
+    setStructurePresets(loadStructurePresets());
+  };
+
+  const savePreset = (): void => {
+    const name = presetName.trim() || `${title} ${new Date().toLocaleTimeString()}`;
+    if (mode === 'structure') {
+      saveStructurePreset(name, values);
+    } else {
+      saveArrayPreset(name, values);
+    }
+    setPresetName('');
+    refreshPresets();
+  };
+
+  const loadPreset = (preset: ArrayPreset): void => {
+    setValues(preset.values);
+    setManualInput(preset.values.join(', '));
+    setInputError(null);
+  };
+
+  const removePreset = (id: string): void => {
+    if (mode === 'structure') {
+      removeStructurePreset(id);
+    } else {
+      removeArrayPreset(id);
+    }
+    refreshPresets();
+  };
+
+  const renamePreset = (): void => {
+    if (renamePresetState === null) return;
+    if (mode === 'structure') {
+      renameStructurePreset(renamePresetState.id, renamePresetState.name);
+    } else {
+      renameArrayPreset(renamePresetState.id, renamePresetState.name);
+    }
+    setRenamePresetState(null);
+    refreshPresets();
+  };
 
   return (
     <div className="flex w-full flex-col gap-6">
