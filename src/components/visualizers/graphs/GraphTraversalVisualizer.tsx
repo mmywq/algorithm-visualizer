@@ -75,8 +75,13 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
   useEffect(() => {
     loadGraphAlgorithm(selectedAlgorithm, graph, startNodeId, loadAlgorithm);
     const settings = loadSettings();
-    saveSettings({ ...settings, lastGraphStartNodeId: startNodeId, playbackSpeedMs });
-  }, [graph, loadAlgorithm, playbackSpeedMs, selectedAlgorithm, startNodeId]);
+    saveSettings({ ...settings, lastGraphStartNodeId: startNodeId });
+  }, [graph, loadAlgorithm, selectedAlgorithm, startNodeId]);
+
+  useEffect(() => {
+    const settings = loadSettings();
+    saveSettings({ ...settings, playbackSpeedMs });
+  }, [playbackSpeedMs]);
 
   useEffect(() => {
     const matrix = toAdjacencyMatrix(graph);

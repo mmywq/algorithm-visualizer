@@ -66,7 +66,7 @@ export const useAlgorithmPlayerStore = create<AlgorithmPlayerStore>()(
       frames,
       currentFrame: initialFrame,
       currentIndex: initialFrame === null ? -1 : 0,
-      status: 'idle',
+      status: initialFrame?.status === 'completed' ? 'completed' : 'idle',
       playbackSpeedMs,
       timerId: null,
     });
@@ -79,6 +79,14 @@ export const useAlgorithmPlayerStore = create<AlgorithmPlayerStore>()(
       return;
     }
 
+    set({ status: 'running' });
+
+    const immediateFrame = get().nextStep();
+    if (immediateFrame === null || get().status === 'completed') {
+      get().pause();
+      return;
+    }
+
     const newTimerId = window.setInterval(() => {
       const frame = get().nextStep();
 
@@ -87,7 +95,7 @@ export const useAlgorithmPlayerStore = create<AlgorithmPlayerStore>()(
       }
     }, playbackSpeedMs);
 
-    set({ status: 'running', timerId: newTimerId });
+    set({ timerId: newTimerId });
   },
 
   pause: () => {

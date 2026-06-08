@@ -8,12 +8,6 @@ import { HomePage } from '@/pages/HomePage';
 import { StructuresPage } from '@/pages/StructuresPage';
 import { PlannedAlgorithmPage } from '@/pages/PlannedAlgorithmPage';
 import { AlgorithmPage, algorithmRouteRegistry } from '@/pages/AlgorithmPages';
-import { BstPage } from '@/pages/BstPage';
-import { HeapPage } from '@/pages/HeapPage';
-import { HashTablePage } from '@/pages/HashTablePage';
-import { HashOpenAddressingPage } from '@/pages/HashOpenAddressingPage';
-import { HashBlockAddressingPage } from '@/pages/HashBlockAddressingPage';
-import { AvlPage } from '@/pages/AvlPage';
 import { useAlgorithmPlayerStore } from '@/stores';
 import { useUiPreferencesStore } from '@/stores';
 
@@ -109,29 +103,6 @@ const renderRoute = (
     return <GraphTraversalVisualizer defaultStartNodeId={settings.lastGraphStartNodeId} />;
   }
 
-  if (route === '/trees/bst') {
-    return <BstPage />;
-  }
-
-  if (route === '/trees/balanced-bst') {
-    return <AvlPage />;
-  }
-
-  if (route === '/heaps/heap') {
-    return <HeapPage />;
-  }
-
-  if (route === '/hash/open-chaining') {
-    return <HashTablePage />;
-  }
-
-  if (route === '/hash/open-addressing') {
-    return <HashOpenAddressingPage />;
-  }
-
-  if (route === '/hash/block-addressing') {
-    return <HashBlockAddressingPage />;
-  }
 
   const configuredPage = algorithmRouteRegistry[route as keyof typeof algorithmRouteRegistry];
 
