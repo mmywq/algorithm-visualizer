@@ -123,50 +123,167 @@ export function* blockSortDemo(inputValues?: readonly number[]): Generator<Array
   });
 }
 
-export function* compareSortsDemo(): Generator<ArrayAlgorithmFrame, void, unknown> {
-  const baseValues = [34, -12, 56, 7, 7, 89, -3, 22];
-  const items = [...createArrayItems(baseValues)];
+export function* compareSortsDemo(inputValues?: readonly number[]): Generator<ArrayAlgorithmFrame, void, unknown> {
+  const baseValues = inputValues !== undefined && inputValues.length > 0 ? [...inputValues] : [34, -12, 56, 7, 7, 89, -3, 22];
+  const algorithms = [
+    simulateBubbleSort(baseValues),
+    simulateSelectionSort(baseValues),
+    simulateInsertionSort(baseValues),
+    simulateMergeSort(baseValues),
+    simulateCountingSort(baseValues),
+    simulateQuickSort(baseValues),
+  ];
   let step = 0;
 
-  yield createFrame(step++, 'initial', items, [], 'Сравниваем подходы сортировки на одном и том же наборе: показываем шаги как в пузырьковой сортировке для наглядности.', {
-    sortedIndices: [],
-  });
+  yield createFrame(
+    step++,
+    'initial',
+    createArrayItems(baseValues),
+    [],
+    `Сравниваем 6 сортировок на одном наборе [${baseValues.join(', ')}]. Для каждой строки считаем сравнения, перестановки/записи и показываем итоговый массив; завершение будет только после всех шести алгоритмов.`,
+  );
 
-  for (let end = items.length - 1; end > 0; end -= 1) {
-    let swapped = false;
-    for (let i = 0; i < end; i += 1) {
-      const j = i + 1;
-      yield createFrame(step++, 'compare', items, [i, j], `Сравниваем элементы ${items[i]!.value} и ${items[j]!.value}.`, {
-        comparingIndices: [i, j],
-        sortedIndices: Array.from({ length: items.length - end - 1 }, (_, idx) => items.length - 1 - idx),
-      });
-
-      if (items[i]!.value > items[j]!.value) {
-        const tmp = items[i]!;
-        items[i] = items[j]!;
-        items[j] = tmp;
-        swapped = true;
-
-        yield createFrame(step++, 'swap', items, [i, j], 'Меняем элементы местами: левый больше правого.', {
-          swappingIndices: [i, j],
-          sortedIndices: Array.from({ length: items.length - end - 1 }, (_, idx) => items.length - 1 - idx),
-        });
-      }
-    }
-
-    yield createFrame(step++, 'inspect', items, [end], `Элемент на позиции ${end} зафиксирован в отсортированной зоне.`, {
-      sortedIndices: Array.from({ length: items.length - end }, (_, idx) => items.length - 1 - idx),
-    });
-
-    if (!swapped) {
-      yield createFrame(step++, 'complete', items, [], 'Массив уже отсортирован: завершаем сравнение сортировок досрочно.', {
-        sortedIndices: items.map((_, idx) => idx),
-      });
-      return;
-    }
+  for (const result of algorithms) {
+    yield createFrame(
+      step++,
+      'inspect',
+      createArrayItems(result.sorted),
+      [],
+      `${result.name}: ${result.explanation} Итог [${result.sorted.join(', ')}], сравнений ${result.comparisons}, записей/обменов ${result.writes}.`,
+      { sortedIndices: result.sorted.map((_, index) => index), auxiliaryArray: [result.comparisons, result.writes] },
+    );
   }
 
-  yield createFrame(step, 'complete', items, [], 'Сравнение сортировок завершено: массив отсортирован, цветовые индикаторы показывали сравнение, обмен и готовую зону.', {
-    sortedIndices: items.map((_, idx) => idx),
-  });
+  const fastest = algorithms.reduce((best, current) => current.comparisons + current.writes < best.comparisons + best.writes ? current : best, algorithms[0]!);
+  yield createFrame(
+    step,
+    'complete',
+    createArrayItems(fastest.sorted),
+    [],
+    `Сравнение 6 сортировок завершено. На этом наборе меньше всего операций у «${fastest.name}»: сравнений ${fastest.comparisons}, записей/обменов ${fastest.writes}. Все алгоритмы дали одинаковый отсортированный результат [${fastest.sorted.join(', ')}].`,
+    { sortedIndices: fastest.sorted.map((_, index) => index) },
+  );
 }
+
+interface SortSimulationResult {
+  readonly name: string;
+  readonly sorted: readonly number[];
+  readonly comparisons: number;
+  readonly writes: number;
+  readonly explanation: string;
+}
+
+const simulateBubbleSort = (values: readonly number[]): SortSimulationResult => {
+  const arr = [...values];
+  let comparisons = 0;
+  let writes = 0;
+  for (let end = arr.length - 1; end > 0; end -= 1) {
+    for (let i = 0; i < end; i += 1) {
+      comparisons += 1;
+      if (arr[i]! > arr[i + 1]!) {
+        [arr[i], arr[i + 1]] = [arr[i + 1]!, arr[i]!];
+        writes += 2;
+      }
+    }
+  }
+  return { name: 'Пузырьковая сортировка', sorted: arr, comparisons, writes, explanation: 'соседние элементы многократно сравниваются, большие значения всплывают вправо.' };
+};
+
+const simulateSelectionSort = (values: readonly number[]): SortSimulationResult => {
+  const arr = [...values];
+  let comparisons = 0;
+  let writes = 0;
+  for (let i = 0; i < arr.length - 1; i += 1) {
+    let minIndex = i;
+    for (let j = i + 1; j < arr.length; j += 1) {
+      comparisons += 1;
+      if (arr[j]! < arr[minIndex]!) minIndex = j;
+    }
+    if (minIndex !== i) {
+      [arr[i], arr[minIndex]] = [arr[minIndex]!, arr[i]!];
+      writes += 2;
+    }
+  }
+  return { name: 'Сортировка выбором', sorted: arr, comparisons, writes, explanation: 'на каждом шаге ищется минимум оставшейся части и переносится в начало.' };
+};
+
+const simulateInsertionSort = (values: readonly number[]): SortSimulationResult => {
+  const arr = [...values];
+  let comparisons = 0;
+  let writes = 0;
+  for (let i = 1; i < arr.length; i += 1) {
+    const key = arr[i]!;
+    let j = i - 1;
+    while (j >= 0) {
+      comparisons += 1;
+      if (arr[j]! <= key) break;
+      arr[j + 1] = arr[j]!;
+      writes += 1;
+      j -= 1;
+    }
+    arr[j + 1] = key;
+    writes += 1;
+  }
+  return { name: 'Сортировка вставками', sorted: arr, comparisons, writes, explanation: 'поддерживает слева отсортированную часть и вставляет очередной элемент на своё место.' };
+};
+
+const simulateMergeSort = (values: readonly number[]): SortSimulationResult => {
+  let comparisons = 0;
+  let writes = 0;
+  const sort = (arr: readonly number[]): number[] => {
+    if (arr.length <= 1) return [...arr];
+    const mid = Math.floor(arr.length / 2);
+    const left = sort(arr.slice(0, mid));
+    const right = sort(arr.slice(mid));
+    const merged: number[] = [];
+    let i = 0;
+    let j = 0;
+    while (i < left.length && j < right.length) {
+      comparisons += 1;
+      if (left[i]! <= right[j]!) merged.push(left[i++]!); else merged.push(right[j++]!);
+      writes += 1;
+    }
+    while (i < left.length) { merged.push(left[i++]!); writes += 1; }
+    while (j < right.length) { merged.push(right[j++]!); writes += 1; }
+    return merged;
+  };
+  return { name: 'Сортировка слиянием', sorted: sort(values), comparisons, writes, explanation: 'массив делится пополам, затем отсортированные половины устойчиво сливаются.' };
+};
+
+const simulateCountingSort = (values: readonly number[]): SortSimulationResult => {
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const count = Array.from({ length: max - min + 1 }, () => 0);
+  let writes = 0;
+  for (const value of values) count[value - min] = (count[value - min] ?? 0) + 1;
+  const sorted: number[] = [];
+  for (let i = 0; i < count.length; i += 1) {
+    while (count[i]! > 0) {
+      sorted.push(i + min);
+      count[i] = (count[i] ?? 0) - 1;
+      writes += 1;
+    }
+  }
+  return { name: 'Сортировка подсчётом', sorted, comparisons: 0, writes, explanation: `не сравнивает элементы, а считает частоты значений в диапазоне от ${min} до ${max}.` };
+};
+
+const simulateQuickSort = (values: readonly number[]): SortSimulationResult => {
+  let comparisons = 0;
+  let writes = 0;
+  const sort = (arr: readonly number[]): number[] => {
+    if (arr.length <= 1) return [...arr];
+    const pivot = arr[Math.floor(arr.length / 2)]!;
+    const less: number[] = [];
+    const equal: number[] = [];
+    const greater: number[] = [];
+    for (const value of arr) {
+      comparisons += 1;
+      if (value < pivot) less.push(value);
+      else if (value > pivot) greater.push(value);
+      else equal.push(value);
+      writes += 1;
+    }
+    return [...sort(less), ...equal, ...sort(greater)];
+  };
+  return { name: 'Быстрая сортировка', sorted: sort(values), comparisons, writes, explanation: 'выбирает опорный элемент, разделяет значения на меньшие/равные/большие и рекурсивно сортирует части.' };
+};

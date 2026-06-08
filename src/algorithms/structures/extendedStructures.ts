@@ -110,18 +110,92 @@ export const hashClosedScenario = (inputValues?: readonly number[]) =>
 export const hashBlockScenario = (inputValues?: readonly number[]) =>
   hashBlockAddressingScenario(inputValues !== undefined && inputValues.length > 0 ? inputValues : [12, 22, 32, 42, 52], 5, 2);
 
-export const heapScenario = (inputValues?: readonly number[]) => runScenario({
-  title: 'Бинарная куча',
-  operation: 'push',
-  values: inputValues !== undefined && inputValues.length > 0 ? inputValues : [40, 15, 60, 5, 30, 55],
-  messages: [
-    'Добавляем элемент в конец массива-кучи.',
-    'Поднимаем элемент вверх (sift-up), пока не выполнится инвариант кучи.',
-    'При извлечении корня переносим последний элемент вверх и выполняем sift-down.',
-    'После перестройки корень снова содержит минимальный/максимальный приоритет.',
-  ],
-  pseudocodeLines: [1, 2, 3, 4],
-});
+export function* heapScenario(inputValues?: readonly number[]): Generator<StructureAlgorithmFrame, void, unknown> {
+  const insertionOrder = inputValues !== undefined && inputValues.length > 0 ? [...inputValues] : [40, 15, 60, 5, 30, 55];
+  const heap: number[] = [];
+  let step = 0;
+
+  const heapSnapshot = () => snapshot('Бинарная min-куча', heap);
+
+  yield frame(
+    step++,
+    'initial',
+    'running',
+    heapSnapshot(),
+    `Начинаем строить min-heap с пустого дерева. Min-heap — куча, где каждый родитель не больше своих детей; поэтому минимум всегда в корне. Порядок вставки: ${insertionOrder.join(', ')}.`,
+    'push',
+    1,
+  );
+
+  for (const value of insertionOrder) {
+    heap.push(value);
+    let index = heap.length - 1;
+    yield frame(
+      step++,
+      'push',
+      'running',
+      heapSnapshot(),
+      `Добавляем ${value} в первую свободную позицию почти полного дерева: индекс массива ${index}. Форма кучи сохранена, теперь проверяем порядок родитель ≤ ребёнок.`,
+      'push',
+      1,
+      index,
+    );
+
+    while (index > 0) {
+      const parentIndex = Math.floor((index - 1) / 2);
+      const parentValue = heap[parentIndex]!;
+      const childValue = heap[index]!;
+
+      yield frame(
+        step++,
+        'compare',
+        'running',
+        heapSnapshot(),
+        `Sift-up: сравниваем ребёнка ${childValue} (индекс ${index}) с родителем ${parentValue} (индекс ${parentIndex}). Если ребёнок меньше, меняем их местами.`,
+        'push',
+        2,
+        index,
+      );
+
+      if (parentValue <= childValue) {
+        yield frame(
+          step++,
+          'inspect',
+          'running',
+          heapSnapshot(),
+          `Обмен не нужен: ${parentValue} ≤ ${childValue}. Инвариант min-heap для этой ветви выполнен.`,
+          'push',
+          3,
+          parentIndex,
+        );
+        break;
+      }
+
+      [heap[parentIndex], heap[index]] = [heap[index]!, heap[parentIndex]!];
+      yield frame(
+        step++,
+        'swap',
+        'running',
+        heapSnapshot(),
+        `Меняем ${childValue} и ${parentValue}: меньшее значение поднимается ближе к корню. Текущий массив кучи: [${heap.join(', ')}].`,
+        'push',
+        2,
+        parentIndex,
+      );
+      index = parentIndex;
+    }
+  }
+
+  yield frame(
+    step,
+    'complete',
+    'completed',
+    heapSnapshot(),
+    `Построение min-heap завершено: массив [${heap.join(', ')}]. Корень ${heap[0] ?? '—'} — минимальный элемент, а для каждого индекса i дети находятся в 2i+1 и 2i+2.`,
+    'push',
+    4,
+  );
+}
 
 export const binomialHeapScenario = () => runScenario({
   title: 'Биномиальная куча',
