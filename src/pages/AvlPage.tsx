@@ -51,17 +51,14 @@ export function AvlPage() {
     <div className="flex w-full flex-col gap-6">
       <section className="app-panel">
         <h1 className="text-3xl font-bold text-app-primary">AVL-дерево</h1>
-        <p className="mt-2 text-sm text-app-muted">
-          AVL-дерево — это двоичное дерево поиска, которое после каждой вставки поддерживает баланс: высоты левого и правого поддеревьев каждого узла отличаются не больше чем на 1.
-        </p>
-        <p className="mt-2 text-sm text-app-muted">
-          Если баланс нарушается, выполняется малый или двойной поворот. Благодаря этому поиск и вставка остаются O(log n), а дерево не вырождается в цепочку.
-        </p>
+        <p className="mt-2 text-sm leading-6 text-app-muted">AVL-дерево — это самобалансирующееся двоичное дерево поиска. Для каждого узла разность высот левого и правого поддеревьев не превышает 1 по модулю. Если это условие нарушается после вставки, выполняется поворот или двойной поворот, который восстанавливает баланс и сохраняет логарифмическую высоту дерева.</p>
+        <p className="mt-2 text-sm leading-6 text-app-muted">Ниже показано, как дерево строится шаг за шагом. Каждая вставка сопровождается проверкой баланса и, при необходимости, вращением узлов.</p>
+        <p className="mt-2 text-sm text-app-muted">Сложность вставки и поиска в среднем O(log n), потому что баланс не позволяет дереву выродиться в длинную цепочку.</p>
 
         <div className="mt-4 flex flex-wrap gap-2">
           <input className="control-input min-w-[360px]" onChange={(event) => setManualInput(event.target.value)} value={manualInput} />
           <button className="control-button" onClick={applyManual} type="button">Применить</button>
-          <button className="control-button" onClick={randomValues} type="button">Случайные значения (до 100)</button>
+          <button className="control-button" onClick={randomValues} type="button">Случайные значения −100…100</button>
           <button className="control-button" onClick={() => { saveStructurePreset('AVL набор', values); setPresets(loadStructurePresets()); }} type="button">Сохранить пресет</button>
         </div>
         {inputError !== null && <p className="mt-2 text-sm text-rose-300">{inputError}</p>}
@@ -98,4 +95,4 @@ const run = (values: readonly number[], loadAlgorithm: ReturnType<typeof useAlgo
 };
 
 const isStructureFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | null): frame is StructureAlgorithmFrame =>
-  frame?.domain === 'array' && typeof frame.data === 'object' && frame.data !== null && 'cells' in frame.data;
+  (frame?.domain === 'tree' || frame?.domain === 'array') && typeof frame.data === 'object' && frame.data !== null && 'cells' in frame.data;

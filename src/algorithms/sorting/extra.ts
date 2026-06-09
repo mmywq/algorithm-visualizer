@@ -30,11 +30,20 @@ export function* countingSortDemo(inputValues?: readonly number[]): Generator<Ar
   const count = Array.from({ length: max + offset + 1 }, () => 0);
   let step = 0;
 
+  yield createFrame(
+    step++,
+    'initial',
+    items,
+    [],
+    `Сортировка подсчётом не сравнивает элементы друг с другом. Сначала строим массив count для диапазона значений от ${min} до ${max}, а затем по этому счётчику восстанавливаем отсортированный массив.`,
+    { auxiliaryArray: [...count] },
+  );
+
   for (let i = 0; i < items.length; i += 1) {
     const currentValue = items[i]!.value;
     const bucketIndex = currentValue + offset;
     count[bucketIndex] = (count[bucketIndex] ?? 0) + 1;
-    yield createFrame(step++, 'inspect', items, [i], `Значение ${currentValue}: увеличиваем count[${bucketIndex}] (смещение ${offset} нужно для отрицательных чисел).`, { auxiliaryArray: [...count] });
+    yield createFrame(step++, 'inspect', items, [i], `Считаем значение ${currentValue}: увеличиваем count[${bucketIndex}] до ${count[bucketIndex]}.`, { auxiliaryArray: [...count] });
   }
 
   let write = 0;
@@ -43,7 +52,7 @@ export function* countingSortDemo(inputValues?: readonly number[]): Generator<Ar
     while ((count[bucketIndex] ?? 0) > 0) {
       items[write] = { ...items[write]!, value };
       count[bucketIndex] = (count[bucketIndex] ?? 0) - 1;
-      yield createFrame(step++, 'merge', items, [write], `Записываем значение ${value} из count[${bucketIndex}] в позицию ${write}.`, {
+      yield createFrame(step++, 'merge', items, [write], `Берём одно значение ${value} из count[${bucketIndex}] и записываем его в позицию ${write}.`, {
         auxiliaryArray: [...count],
         sortedIndices: Array.from({ length: write + 1 }, (_, idx) => idx),
       });
@@ -51,8 +60,9 @@ export function* countingSortDemo(inputValues?: readonly number[]): Generator<Ar
     }
   }
 
-  yield createFrame(step, 'complete', items, [], 'Counting Sort завершён.', {
+  yield createFrame(step, 'complete', items, [], `Counting Sort завершён: итоговый массив [${items.map((item) => item.value).join(', ')}].`, {
     sortedIndices: items.map((_, idx) => idx),
+    auxiliaryArray: [...count],
   });
 }
 
@@ -60,68 +70,167 @@ export function* radixSortDemo(inputValues?: readonly number[]): Generator<Array
   const sourceValues = inputValues !== undefined && inputValues.length > 0 ? [...inputValues] : [329, 457, 657, 839, 436, 720, 355];
   const items = [...createArrayItems(sourceValues)];
   let step = 0;
+
+  const negatives = sourceValues.filter((value) => value < 0).map((value) => Math.abs(value));
+  const positives = sourceValues.filter((value) => value >= 0);
+
+  yield createFrame(
+    step++,
+    'initial',
+    items,
+    [],
+    `Поразрядная сортировка рассматривает числа по цифрам: сначала единицы, затем десятки, сотни и так далее. Для отрицательных и неотрицательных чисел сортируем модули отдельно, а потом собираем общий результат: отрицательные идут раньше неотрицательных.`,
+    { auxiliaryArray: [...sourceValues.map((value) => Math.abs(value))] },
+  );
+
+  const sortedNegatives = lsdRadixSort(negatives, 'отрицательных');
+  const negativeSteps = sortedNegatives.steps;
+  const sortedPositives = lsdRadixSort(positives, 'неотрицательных');
+  const positiveSteps = sortedPositives.steps;
+
+  for (const animationStep of negativeSteps) {
+    yield createFrame(step++, animationStep.phase === 'complete' ? 'inspect' : animationStep.phase, createArrayItems(animationStep.values), animationStep.activeIndices, `Radix sort (отрицательные): ${animationStep.message}`, {
+      ...(animationStep.auxiliaryArray === undefined ? {} : { auxiliaryArray: animationStep.auxiliaryArray }),
+      ...(animationStep.sortedIndices === undefined ? {} : { sortedIndices: animationStep.sortedIndices }),
+    });
+  }
+
+  for (const animationStep of positiveSteps) {
+    yield createFrame(step++, animationStep.phase === 'complete' ? 'inspect' : animationStep.phase, createArrayItems(animationStep.values), animationStep.activeIndices, `Radix sort (неотрицательные): ${animationStep.message}`, {
+      ...(animationStep.auxiliaryArray === undefined ? {} : { auxiliaryArray: animationStep.auxiliaryArray }),
+      ...(animationStep.sortedIndices === undefined ? {} : { sortedIndices: animationStep.sortedIndices }),
+    });
+  }
+
+  const finalValues = [...sortedNegatives.sorted.map((value) => -value).reverse(), ...sortedPositives.sorted];
+  const finalItems = createArrayItems(finalValues);
+  yield createFrame(
+    step,
+    'complete',
+    finalItems,
+    [],
+    `Radix Sort завершён: отрицательные значения сначала упорядочены по модулю и развернуты, затем к ним добавлены неотрицательные. Итоговый массив [${finalValues.join(', ')}].`,
+    { sortedIndices: finalItems.map((_, idx) => idx) },
+  );
+}
+
+export function* blockSortDemo(inputValues?: readonly number[]): Generator<ArrayAlgorithmFrame, void, unknown> {
+  const sourceValues = inputValues !== undefined && inputValues.length > 0 ? [...inputValues] : [12, 5, 19, 3, 8, 14, 7, 1];
+  const items = [...createArrayItems(sourceValues)];
+  const blockSize = 2;
+  let step = 0;
+
+  yield createFrame(
+    step++,
+    'initial',
+    items,
+    [],
+    `Блочная сортировка сначала разбивает массив на блоки фиксированного размера, затем сортирует каждый блок отдельно и в конце сливает их в один отсортированный массив. Для демонстрации используем блоки по ${blockSize} элемента.`,
+  );
+
+  const blocks: Array<Array<number>> = [];
+  for (let blockStart = 0; blockStart < items.length; blockStart += blockSize) {
+    const blockValues = items.slice(blockStart, blockStart + blockSize).map((item) => item.value).sort((a, b) => a - b);
+    blocks.push([...blockValues]);
+    for (let i = 0; i < blockValues.length; i += 1) {
+      items[blockStart + i] = { ...items[blockStart + i]!, value: blockValues[i]! };
+    }
+    yield createFrame(
+      step++,
+      'inspect',
+      items,
+      range(blockStart, Math.min(blockStart + blockSize, items.length)),
+      `Сортируем блок ${Math.floor(blockStart / blockSize) + 1}: значения [${blockValues.join(', ')}]. После локальной сортировки блок становится упорядоченным сам по себе.`,
+      { auxiliaryArray: blockValues },
+    );
+  }
+
+  const pointers = Array.from({ length: blocks.length }, () => 0);
+  const mergedValues: number[] = [];
+  while (mergedValues.length < sourceValues.length) {
+    const candidates = blocks
+      .map((block, index) => ({ block, index, value: block[pointers[index]!] }))
+      .filter((candidate): candidate is { block: number[]; index: number; value: number } => candidate.value !== undefined);
+
+    const nextCandidate = candidates.reduce((best, candidate) => (candidate.value < best.value ? candidate : best), candidates[0]!);
+    mergedValues.push(nextCandidate.value);
+    pointers[nextCandidate.index]! += 1;
+
+    for (let i = 0; i < mergedValues.length; i += 1) {
+      items[i] = { ...items[i]!, value: mergedValues[i]! };
+    }
+    yield createFrame(
+      step++,
+      'merge',
+      items,
+      [mergedValues.length - 1],
+      `Сравниваем первые элементы блоков и берём минимальный кандидат ${nextCandidate.value} из блока ${nextCandidate.index + 1}. Так постепенно собирается общий отсортированный массив.`,
+      { auxiliaryArray: candidates.map((candidate) => candidate.value), sortedIndices: Array.from({ length: mergedValues.length }, (_, idx) => idx) },
+    );
+  }
+
+  yield createFrame(step, 'complete', items, [], `Block Sort завершён: итоговый массив [${mergedValues.join(', ')}].`, {
+    sortedIndices: items.map((_, idx) => idx),
+  });
+}
+
+
+interface RadixSimulationResult {
+  readonly sorted: readonly number[];
+  readonly steps: readonly RadixAnimationStep[];
+}
+
+interface RadixAnimationStep {
+  readonly phase: ArrayAlgorithmFrame['phase'];
+  readonly values: readonly number[];
+  readonly activeIndices: readonly number[];
+  readonly message: string;
+  readonly auxiliaryArray?: readonly number[];
+  readonly sortedIndices?: readonly number[];
+}
+
+const lsdRadixSort = (values: readonly number[], label: string): RadixSimulationResult => {
+  if (values.length === 0) {
+    return { sorted: [], steps: [{ phase: 'complete', values: [], activeIndices: [], message: `у ${label} чисел нет, этап пропускается.` }] };
+  }
+
+  let current = [...values];
+  const steps: RadixAnimationStep[] = [];
   let exp = 1;
-  const max = Math.max(...items.map((i) => Math.abs(i.value)));
+  const max = Math.max(...current);
 
   while (Math.floor(max / exp) > 0) {
-    const buckets: Array<ArrayItem[]> = Array.from({ length: 10 }, () => []);
-
-    for (let i = 0; i < items.length; i += 1) {
-      const digit = Math.floor(Math.abs(items[i]!.value) / exp) % 10;
-      buckets[digit]!.push(items[i]!);
-      yield createFrame(step++, 'inspect', items, [i], `Разряд ${exp}: по модулю кладём ${items[i]!.value} в bucket ${digit}. Отрицательные числа в финале будут перенесены перед неотрицательными.`);
+    const buckets: number[][] = Array.from({ length: 10 }, () => []);
+    for (const value of current) {
+      const digit = Math.floor(value / exp) % 10;
+      buckets[digit]!.push(value);
     }
 
-    let index = 0;
-    for (const bucket of buckets) {
-      for (const value of bucket) {
-        items[index] = value;
-        yield createFrame(step++, 'merge', items, [index], `Собираем обратно после разряда ${exp}.`);
-        index += 1;
-      }
-    }
+    steps.push({
+      phase: 'inspect',
+      values: [...current],
+      activeIndices: current.map((_, index) => index),
+      message: `разряд ${exp}: распределяем ${label} по buckets от 0 до 9 по текущей цифре.`,
+      auxiliaryArray: buckets.map((bucket) => bucket.length),
+    });
+
+    current = buckets.flat();
+    steps.push({
+      phase: 'merge',
+      values: [...current],
+      activeIndices: current.map((_, index) => index),
+      sortedIndices: Array.from({ length: current.length }, (_, index) => index),
+      message: `после сбора по разряду ${exp} порядок становится ${label} промежуточно стабильным: [${current.join(', ')}].`,
+    });
 
     exp *= 10;
   }
 
-  const sortedValues = items.map((item) => item.value).sort((a, b) => a - b);
-  for (let i = 0; i < sortedValues.length; i += 1) {
-    items[i] = { ...items[i]!, value: sortedValues[i]! };
-    yield createFrame(step++, 'merge', items, [i], `Финальная сборка signed radix: записываем ${sortedValues[i]} в позицию ${i}, чтобы отрицательные стояли перед неотрицательными.`, {
-      sortedIndices: Array.from({ length: i + 1 }, (_, idx) => idx),
-    });
-  }
-
-  yield createFrame(step, 'complete', items, [], `Radix Sort завершён: итоговый массив [${sortedValues.join(', ')}].`, {
-    sortedIndices: items.map((_, idx) => idx),
-  });
-}
-
-export function* blockSortDemo(inputValues?: readonly number[]): Generator<ArrayAlgorithmFrame, void, unknown> {
-  const items = [...createArrayItems(inputValues !== undefined && inputValues.length > 0 ? inputValues : [12, 5, 19, 3, 8, 14, 7, 1])];
-  const blockSize = 2;
-  let step = 0;
-
-  for (let blockStart = 0; blockStart < items.length; blockStart += blockSize) {
-    const block = items.slice(blockStart, blockStart + blockSize).sort((a, b) => a.value - b.value);
-    for (let i = 0; i < block.length; i += 1) {
-      items[blockStart + i] = block[i]!;
-    }
-    yield createFrame(step++, 'inspect', items, [blockStart], `Локально сортируем блок [${blockStart}..${blockStart + blockSize - 1}].`);
-  }
-
-  const sorted = [...items].sort((a, b) => a.value - b.value);
-  for (let i = 0; i < sorted.length; i += 1) {
-    items[i] = sorted[i]!;
-    yield createFrame(step++, 'merge', items, [i], 'Глобальное слияние блоков.', {
-      sortedIndices: Array.from({ length: i + 1 }, (_, idx) => idx),
-    });
-  }
-
-  yield createFrame(step, 'complete', items, [], 'Block Sort завершён.', {
-    sortedIndices: items.map((_, idx) => idx),
-  });
-}
+  return {
+    sorted: current,
+    steps,
+  };
+};
 
 export function* compareSortsDemo(inputValues?: readonly number[]): Generator<ArrayAlgorithmFrame, void, unknown> {
   const baseValues = inputValues !== undefined && inputValues.length > 0 ? [...inputValues] : [34, -12, 56, 7, 7, 89, -3, 22];
@@ -150,7 +259,7 @@ export function* compareSortsDemo(inputValues?: readonly number[]): Generator<Ar
     for (const animationStep of run.animationSteps) {
       yield createFrame(
         step++,
-        animationStep.phase,
+        animationStep.phase === 'complete' ? 'inspect' : animationStep.phase,
         createArrayItems(animationStep.values),
         animationStep.activeIndices,
         `${run.name}: ${animationStep.message}`,
@@ -167,7 +276,7 @@ export function* compareSortsDemo(inputValues?: readonly number[]): Generator<Ar
     comparisonRows.push(toComparisonRow(run));
     yield createFrame(
       step++,
-      'complete',
+      'inspect',
       createArrayItems(run.sorted),
       [],
       `${run.name} завершена. Из исходного массива [${baseValues.join(', ')}] получен результат [${run.sorted.join(', ')}]. Сравнений: ${run.comparisons}, записей/обменов: ${run.writes}.`,

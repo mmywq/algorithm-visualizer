@@ -41,7 +41,28 @@ export function ArrayVisualizer({ frame }: ArrayVisualizerProps) {
         <Legend color="#06b6d4" label="сравнение" />
         <Legend color="#f97316" label="обмен" />
         <Legend color="#10b981" label="отсортировано" />
+        <Legend color="#a855f7" label="вспомогательная структура" />
       </div>
+
+      {frame?.meta.auxiliaryArray !== undefined && (
+        <div className="mt-5 rounded-2xl border border-app bg-surface p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-300">Вспомогательный массив</p>
+              <p className="mt-1 text-sm text-app-muted">Счётчики, корзины или промежуточные разряды, которые алгоритм использует параллельно с основным массивом.</p>
+            </div>
+            <p className="rounded-xl border border-app bg-slate-950/40 px-3 py-2 text-xs text-app-muted">Строка псевдокода: <span className="font-semibold text-violet-200">{frame?.pseudocode.line ?? '—'}</span></p>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {frame.meta.auxiliaryArray.map((value, index) => (
+              <span className="inline-flex min-w-12 flex-col items-center rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-sm font-semibold text-violet-100" key={`${index}-${value}`}>
+                <span>{value}</span>
+                <span className="mt-1 text-[10px] font-normal text-violet-200/70">{index}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {comparisonRows.length > 0 && <SortComparisonTable rows={comparisonRows} />}
     </section>

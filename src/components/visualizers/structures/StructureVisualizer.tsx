@@ -6,10 +6,14 @@ interface StructureVisualizerProps {
 
 export function StructureVisualizer({ frame }: StructureVisualizerProps) {
   const snapshot = frame?.data;
+  const label = snapshot?.label ?? '';
+  const lowerLabel = label.toLowerCase();
   const isTreeLike =
-    snapshot?.label.includes('BST') === true ||
-    snapshot?.label.includes('куча') === true ||
-    snapshot?.label.includes('Куча') === true;
+    lowerLabel.includes('дерево') === true ||
+    lowerLabel.includes('bst') === true ||
+    lowerLabel.includes('avl') === true ||
+    lowerLabel.includes('куча') === true;
+  const isLinkedListLike = lowerLabel.includes('список') === true;
 
   return (
     <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6">
@@ -19,6 +23,8 @@ export function StructureVisualizer({ frame }: StructureVisualizerProps) {
         <HashTableView frame={frame} />
       ) : isTreeLike ? (
         <TreeView frame={frame} />
+      ) : isLinkedListLike ? (
+        <LinkedListView frame={frame} />
       ) : (
         <div className="mt-4 flex flex-wrap gap-3">
           {snapshot?.cells.map((cell, index) => (
@@ -97,6 +103,45 @@ function HashTableView({ frame }: { readonly frame: StructureAlgorithmFrame | nu
   );
 }
 
+function LinkedListView({ frame }: { readonly frame: StructureAlgorithmFrame | null }) {
+  const cells = frame?.data.cells ?? [];
+  const pointers = frame?.meta.pointers ?? {};
+
+  return (
+    <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950/50 p-4">
+      <div className="flex min-h-28 items-center gap-3">
+        {cells.length === 0 ? (
+          <div className="rounded-2xl border border-slate-700 bg-slate-900 px-5 py-4 text-sm text-slate-400">
+            Список пуст: head не указывает на узел.
+          </div>
+        ) : cells.map((cell, index) => {
+          const isActive = frame?.meta.activeIndex === index;
+          const pointerLabels = Object.entries(pointers).filter(([, pointerIndex]) => pointerIndex === index).map(([label]) => label);
+          return (
+            <div className="flex items-center gap-3" key={cell.id}>
+              <div className="relative flex flex-col items-center gap-2">
+                {pointerLabels.length > 0 && (
+                  <div className="absolute -top-8 flex flex-wrap justify-center gap-1">
+                    {pointerLabels.map((label) => <PointerBadge label={label} key={label} />)}
+                  </div>
+                )}
+                <div className={isActive ? 'flex h-16 min-w-16 items-center justify-center rounded-2xl border border-cyan-300 bg-cyan-500/30 px-4 text-lg font-bold text-cyan-100' : 'flex h-16 min-w-16 items-center justify-center rounded-2xl border border-slate-700 bg-slate-900 px-4 text-lg font-bold text-slate-100'}>
+                  {cell.value ?? '·'}
+                </div>
+                <span className="text-xs text-slate-500">узел {index}</span>
+              </div>
+              {index < cells.length - 1 && <span className="text-2xl text-slate-500">→</span>}
+            </div>
+          );
+        })}
+      </div>
+      <p className="mt-3 text-xs leading-5 text-slate-400">
+        Стрелка показывает ссылку на следующий узел. В стеке добавление и удаление идут через head; в очереди добавление идёт через tail, а удаление — через head.
+      </p>
+    </div>
+  );
+}
+
 function PointerBadge({ label }: { readonly label: string }) {
   return (
     <div className="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-violet-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
@@ -111,13 +156,22 @@ const getPointerLabel = (label: string): string => {
     tail: 'хвост tail',
     top: 'вершина top',
     i: 'индекс i',
+    search: 'поиск search',
+    current: 'текущий узел',
+    root: 'корень root',
+    left: 'левый ребёнок',
+    right: 'правый ребёнок',
+    min: 'минимум',
   };
   return labels[label] ?? label;
 };
 
 function TreeView({ frame }: { readonly frame: StructureAlgorithmFrame | null }) {
-  const nodes = buildTreeLayout(frame?.data.cells ?? [], frame?.meta.activeIndex);
-  const visibleNodes = nodes.filter((node) => node.value !== null || node.isActive);
+  const searchPath = Array.isArray(frame?.meta.searchPath)
+    ? (frame?.meta.searchPath as readonly number[])
+    : [];
+  const nodes = buildTreeLayout(frame?.data.cells ?? [], frame?.meta.activeIndex, searchPath);
+  const visibleNodes = nodes.filter((node) => node.value !== null || node.isActive || node.isInSearchPath);
   const visibleNodeIndexes = new Set(visibleNodes.map((node) => node.index));
   const edges = visibleNodes
     .map((node) => {
@@ -148,20 +202,33 @@ function TreeView({ frame }: { readonly frame: StructureAlgorithmFrame | null })
           ))}
         </svg>
 
-        {visibleNodes.map((node) => (
-          <div
-            className={
-              node.isActive
-                ? 'absolute flex h-14 min-w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-cyan-300 bg-cyan-500 px-3 text-center text-sm font-bold text-slate-950 shadow-[0_0_24px_rgba(34,211,238,0.45)]'
-                : 'absolute flex h-14 min-w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-slate-600 bg-slate-900 px-3 text-center text-sm font-bold text-slate-100'
-            }
-            key={node.id}
-            style={{ left: `${node.x}%`, top: `${node.y}%` }}
-            title={`Индекс массива: ${node.index}`}
-          >
-            {node.value ?? '·'}
-          </div>
-        ))}
+        {visibleNodes.map((node) => {
+          const pointerLabels = Object.entries(frame?.meta.pointers ?? {}).filter(([, pointerIndex]) => pointerIndex === node.index).map(([label]) => label);
+          return (
+            <div key={node.id}>
+              {pointerLabels.length > 0 && (
+                <div className="absolute z-10 -translate-x-1/2 -translate-y-full" style={{ left: `${node.x}%`, top: `${node.y}%` }}>
+                  <div className="mb-1 flex flex-wrap justify-center gap-1">
+                    {pointerLabels.map((label) => <PointerBadge label={label} key={label} />)}
+                  </div>
+                </div>
+              )}
+              <div
+                className={
+                  node.isActive
+                    ? 'absolute flex h-14 min-w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-cyan-300 bg-cyan-500 px-3 text-center text-sm font-bold text-slate-950 shadow-[0_0_24px_rgba(34,211,238,0.45)]'
+                    : node.isInSearchPath
+                      ? 'absolute flex h-14 min-w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-cyan-400 bg-cyan-950/80 px-3 text-center text-sm font-bold text-cyan-100'
+                      : 'absolute flex h-14 min-w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-slate-600 bg-slate-900 px-3 text-center text-sm font-bold text-slate-100'
+                }
+                style={{ left: `${node.x}%`, top: `${node.y}%` }}
+                title={`Индекс массива: ${node.index}`}
+              >
+                {node.value ?? '·'}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -174,11 +241,13 @@ interface TreeLayoutNode {
   readonly x: number;
   readonly y: number;
   readonly isActive: boolean;
+  readonly isInSearchPath: boolean;
 }
 
 const buildTreeLayout = (
   cells: readonly { id: string; value: number | null }[],
   activeIndex: number | undefined,
+  searchPath: readonly number[] = [],
 ): readonly TreeLayoutNode[] => {
   const levelCount = Math.max(1, getTreeLevelCount(cells.length));
   const yStep = levelCount <= 1 ? 0 : 84 / (levelCount - 1);
@@ -196,6 +265,7 @@ const buildTreeLayout = (
       x: ((positionInLevel + 1) / (nodesInLevel + 1)) * 100,
       y: levelCount <= 1 ? 50 : 8 + level * yStep,
       isActive: activeIndex === index,
+      isInSearchPath: searchPath.includes(index),
     };
   });
 };

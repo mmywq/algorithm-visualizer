@@ -50,6 +50,8 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
   const [renamePresetState, setRenamePresetState] = useState<{ id: string; name: string } | null>(null);
   const [newNodeLabel, setNewNodeLabel] = useState('');
   const [newNodeLinks, setNewNodeLinks] = useState('');
+  const [edgeSourceId, setEdgeSourceId] = useState<NodeId>('A');
+  const [edgeTargetId, setEdgeTargetId] = useState<NodeId>('B');
   const [randomNodesCount, setRandomNodesCount] = useState(8);
   const [randomDensity, setRandomDensity] = useState(0.3);
 
@@ -66,6 +68,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
   const status = useAlgorithmPlayerStore((state) => state.status);
 
   const graphFrame = isGraphAlgorithmFrame(currentFrame) ? currentFrame : null;
+  const displayedGraph = status === 'running' || status === 'paused' || status === 'completed' ? graphFrame?.data ?? graph : graph;
   const graphStats = getGraphStats(graph);
   const completedStepHistory = useMemo(
     () => frames.filter(isGraphAlgorithmFrame).map((frame) => frame.description ?? frame.message),
@@ -100,6 +103,18 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
       setStartNodeId(fallbackNodeId);
     }
   }, [graph.nodes, startNodeId]);
+
+  useEffect(() => {
+    const firstNodeId = graph.nodes[0]?.id;
+    const secondNodeId = graph.nodes[1]?.id ?? firstNodeId;
+
+    if (firstNodeId !== undefined && graph.nodes.some((node) => node.id === edgeSourceId) === false) {
+      setEdgeSourceId(firstNodeId);
+    }
+    if (secondNodeId !== undefined && graph.nodes.some((node) => node.id === edgeTargetId) === false) {
+      setEdgeTargetId(secondNodeId);
+    }
+  }, [edgeSourceId, edgeTargetId, graph.nodes]);
 
   const commitGraph = (nextGraph: GraphSnapshot): void => {
     const normalized = normalizeGraph(nextGraph);
@@ -143,6 +158,35 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
     const nodes = graph.nodes.filter((node) => node.id !== nodeId);
     const edges = graph.edges.filter((edge) => edge.source !== nodeId && edge.target !== nodeId);
     commitGraph({ nodes, edges });
+  };
+
+  const addSelectedEdge = (): void => {
+    if (edgeSourceId === edgeTargetId) {
+      setGraphInputError('Петли пока не добавляем: выберите две разные вершины.');
+      return;
+    }
+    if (graph.nodes.some((node) => node.id === edgeSourceId) === false || graph.nodes.some((node) => node.id === edgeTargetId) === false) {
+      setGraphInputError('Для добавления связи обе вершины должны существовать.');
+      return;
+    }
+    if (graph.edges.some((edge) => edgeKey(edge.source, edge.target) === edgeKey(edgeSourceId, edgeTargetId))) {
+      setGraphInputError(`Связь ${edgeSourceId}—${edgeTargetId} уже есть.`);
+      return;
+    }
+
+    commitGraph({
+      nodes: graph.nodes,
+      edges: [...graph.edges, { id: `${edgeSourceId}-${edgeTargetId}`, source: edgeSourceId, target: edgeTargetId, directed: false, payload: {} }],
+    });
+  };
+
+  const removeSelectedEdge = (): void => {
+    const nextEdges = graph.edges.filter((edge) => edgeKey(edge.source, edge.target) !== edgeKey(edgeSourceId, edgeTargetId));
+    if (nextEdges.length === graph.edges.length) {
+      setGraphInputError(`Связь ${edgeSourceId}—${edgeTargetId} не найдена.`);
+      return;
+    }
+    commitGraph({ nodes: graph.nodes, edges: nextEdges });
   };
 
   const generateRandomGraph = (): void => {
@@ -312,6 +356,15 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
             <button className="control-button" onClick={addNode} type="button">Добавить узел</button>
             <button className="control-button" onClick={clearGraph} type="button">Очистить граф</button>
             <button className="control-button" onClick={resetToBaseGraph} type="button">Сбросить демо-граф</button>
+            <select className="h-10 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" disabled={graph.nodes.length === 0} onChange={(event) => setEdgeSourceId(event.target.value)} value={edgeSourceId}>
+              {graph.nodes.map((node) => <option key={`source-${node.id}`} value={node.id}>{node.label}</option>)}
+            </select>
+            <span className="self-center text-sm text-app-muted">—</span>
+            <select className="h-10 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" disabled={graph.nodes.length === 0} onChange={(event) => setEdgeTargetId(event.target.value)} value={edgeTargetId}>
+              {graph.nodes.map((node) => <option key={`target-${node.id}`} value={node.id}>{node.label}</option>)}
+            </select>
+            <button className="control-button" disabled={graph.nodes.length < 2} onClick={addSelectedEdge} type="button">Добавить связь</button>
+            <button className="control-button" disabled={graph.nodes.length < 2} onClick={removeSelectedEdge} type="button">Удалить связь</button>
             <input className="h-10 w-24 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" type="number" min={2} max={24} value={randomNodesCount} onChange={(event) => setRandomNodesCount(Number(event.target.value))} placeholder="Вершин" />
             <input className="h-10 w-28 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" type="number" min={0} max={1} step={0.05} value={randomDensity} onChange={(event) => setRandomDensity(Number(event.target.value))} placeholder="Плотность" />
             <button className="control-button" onClick={generateRandomGraph} type="button">Сгенерировать случайный граф</button>
@@ -373,7 +426,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
         )}
       </section>
 
-      <GraphVisualizer editable frame={graphFrame} graph={graph} onAddNodeAt={addNodeAtPosition} onGraphChange={commitGraph} />
+      <GraphVisualizer editable frame={graphFrame} graph={displayedGraph} onAddNodeAt={addNodeAtPosition} onGraphChange={commitGraph} />
 
       <section className="grid gap-4 lg:grid-cols-2">
         <div className="app-panel">
@@ -765,45 +818,37 @@ function StatCard({ label, value }: StatCardProps) {
 
 
 const applyForceLayout = (nodes: GraphSnapshot['nodes'], edges: readonly GraphEdge[] = []): GraphSnapshot['nodes'] => {
-  const width = 920;
-  const height = 520;
+  const width = 760;
+  const height = 360;
   const centerX = width / 2;
   const centerY = height / 2;
-  const radius = Math.max(100, Math.min(width, height) / 2 - 70);
+  const radius = Math.max(90, Math.min(width, height) / 2 - 45);
   const points = nodes.map((node, index) => {
-    const angle = nodes.length === 0 ? 0 : (index / nodes.length) * Math.PI * 2;
+    const angle = nodes.length <= 1 ? 0 : (index / nodes.length) * Math.PI * 2 - Math.PI / 2;
     return {
       ...node,
       position: {
-        x: centerX + Math.cos(angle) * radius * 0.8,
-        y: centerY + Math.sin(angle) * radius * 0.8,
+        x: centerX + Math.cos(angle) * radius,
+        y: centerY + Math.sin(angle) * radius,
       },
     };
   });
 
-  for (let iter = 0; iter < 120; iter += 1) {
+  for (let iter = 0; iter < 70; iter += 1) {
     for (let i = 0; i < points.length; i += 1) {
       for (let j = i + 1; j < points.length; j += 1) {
         const a = points[i]!;
         const b = points[j]!;
-        const dx = b.position.x - a.position.x;
-        const dy = b.position.y - a.position.y;
-        const dist = Math.max(24, Math.hypot(dx, dy));
-        const force = 3200 / (dist * dist);
+        const dx = b.position.x - a.position.x || 0.01;
+        const dy = b.position.y - a.position.y || 0.01;
+        const dist = Math.max(40, Math.hypot(dx, dy));
+        const force = 1800 / (dist * dist);
         const fx = (dx / dist) * force;
         const fy = (dy / dist) * force;
         a.position.x -= fx;
         a.position.y -= fy;
         b.position.x += fx;
         b.position.y += fy;
-      }
-    }
-
-    for (const edge of edges) {
-      const source = points.find((point) => point.id === edge.source);
-      const target = points.find((point) => point.id === edge.target);
-      if (source === undefined || target === undefined) {
-        continue;
       }
 
       const dx = target.position.x - source.position.x;
@@ -819,11 +864,29 @@ const applyForceLayout = (nodes: GraphSnapshot['nodes'], edges: readonly GraphEd
       target.position.y -= fy;
     }
 
+    for (const edge of edges) {
+      const source = points.find((point) => point.id === edge.source);
+      const target = points.find((point) => point.id === edge.target);
+      if (source === undefined || target === undefined) continue;
+
+      const dx = target.position.x - source.position.x;
+      const dy = target.position.y - source.position.y;
+      const dist = Math.max(1, Math.hypot(dx, dy));
+      const desired = 135;
+      const pull = (dist - desired) * 0.01;
+      const fx = (dx / dist) * pull;
+      const fy = (dy / dist) * pull;
+      source.position.x += fx;
+      source.position.y += fy;
+      target.position.x -= fx;
+      target.position.y -= fy;
+    }
+
     for (const node of points) {
-      node.position.x += (centerX - node.position.x) * 0.015;
-      node.position.y += (centerY - node.position.y) * 0.015;
-      node.position.x = Math.min(width - 40, Math.max(40, node.position.x));
-      node.position.y = Math.min(height - 40, Math.max(40, node.position.y));
+      node.position.x += (centerX - node.position.x) * 0.01;
+      node.position.y += (centerY - node.position.y) * 0.01;
+      node.position.x = Math.min(width - 48, Math.max(48, node.position.x));
+      node.position.y = Math.min(height - 48, Math.max(48, node.position.y));
     }
   }
 
