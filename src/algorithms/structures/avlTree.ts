@@ -100,7 +100,7 @@ const createFrame = (step: number, root: AvlNode | null, event: AvlEvent, phase:
   const activeIndex = findIndex(data, event.activeValue);
   return {
     step,
-    domain: 'array',
+    domain: 'tree',
     phase,
     status: phase === 'complete' ? 'completed' : 'running',
     data,

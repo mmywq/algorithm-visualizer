@@ -50,6 +50,8 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
   const [renamePresetState, setRenamePresetState] = useState<{ id: string; name: string } | null>(null);
   const [newNodeLabel, setNewNodeLabel] = useState('');
   const [newNodeLinks, setNewNodeLinks] = useState('');
+  const [edgeSourceId, setEdgeSourceId] = useState<NodeId>('A');
+  const [edgeTargetId, setEdgeTargetId] = useState<NodeId>('B');
   const [randomNodesCount, setRandomNodesCount] = useState(8);
   const [randomDensity, setRandomDensity] = useState(0.3);
 
@@ -66,6 +68,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
   const status = useAlgorithmPlayerStore((state) => state.status);
 
   const graphFrame = isGraphAlgorithmFrame(currentFrame) ? currentFrame : null;
+  const displayedGraph = status === 'running' || status === 'paused' || status === 'completed' ? graphFrame?.data ?? graph : graph;
   const graphStats = getGraphStats(graph);
   const completedStepHistory = useMemo(
     () => frames.filter(isGraphAlgorithmFrame).map((frame) => frame.description ?? frame.message),
@@ -100,6 +103,18 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
       setStartNodeId(fallbackNodeId);
     }
   }, [graph.nodes, startNodeId]);
+
+  useEffect(() => {
+    const firstNodeId = graph.nodes[0]?.id;
+    const secondNodeId = graph.nodes[1]?.id ?? firstNodeId;
+
+    if (firstNodeId !== undefined && graph.nodes.some((node) => node.id === edgeSourceId) === false) {
+      setEdgeSourceId(firstNodeId);
+    }
+    if (secondNodeId !== undefined && graph.nodes.some((node) => node.id === edgeTargetId) === false) {
+      setEdgeTargetId(secondNodeId);
+    }
+  }, [edgeSourceId, edgeTargetId, graph.nodes]);
 
   const commitGraph = (nextGraph: GraphSnapshot): void => {
     const normalized = normalizeGraph(nextGraph);
@@ -143,6 +158,35 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
     const nodes = graph.nodes.filter((node) => node.id !== nodeId);
     const edges = graph.edges.filter((edge) => edge.source !== nodeId && edge.target !== nodeId);
     commitGraph({ nodes, edges });
+  };
+
+  const addSelectedEdge = (): void => {
+    if (edgeSourceId === edgeTargetId) {
+      setGraphInputError('Петли пока не добавляем: выберите две разные вершины.');
+      return;
+    }
+    if (graph.nodes.some((node) => node.id === edgeSourceId) === false || graph.nodes.some((node) => node.id === edgeTargetId) === false) {
+      setGraphInputError('Для добавления связи обе вершины должны существовать.');
+      return;
+    }
+    if (graph.edges.some((edge) => edgeKey(edge.source, edge.target) === edgeKey(edgeSourceId, edgeTargetId))) {
+      setGraphInputError(`Связь ${edgeSourceId}—${edgeTargetId} уже есть.`);
+      return;
+    }
+
+    commitGraph({
+      nodes: graph.nodes,
+      edges: [...graph.edges, { id: `${edgeSourceId}-${edgeTargetId}`, source: edgeSourceId, target: edgeTargetId, directed: false, payload: {} }],
+    });
+  };
+
+  const removeSelectedEdge = (): void => {
+    const nextEdges = graph.edges.filter((edge) => edgeKey(edge.source, edge.target) !== edgeKey(edgeSourceId, edgeTargetId));
+    if (nextEdges.length === graph.edges.length) {
+      setGraphInputError(`Связь ${edgeSourceId}—${edgeTargetId} не найдена.`);
+      return;
+    }
+    commitGraph({ nodes: graph.nodes, edges: nextEdges });
   };
 
   const generateRandomGraph = (): void => {
@@ -257,7 +301,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
             <p className="text-sm font-semibold uppercase tracking-[0.28em] text-violet-300">Графы без страха</p>
             <h1 className="mt-2 text-4xl font-bold tracking-tight text-app-primary">Обход графа: пошаговая сеть</h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-app-muted">
-              Вершины — это объекты, рёбра — связи между ними. Перетащите вершины мышкой, соедините две вершины линией на холсте или измените список/матрицу — все представления синхронизируются автоматически.
+              Вершины — это объекты, рёбра — связи между ними. Ниже можно собрать граф вручную, перетащить вершины мышкой, соединить их линиями на холсте или изменить список и матрицу смежности — все представления синхронизируются автоматически, чтобы было видно, как данные переходят из одного вида в другой.
             </p>
           </div>
 
@@ -272,6 +316,21 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
                 {algorithmLabels[algorithmKey]}
               </button>
             ))}
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-3 rounded-2xl border border-app bg-surface p-4 text-sm text-app-muted xl:grid-cols-3">
+          <div className="rounded-xl border border-app bg-slate-950/40 p-3">
+            <p className="font-semibold text-app-primary">Что показывает этот раздел</p>
+            <p className="mt-2 leading-6">Обход графа показывает, в каком порядке алгоритм посещает вершины и по каким рёбрам он переходит дальше. Это помогает понимать поиск путей, связность и работу алгоритмов, которые строят маршрут шаг за шагом.</p>
+          </div>
+          <div className="rounded-xl border border-app bg-slate-950/40 p-3">
+            <p className="font-semibold text-app-primary">BFS</p>
+            <p className="mt-2 leading-6">Поиск в ширину использует очередь: сначала обрабатываются вершины, которые находятся ближе к старту. Такой порядок полезен, когда нужно получить кратчайший путь в невзвешенном графе.</p>
+          </div>
+          <div className="rounded-xl border border-app bg-slate-950/40 p-3">
+            <p className="font-semibold text-app-primary">DFS</p>
+            <p className="mt-2 leading-6">Поиск в глубину использует стек: алгоритм идёт по одной ветви как можно дальше и только потом возвращается назад. Так удобно искать компоненты связности, циклы и структурные зависимости.</p>
           </div>
         </div>
 
@@ -297,6 +356,15 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
             <button className="control-button" onClick={addNode} type="button">Добавить узел</button>
             <button className="control-button" onClick={clearGraph} type="button">Очистить граф</button>
             <button className="control-button" onClick={resetToBaseGraph} type="button">Сбросить демо-граф</button>
+            <select className="h-10 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" disabled={graph.nodes.length === 0} onChange={(event) => setEdgeSourceId(event.target.value)} value={edgeSourceId}>
+              {graph.nodes.map((node) => <option key={`source-${node.id}`} value={node.id}>{node.label}</option>)}
+            </select>
+            <span className="self-center text-sm text-app-muted">—</span>
+            <select className="h-10 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" disabled={graph.nodes.length === 0} onChange={(event) => setEdgeTargetId(event.target.value)} value={edgeTargetId}>
+              {graph.nodes.map((node) => <option key={`target-${node.id}`} value={node.id}>{node.label}</option>)}
+            </select>
+            <button className="control-button" disabled={graph.nodes.length < 2} onClick={addSelectedEdge} type="button">Добавить связь</button>
+            <button className="control-button" disabled={graph.nodes.length < 2} onClick={removeSelectedEdge} type="button">Удалить связь</button>
             <input className="h-10 w-24 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" type="number" min={2} max={24} value={randomNodesCount} onChange={(event) => setRandomNodesCount(Number(event.target.value))} placeholder="Вершин" />
             <input className="h-10 w-28 rounded-xl border border-app bg-surface px-3 text-sm text-app-primary" type="number" min={0} max={1} step={0.05} value={randomDensity} onChange={(event) => setRandomDensity(Number(event.target.value))} placeholder="Плотность" />
             <button className="control-button" onClick={generateRandomGraph} type="button">Сгенерировать случайный граф</button>
@@ -358,7 +426,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
         )}
       </section>
 
-      <GraphVisualizer editable frame={graphFrame} graph={graph} onAddNodeAt={addNodeAtPosition} onGraphChange={commitGraph} />
+      <GraphVisualizer editable frame={graphFrame} graph={displayedGraph} onAddNodeAt={addNodeAtPosition} onGraphChange={commitGraph} />
 
       <section className="grid gap-4 lg:grid-cols-2">
         <div className="app-panel">
@@ -418,8 +486,8 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
         <div className="rounded-2xl border border-app bg-surface p-3 text-sm text-app-muted lg:col-span-2">
           <p className="font-semibold text-app-primary">Псевдокод {selectedAlgorithm.toUpperCase()}</p>
           {(selectedAlgorithm === 'bfs'
-            ? ['инициализировать очередь и множество посещённых', 'поместить стартовую вершину в очередь', 'извлечь вершину u из очереди и обработать', 'для каждого соседа v вершины u', 'если v не посещена: отметить и добавить в очередь', 'если очередь пуста — обход завершён']
-            : ['инициализировать стек и множество посещённых', 'поместить стартовую вершину в стек', 'снять вершину u со стека и обработать', 'для каждого соседа v вершины u', 'если v не посещена: отметить и поместить в стек', 'если стек пуст — обход завершён'])
+            ? ['создать очередь и множество посещённых вершин', 'поместить стартовую вершину в очередь', 'извлечь вершину из начала очереди', 'просмотреть всех соседей текущей вершины', 'непосещённого соседа отметить и добавить в очередь', 'повторять, пока очередь не опустеет']
+            : ['создать стек и множество посещённых вершин', 'поместить стартовую вершину в стек', 'снять вершину с вершины стека', 'просмотреть всех соседей текущей вершины', 'непосещённого соседа отметить и поместить в стек', 'повторять, пока стек не опустеет'])
             .map((line, index) => (
               <p key={line} className={graphFrame?.pseudocode.line === index + 1 ? 'text-violet-200 font-semibold' : ''}>{index + 1}. {line}</p>
             ))}
@@ -428,17 +496,41 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
 
       <section className="app-panel">
         <h3 className="text-lg font-semibold text-app-primary">Краткая теория обходов</h3>
-        <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-app-muted">
-          <li><strong>BFS</strong> находит кратчайший путь в невзвешенном графе.</li>
-          <li><strong>DFS</strong> удобен для поиска компонент, циклов и топологического анализа.</li>
-          <li>Сложность обеих стратегий: <strong>O(V + E)</strong>, где V — вершины, E — рёбра.</li>
-        </ul>
+        <div className="mt-3 grid gap-3 md:grid-cols-3">
+          <div className="rounded-2xl border border-app bg-surface p-3 text-sm leading-6 text-app-muted">
+            <p className="font-semibold text-app-primary">Зачем нужен обход графа</p>
+            <p className="mt-2">Обход нужен, чтобы по шагам изучить связность графа, найти путь между вершинами, обработать зависимости и понять, какие вершины достижимы из стартовой точки.</p>
+          </div>
+          <div className="rounded-2xl border border-app bg-surface p-3 text-sm leading-6 text-app-muted">
+            <p className="font-semibold text-app-primary">Что такое frontier</p>
+            <p className="mt-2">Frontier — это граница обхода: вершины, которые уже найдены, но ещё не обработаны. В BFS это очередь, в DFS — стек.</p>
+          </div>
+          <div className="rounded-2xl border border-app bg-surface p-3 text-sm leading-6 text-app-muted">
+            <p className="font-semibold text-app-primary">Свойства</p>
+            <p className="mt-2">BFS обходит уровни по порядку и даёт кратчайший путь в невзвешенном графе. DFS глубоко уходит по одной ветви и удобен для структурного анализа. Обе стратегии работают за <strong>O(V + E)</strong>.</p>
+          </div>
+        </div>
       </section>
 
-      {status === 'completed' && completedStepHistory.length > 0 && (
+      {status === 'completed' && graphFrame !== null && (
         <section className="app-panel">
-          <h3 className="text-xl font-semibold text-app-primary">История шагов обхода</h3>
-          <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-app-muted">
+          <h3 className="text-xl font-semibold text-app-primary">Результат обхода</h3>
+          <div className="mt-3 grid gap-3 md:grid-cols-3">
+            <div className="rounded-2xl border border-app bg-surface p-3 text-sm text-app-muted">
+              <p className="font-semibold text-app-primary">Порядок посещения</p>
+              <p className="mt-2 font-mono text-xs leading-6 text-app-primary">{graphFrame.meta.visitedNodeIds.join(' → ')}</p>
+            </div>
+            <div className="rounded-2xl border border-app bg-surface p-3 text-sm text-app-muted">
+              <p className="font-semibold text-app-primary">Обработано рёбер</p>
+              <p className="mt-2 font-mono text-xs leading-6 text-app-primary">{graphFrame.meta.traversedEdgeIds.length > 0 ? graphFrame.meta.traversedEdgeIds.join(', ') : '—'}</p>
+            </div>
+            <div className="rounded-2xl border border-app bg-surface p-3 text-sm text-app-muted">
+              <p className="font-semibold text-app-primary">Итог</p>
+              <p className="mt-2 leading-6">Алгоритм завершил обход от вершины {graphFrame.meta.startNodeId}. Посещено вершин: {graphFrame.meta.visitedNodeIds.length}.
+              </p>
+            </div>
+          </div>
+          <ol className="mt-4 list-decimal space-y-1 pl-5 text-sm text-app-muted">
             {completedStepHistory.map((entry, index) => <li key={`${index}-${entry}`}>{entry}</li>)}
           </ol>
         </section>
@@ -725,26 +817,66 @@ function StatCard({ label, value }: StatCardProps) {
 }
 
 
-const applyForceLayout = (nodes: GraphSnapshot['nodes'], _edges: readonly GraphEdge[] = []): GraphSnapshot['nodes'] => {
-  const width = 820;
-  const height = 420;
-  const points = nodes.map((node, index) => ({ ...node, position: { x: 120 + (index % 8) * 80, y: 80 + Math.floor(index / 8) * 90 } }));
+const applyForceLayout = (nodes: GraphSnapshot['nodes'], edges: readonly GraphEdge[] = []): GraphSnapshot['nodes'] => {
+  const width = 760;
+  const height = 360;
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const radius = Math.max(90, Math.min(width, height) / 2 - 45);
+  const points = nodes.map((node, index) => {
+    const angle = nodes.length <= 1 ? 0 : (index / nodes.length) * Math.PI * 2 - Math.PI / 2;
+    return {
+      ...node,
+      position: {
+        x: centerX + Math.cos(angle) * radius,
+        y: centerY + Math.sin(angle) * radius,
+      },
+    };
+  });
 
-  for (let iter = 0; iter < 90; iter += 1) {
+  for (let iter = 0; iter < 70; iter += 1) {
     for (let i = 0; i < points.length; i += 1) {
       for (let j = i + 1; j < points.length; j += 1) {
-        const a = points[i]!; const b = points[j]!;
-        const dx = b.position.x - a.position.x; const dy = b.position.y - a.position.y;
-        const dist = Math.max(20, Math.hypot(dx, dy));
-        const force = 2600 / (dist * dist);
-        const fx = (dx / dist) * force; const fy = (dy / dist) * force;
-        a.position.x -= fx; a.position.y -= fy; b.position.x += fx; b.position.y += fy;
+        const a = points[i]!;
+        const b = points[j]!;
+        const dx = b.position.x - a.position.x || 0.01;
+        const dy = b.position.y - a.position.y || 0.01;
+        const dist = Math.max(40, Math.hypot(dx, dy));
+        const force = 1800 / (dist * dist);
+        const fx = (dx / dist) * force;
+        const fy = (dy / dist) * force;
+        a.position.x -= fx;
+        a.position.y -= fy;
+        b.position.x += fx;
+        b.position.y += fy;
       }
     }
+
+    for (const edge of edges) {
+      const source = points.find((point) => point.id === edge.source);
+      const target = points.find((point) => point.id === edge.target);
+      if (source === undefined || target === undefined) continue;
+
+      const dx = target.position.x - source.position.x;
+      const dy = target.position.y - source.position.y;
+      const dist = Math.max(1, Math.hypot(dx, dy));
+      const desired = 135;
+      const pull = (dist - desired) * 0.01;
+      const fx = (dx / dist) * pull;
+      const fy = (dy / dist) * pull;
+      source.position.x += fx;
+      source.position.y += fy;
+      target.position.x -= fx;
+      target.position.y -= fy;
+    }
+
     for (const node of points) {
-      node.position.x = Math.min(width, Math.max(20, node.position.x));
-      node.position.y = Math.min(height, Math.max(20, node.position.y));
+      node.position.x += (centerX - node.position.x) * 0.01;
+      node.position.y += (centerY - node.position.y) * 0.01;
+      node.position.x = Math.min(width - 48, Math.max(48, node.position.x));
+      node.position.y = Math.min(height - 48, Math.max(48, node.position.y));
     }
   }
+
   return points;
 };
