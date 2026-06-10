@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { SortingVisualizer } from '@/components/visualizers/arrays/SortingVisualizer';
-import { GraphTraversalVisualizer } from '@/components/visualizers/graphs/GraphTraversalVisualizer';
 import { SiteHeader } from '@/components/layout/SiteHeader';
 import { algorithmCatalog } from '@/config/algorithmCatalog';
 import { loadSettings, saveSettings } from '@/lib/storage';
@@ -8,6 +7,7 @@ import { HomePage } from '@/pages/HomePage';
 import { StructuresPage } from '@/pages/StructuresPage';
 import { PlannedAlgorithmPage } from '@/pages/PlannedAlgorithmPage';
 import { AlgorithmPage, algorithmRouteRegistry } from '@/pages/AlgorithmPages';
+import { GraphWorkbench, graphWorkbenchRoutes } from '@/pages/GraphWorkbench';
 import { useAlgorithmPlayerStore } from '@/stores';
 import { useUiPreferencesStore } from '@/stores';
 
@@ -99,10 +99,10 @@ const renderRoute = (
   }
 
 
-  if (route === '/graphs/traversal') {
-    return <GraphTraversalVisualizer defaultStartNodeId={settings.lastGraphStartNodeId} />;
+  const graphPage = graphWorkbenchRoutes[route];
+  if (graphPage !== undefined) {
+    return <GraphWorkbench config={graphPage} key={route} />;
   }
-
 
   const configuredPage = algorithmRouteRegistry[route as keyof typeof algorithmRouteRegistry];
 

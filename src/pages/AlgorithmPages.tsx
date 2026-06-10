@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { compareSortsDemo, blockSortDemo, countingSortDemo, radixSortDemo } from '@/algorithms/sorting/extra';
-import { connectedComponentsDemo, dijkstraDemo, mstDemo } from '@/algorithms/graphs';
 import { balancedBstScenario, binomialHeapScenario, bstScenario, bstSearchScenario, hashBlockScenario, hashClosedScenario, hashOpenScenario, heapExtractMinScenario, heapScenario } from '@/algorithms/structures/extendedStructures';
 import { DataInputPanel } from '@/components/common/DataInputPanel';
 import { ResultPanel } from '@/components/common/ResultPanel';
@@ -8,13 +7,12 @@ import { StepExplainPanel } from '@/components/common/StepExplainPanel';
 import { TheoryPanel } from '@/components/common/TheoryPanel';
 import { PlayerControls } from '@/components/player/PlayerControls';
 import { ArrayVisualizer } from '@/components/visualizers/arrays/ArrayVisualizer';
-import { GraphVisualizer } from '@/components/visualizers/graphs/GraphVisualizer';
 import { StructureVisualizer } from '@/components/visualizers/structures/StructureVisualizer';
 import { useAlgorithmPlayerStore } from '@/stores';
-import type { AlgorithmFrame, AlgorithmTheory, ArrayAlgorithmFrame, GraphAlgorithmFrame, StructureAlgorithmFrame } from '@/types';
+import type { AlgorithmFrame, AlgorithmTheory, ArrayAlgorithmFrame, StructureAlgorithmFrame } from '@/types';
 import { algorithmTheoryByRoute, fallbackTheory } from './theoryContent';
 
-type Mode = 'array' | 'graph' | 'structure';
+type Mode = 'array' | 'structure';
 
 type PageGeneratorFactory = (
   inputValues?: readonly number[],
@@ -45,13 +43,12 @@ export function AlgorithmPage({ route, title, mode, generatorFactory }: Algorith
   const setPlaybackSpeed = useAlgorithmPlayerStore((state) => state.setPlaybackSpeed);
   const status = useAlgorithmPlayerStore((state) => state.status);
 
-  const canUseNumericInput = mode !== 'graph';
   const isBstPage = title === 'Двоичное дерево поиска';
   const isHeapPage = title === 'Куча';
 
   useEffect(() => {
-    loadPageAlgorithm(generatorFactory, canUseNumericInput ? values : undefined, loadAlgorithm);
-  }, [canUseNumericInput, generatorFactory, loadAlgorithm, values]);
+    loadPageAlgorithm(generatorFactory, values, loadAlgorithm);
+  }, [generatorFactory, loadAlgorithm, values]);
 
   const frame = currentFrame;
   const theory: AlgorithmTheory = algorithmTheoryByRoute[route] ?? fallbackTheory(mode);
@@ -60,7 +57,7 @@ export function AlgorithmPage({ route, title, mode, generatorFactory }: Algorith
 
   const resetAlgorithm = (): void => {
     setSearchError(null);
-    loadPageAlgorithm(generatorFactory, canUseNumericInput ? values : undefined, loadAlgorithm);
+    loadPageAlgorithm(generatorFactory, values, loadAlgorithm);
   };
 
   const runBstSearch = (): void => {
@@ -95,8 +92,7 @@ export function AlgorithmPage({ route, title, mode, generatorFactory }: Algorith
 
       <TheoryPanel theory={theory} />
 
-      {canUseNumericInput && (
-        <DataInputPanel
+      <DataInputPanel
           maxSize={16}
           minSize={2}
           onApply={(nextValues) => { setSearchError(null); setValues(nextValues); }}
@@ -123,13 +119,11 @@ export function AlgorithmPage({ route, title, mode, generatorFactory }: Algorith
               <p className="basis-full text-xs leading-5 text-app-muted">Извлечение минимума показывает перенос последнего элемента в корень и последующее «просеивание вниз» через меньшего ребёнка.</p>
             </div>
           )}
-        </DataInputPanel>
-      )}
+      </DataInputPanel>
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
         <div>
           {mode === 'array' && <ArrayVisualizer frame={isArrayFrame(frame) ? frame : null} />}
-          {mode === 'graph' && <GraphVisualizer frame={isGraphFrame(frame) ? frame : null} graph={isGraphFrame(frame) ? frame.data : { nodes: [], edges: [] }} title={title} />}
           {mode === 'structure' && <StructureVisualizer frame={isStructureFrame(frame) ? frame : null} />}
         </div>
         <StepExplainPanel frame={frame} pseudocode={theory.pseudocode} />
@@ -150,7 +144,7 @@ export function AlgorithmPage({ route, title, mode, generatorFactory }: Algorith
         totalFrames={frames.length}
       />
 
-      {isCompleted && <ResultPanel steps={stepsHistory} summary={buildResultSummary(title, frame)} />}
+      {isCompleted && <ResultPanel steps={stepsHistory} summary={frame?.description ?? frame?.message ?? null} />}
     </div>
   );
 }
@@ -179,38 +173,7 @@ const getDefaultValues = (title: string, mode: Mode): readonly number[] => {
 };
 
 const isArrayFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | null): frame is ArrayAlgorithmFrame => frame?.domain === 'array' && Array.isArray(frame.data) && frame.data.every((item) => typeof item === 'object' && item !== null && 'value' in item);
-const isGraphFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | null): frame is GraphAlgorithmFrame => frame?.domain === 'graph';
 const isStructureFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | null): frame is StructureAlgorithmFrame => (frame?.domain === 'tree' || frame?.domain === 'array') && typeof frame.data === 'object' && frame.data !== null && 'cells' in frame.data;
-
-const buildResultSummary = (title: string, frame: AlgorithmFrame<unknown, Record<string, unknown>> | null): string | null => {
-  if (frame === null) {
-    return null;
-  }
-
-  const fallback = frame.description ?? frame.message;
-
-  if (isGraphFrame(frame)) {
-    const meta = frame.meta as Record<string, unknown>;
-    if (title === 'Компоненты связности') {
-      const components = Array.isArray(meta.components) ? meta.components as readonly string[][] : [];
-      const componentCount = typeof meta.componentCount === 'number' ? meta.componentCount : components.length;
-      if (componentCount > 0) {
-        return `Найдено компонент связности: ${componentCount}. Состав: ${components.map((members, index) => `№${index + 1} — [${members.join(', ')}]`).join('; ')}.`;
-      }
-    } else if (title === 'Алгоритм Дейкстры') {
-      const distances = Array.isArray(meta.distances) ? meta.distances as readonly string[] : [];
-      if (distances.length > 0) {
-        return `Кратчайшие расстояния от вершины ${String(meta.startNodeId ?? '')}: ${distances.join(', ')}.`;
-      }
-    } else if (title === 'Минимальное остовное дерево') {
-      const mstEdgeIds = Array.isArray(meta.mstEdgeIds) ? meta.mstEdgeIds as readonly string[] : [];
-      const totalWeight = typeof meta.totalWeight === 'number' ? meta.totalWeight : null;
-      return `В остовное дерево вошли рёбра: ${mstEdgeIds.length > 0 ? mstEdgeIds.join(', ') : '—'}.${totalWeight === null ? '' : ` Суммарный вес: ${totalWeight}.`}`;
-    }
-  }
-
-  return fallback;
-};
 
 export const algorithmRouteRegistry = {
   '/trees/bst': { title: 'Двоичное дерево поиска', mode: 'structure' as const, generatorFactory: bstScenario },
@@ -224,7 +187,4 @@ export const algorithmRouteRegistry = {
   '/sorting/block': { title: 'Блочная сортировка', mode: 'array' as const, generatorFactory: blockSortDemo },
   '/sorting/counting': { title: 'Сортировка подсчётом', mode: 'array' as const, generatorFactory: countingSortDemo },
   '/sorting/radix': { title: 'Поразрядная сортировка', mode: 'array' as const, generatorFactory: radixSortDemo },
-  '/graphs/components': { title: 'Компоненты связности', mode: 'graph' as const, generatorFactory: connectedComponentsDemo },
-  '/graphs/dijkstra': { title: 'Алгоритм Дейкстры', mode: 'graph' as const, generatorFactory: dijkstraDemo },
-  '/graphs/mst': { title: 'Минимальное остовное дерево', mode: 'graph' as const, generatorFactory: mstDemo },
 };

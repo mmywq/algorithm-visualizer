@@ -46,7 +46,7 @@ export function* bfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
     graph,
     [startNodeId],
     bfsPseudocode.initial,
-    `Старт: отмечаем вершину ${startNodeId} как найденную и кладём её в очередь. Очередь сейчас: [${queue.join(', ')}].`,
+    `Начало обхода: вершина ${startNodeId} отмечается как найденная и помещается в очередь. Содержимое очереди: [${queue.join(', ')}].`,
     createGraphMeta(startNodeId, visitedNodeIds, queue, traversedEdgeIds, startNodeId),
   );
 
@@ -63,7 +63,7 @@ export function* bfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
       graph,
       [currentNodeId],
       bfsPseudocode.dequeue,
-      `Берём из начала очереди вершину ${currentNodeId}. Осталось в очереди: [${queue.join(', ') || 'пусто'}].`,
+      `Из начала очереди извлекается вершина ${currentNodeId}. В очереди остаётся: [${queue.join(', ') || 'пусто'}].`,
       createGraphMeta(startNodeId, visitedNodeIds, queue, traversedEdgeIds, currentNodeId),
     );
 
@@ -73,7 +73,7 @@ export function* bfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
       graph,
       [currentNodeId],
       bfsPseudocode.visit,
-      `Обрабатываем вершину ${currentNodeId}. Посещённые вершины: [${[...visitedNodeIds].join(', ')}].`,
+      `Обрабатывается вершина ${currentNodeId}. Посещённые вершины: [${[...visitedNodeIds].join(', ')}].`,
       createGraphMeta(startNodeId, visitedNodeIds, queue, traversedEdgeIds, currentNodeId),
     );
 
@@ -84,7 +84,7 @@ export function* bfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
         graph,
         [currentNodeId, neighbor.nodeId, neighbor.edgeId],
         bfsPseudocode.inspectNeighbor,
-        `Проверяем соседа ${neighbor.nodeId} вершины ${currentNodeId}: если он не посещён, добавим в очередь, чтобы обойти граф послойно.`,
+        `Проверяется сосед ${neighbor.nodeId} вершины ${currentNodeId}: непосещённые соседи добавляются в очередь — так обход идёт по слоям.`,
         createGraphMeta(startNodeId, visitedNodeIds, queue, traversedEdgeIds, currentNodeId),
       );
 
@@ -99,7 +99,7 @@ export function* bfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
           graph,
           [currentNodeId, neighbor.nodeId, neighbor.edgeId],
           bfsPseudocode.enqueue,
-          `Добавляем ${neighbor.nodeId} в очередь: BFS сначала обходит вершины текущего расстояния от старта, затем переходит глубже.`,
+          `Вершина ${neighbor.nodeId} отмечается как найденная и помещается в конец очереди. Очередь: [${queue.join(', ')}].`,
           createGraphMeta(startNodeId, visitedNodeIds, queue, traversedEdgeIds, neighbor.nodeId),
         );
       }
@@ -112,7 +112,7 @@ export function* bfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
     graph,
     [],
     bfsPseudocode.complete,
-    `BFS завершён: из вершины ${startNodeId} достижимы ${visitedNodeIds.size} верш.: [${[...visitedNodeIds].join(', ')}]. Очередь пуста, обход успешен.`,
+    `Обход в ширину завершён: очередь пуста. Из вершины ${startNodeId} достижимы ${visitedNodeIds.size} вершин, порядок посещения: ${[...visitedNodeIds].join(' → ')}. Выделенные рёбра образуют дерево обхода.`,
     createGraphMeta(startNodeId, visitedNodeIds, queue, traversedEdgeIds),
   );
 }

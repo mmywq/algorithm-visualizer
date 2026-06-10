@@ -46,7 +46,7 @@ export function* dfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
     graph,
     [startNodeId],
     dfsPseudocode.initial,
-    `Старт: отмечаем вершину ${startNodeId} как найденную и кладём её в стек. Стек сейчас: [${stack.join(', ')}].`,
+    `Начало обхода: вершина ${startNodeId} отмечается как найденная и помещается в стек. Содержимое стека: [${stack.join(', ')}].`,
     createGraphMeta(startNodeId, visitedNodeIds, stack, traversedEdgeIds, startNodeId),
   );
 
@@ -63,7 +63,7 @@ export function* dfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
       graph,
       [currentNodeId],
       dfsPseudocode.pop,
-      `Снимаем с вершины стека ${currentNodeId}. В стеке осталось: [${stack.join(', ') || 'пусто'}].`,
+      `С вершины стека снимается ${currentNodeId}. В стеке остаётся: [${stack.join(', ') || 'пусто'}].`,
       createGraphMeta(startNodeId, visitedNodeIds, stack, traversedEdgeIds, currentNodeId),
     );
 
@@ -73,7 +73,7 @@ export function* dfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
       graph,
       [currentNodeId],
       dfsPseudocode.visit,
-      `Обрабатываем вершину ${currentNodeId}. Посещённые вершины: [${[...visitedNodeIds].join(', ')}].`,
+      `Обрабатывается вершина ${currentNodeId}. Посещённые вершины: [${[...visitedNodeIds].join(', ')}].`,
       createGraphMeta(startNodeId, visitedNodeIds, stack, traversedEdgeIds, currentNodeId),
     );
 
@@ -86,7 +86,7 @@ export function* dfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
         graph,
         [currentNodeId, neighbor.nodeId, neighbor.edgeId],
         dfsPseudocode.inspectNeighbor,
-        `Проверяем соседа ${neighbor.nodeId} вершины ${currentNodeId}: если он не посещён, углубимся в него раньше остальных.`,
+        `Проверяется сосед ${neighbor.nodeId} вершины ${currentNodeId}: непосещённые соседи помещаются в стек и обрабатываются раньше остальных.`,
         createGraphMeta(startNodeId, visitedNodeIds, stack, traversedEdgeIds, currentNodeId),
       );
 
@@ -101,7 +101,7 @@ export function* dfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
           graph,
           [currentNodeId, neighbor.nodeId, neighbor.edgeId],
           dfsPseudocode.push,
-          `Кладём ${neighbor.nodeId} в стек: DFS выбирает углубление по текущей ветви, а возврат делает позже.`,
+          `Вершина ${neighbor.nodeId} отмечается как найденная и помещается в стек. Стек: [${stack.join(', ')}].`,
           createGraphMeta(startNodeId, visitedNodeIds, stack, traversedEdgeIds, neighbor.nodeId),
         );
       }
@@ -114,7 +114,7 @@ export function* dfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
     graph,
     [],
     dfsPseudocode.complete,
-    `DFS завершён: из вершины ${startNodeId} достижимы ${visitedNodeIds.size} верш.: [${[...visitedNodeIds].join(', ')}]. Стек пуст, обход успешен.`,
+    `Обход в глубину завершён: стек пуст. Из вершины ${startNodeId} достижимы ${visitedNodeIds.size} вершин, порядок обнаружения: ${[...visitedNodeIds].join(' → ')}. Выделенные рёбра образуют дерево обхода.`,
     createGraphMeta(startNodeId, visitedNodeIds, stack, traversedEdgeIds),
   );
 }
