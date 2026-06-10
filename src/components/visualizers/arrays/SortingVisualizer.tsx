@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { bubbleSort, mergeSort } from '@/algorithms/arrays';
 import { PlayerControls } from '@/components/player/PlayerControls';
+import { StepHistoryPanel } from '@/components/player/StepHistoryPanel';
 import { loadArrayPresets, loadSettings, removeArrayPreset, renameArrayPreset, saveArrayPreset, saveSettings } from '@/lib/storage';
 import { useAlgorithmPlayerStore } from '@/stores';
 import { useUiPreferencesStore } from '@/stores';
@@ -194,14 +195,7 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
           </div>
         </aside>
       </div>
-      {status === 'completed' && stepsHistory.length > 0 && (
-        <section className="app-panel">
-          <h3 className="text-xl font-semibold text-app-primary">История шагов сортировки</h3>
-          <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-app-muted">
-            {stepsHistory.map((entry, index) => <li key={`${index}-${entry}`}>{entry}</li>)}
-          </ol>
-        </section>
-      )}
+      {status === 'completed' && <StepHistoryPanel steps={stepsHistory} title="История шагов сортировки" />}
 
       <PlayerControls canStepBackward={currentIndex > 0} canStepForward={status !== 'completed'} currentIndex={currentIndex} onNextStep={nextStep} onPause={pause} onPlay={play} onPrevStep={prevStep} onReset={() => loadSortingAlgorithm(selectedAlgorithm, values, loadAlgorithm)} onSpeedChange={(speed) => { setPlaybackSpeed(speed); setUiPlaybackSpeed(speed); }} playbackSpeedMs={playbackSpeedMs} status={status} totalFrames={frames.length} />
     </div>

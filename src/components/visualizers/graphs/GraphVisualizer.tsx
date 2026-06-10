@@ -4,13 +4,17 @@ import ReactFlow, {
   applyNodeChanges,
   Background,
   Controls,
+  Handle,
   MarkerType,
+  Position,
   type Connection,
   type Edge,
   type EdgeChange,
-  type OnInit,
   type Node,
   type NodeChange,
+  type NodeProps,
+  ConnectionMode,
+  type OnInit,
 } from 'reactflow';
 import { useState, type MouseEvent } from 'react';
 import type { GraphAlgorithmFrame, GraphEdge, GraphNode, GraphPosition, GraphSnapshot } from '@/types';
@@ -23,6 +27,8 @@ interface GraphVisualizerProps {
   readonly onGraphChange?: (graph: GraphSnapshot) => void;
   readonly onAddNodeAt?: (position: GraphPosition) => void;
 }
+
+const nodeTypes = { graphNode: GraphNodeView };
 
 export function GraphVisualizer({ frame, graph, editable = false, onGraphChange, onAddNodeAt }: GraphVisualizerProps) {
   const [projectFlowPosition, setProjectFlowPosition] = useState<((position: GraphPosition) => GraphPosition) | null>(null);
@@ -118,10 +124,12 @@ export function GraphVisualizer({ frame, graph, editable = false, onGraphChange,
 
       <div className="h-[460px] overflow-hidden rounded-2xl border border-app bg-surface">
         <ReactFlow
+          connectionMode={ConnectionMode.Loose}
           edges={edges}
           fitView
           maxZoom={1.5}
           minZoom={0.5}
+          nodeTypes={nodeTypes}
           nodes={nodes}
           nodesDraggable={editable}
           nodesConnectable={editable}
@@ -217,24 +225,11 @@ const toReactFlowNode = (node: GraphNode, frame: GraphAlgorithmFrame | null): No
 
   return {
     id: node.id,
-    data: { label: node.label },
+    type: 'graphNode',
+    data: { label: node.label, background: tone.background, border: tone.border, shadow: tone.shadow },
     deletable: true,
     position: node.position,
     selectable: true,
-    style: {
-      width: 64,
-      height: 64,
-      alignItems: 'center',
-      background: tone.background,
-      border: `2px solid ${tone.border}`,
-      borderRadius: 999,
-      boxShadow: tone.shadow,
-      color: '#f8fafc',
-      display: 'flex',
-      fontSize: 18,
-      fontWeight: 800,
-      justifyContent: 'center',
-    },
   };
 };
 
@@ -249,12 +244,13 @@ const toReactFlowEdge = (edge: GraphEdge, frame: GraphAlgorithmFrame | null): Ed
     target: edge.target,
     animated: isActive,
     deletable: true,
+    interactionWidth: 26,
     ...(edge.weight === undefined ? {} : { label: edge.weight.toString() }),
     data: { directed: edge.directed, weight: edge.weight },
     ...(edge.directed ? { markerEnd: { type: MarkerType.ArrowClosed, color } } : {}),
     style: {
       stroke: color,
-      strokeWidth: isActive || isTraversed ? 3 : 2,
+      strokeWidth: isActive || isTraversed ? 4 : 3,
     },
   };
 };
@@ -306,3 +302,39 @@ const getNodeTone = (nodeId: string, frame: GraphAlgorithmFrame | null) => {
     shadow: '0 0 0 rgba(0, 0, 0, 0)',
   };
 };
+
+
+function GraphNodeView({ data, selected }: NodeProps<{ label: string; background: string; border: string; shadow: string }>) {
+  return (
+    <div
+      className={selected ? 'relative flex h-[84px] w-[84px] items-center justify-center rounded-full text-slate-50 ring-4 ring-violet-300/30' : 'relative flex h-[84px] w-[84px] items-center justify-center rounded-full text-slate-50'}
+      style={{ background: data.background, border: `2px solid ${data.border}`, boxShadow: data.shadow }}
+    >
+      <Handle
+        className="!h-6 !w-6 !border-2 !border-white !bg-violet-400"
+        id="left"
+        position={Position.Left}
+        type="target"
+      />
+      <Handle
+        className="!h-6 !w-6 !border-2 !border-white !bg-violet-400"
+        id="right"
+        position={Position.Right}
+        type="source"
+      />
+      <Handle
+        className="!h-6 !w-6 !border-2 !border-white !bg-violet-400"
+        id="top"
+        position={Position.Top}
+        type="target"
+      />
+      <Handle
+        className="!h-6 !w-6 !border-2 !border-white !bg-violet-400"
+        id="bottom"
+        position={Position.Bottom}
+        type="source"
+      />
+      <span className="text-base font-extrabold">{data.label}</span>
+    </div>
+  );
+}

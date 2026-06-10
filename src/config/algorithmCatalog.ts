@@ -32,9 +32,9 @@ export const algorithmCatalog: readonly AlgorithmCategory[] = [
     items: [
       { id: 'bst', name: 'Двоичное дерево поиска', route: '/trees/bst', status: 'ready' },
       { id: 'balanced-bst', name: 'Сбалансированное двоичное дерево поиска', route: '/trees/balanced-bst', status: 'ready' },
-      { id: 'hash-open', name: 'Открытые хеш-таблицы (закрытая адресация)', route: '/hash/open-chaining', status: 'ready' },
-      { id: 'hash-closed', name: 'Закрытые хеш-таблицы (открытая адресация)', route: '/hash/open-addressing', status: 'ready' },
-      { id: 'hash-block', name: 'Закрытые хеш-таблицы (с использованием блоков)', route: '/hash/block-addressing', status: 'ready' },
+      { id: 'hash-open', name: 'Хеш-таблица: метод цепочек', route: '/hash/open-chaining', status: 'ready' },
+      { id: 'hash-closed', name: 'Хеш-таблица: открытая адресация', route: '/hash/open-addressing', status: 'ready' },
+      { id: 'hash-block', name: 'Хеш-таблица: блочная адресация', route: '/hash/block-addressing', status: 'ready' },
     ],
   },
   {

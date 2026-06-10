@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { compareSortsDemo, blockSortDemo, countingSortDemo, radixSortDemo } from '@/algorithms/sorting/extra';
 import { connectedComponentsDemo, dijkstraDemo, mstDemo } from '@/algorithms/graphs';
-import { balancedBstScenario, binomialHeapScenario, bstScenario, hashBlockScenario, hashClosedScenario, hashOpenScenario, heapScenario } from '@/algorithms/structures/extendedStructures';
+import { balancedBstScenario, binomialHeapScenario, bstScenario, bstSearchScenario, hashBlockScenario, hashClosedScenario, hashOpenScenario, heapExtractMinScenario, heapScenario } from '@/algorithms/structures/extendedStructures';
 import { PlayerControls } from '@/components/player/PlayerControls';
+import { StepHistoryPanel } from '@/components/player/StepHistoryPanel';
 import { StepTutorPanel } from '@/components/player/StepTutorPanel';
 import { ArrayVisualizer } from '@/components/visualizers/arrays/ArrayVisualizer';
 import { GraphVisualizer } from '@/components/visualizers/graphs/GraphVisualizer';
@@ -15,6 +16,7 @@ type Mode = 'array' | 'graph' | 'structure';
 
 type PageGeneratorFactory = (
   inputValues?: readonly number[],
+  ...extraArgs: readonly number[]
 ) => Generator<AlgorithmFrame<unknown, Record<string, unknown>>, void, unknown>;
 
 interface AlgorithmPageProps {
@@ -39,6 +41,8 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
   const [values, setValues] = useState<readonly number[]>(() => getDefaultValues(title, mode));
   const [manualInput, setManualInput] = useState(() => getDefaultValues(title, mode).join(', '));
   const [inputError, setInputError] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState('');
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [presetName, setPresetName] = useState('');
   const [renamePresetState, setRenamePresetState] = useState<{ id: string; name: string } | null>(null);
   const [arrayPresets, setArrayPresets] = useState(loadArrayPresets());
@@ -58,6 +62,8 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
 
   const canUseNumericInput = mode !== 'graph';
   const presets = mode === 'structure' ? structurePresets : arrayPresets;
+  const isBstPage = title === 'Двоичное дерево поиска';
+  const isHeapPage = title === 'Куча';
 
   useEffect(() => {
     loadPageAlgorithm(generatorFactory, canUseNumericInput ? values : undefined, loadAlgorithm);
@@ -71,6 +77,27 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
     loadPageAlgorithm(generatorFactory, canUseNumericInput ? values : undefined, loadAlgorithm);
   };
 
+  const runBstSearch = (): void => {
+    const trimmed = searchInput.trim();
+    const target = Number(trimmed);
+    if (trimmed.length === 0 || Number.isInteger(target) === false || Number.isFinite(target) === false) {
+      setSearchError('Введите целое число, которое нужно найти в BST.');
+      return;
+    }
+    setSearchError(null);
+    const generator = bstSearchScenario(values, target);
+    const first = generator.next();
+    if (first.done) {
+      loadAlgorithm(generator);
+    } else {
+      loadAlgorithm(generator, { initialFrame: first.value });
+    }
+  };
+
+  const runHeapExtractMin = (): void => {
+    loadPageAlgorithm(heapExtractMinScenario, values, loadAlgorithm);
+  };
+
   const applyValues = (): void => {
     const parsed = parseInputValues(manualInput);
     if (!parsed.ok) {
@@ -78,6 +105,7 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
       return;
     }
     setInputError(null);
+    setSearchError(null);
     setValues(parsed.values);
   };
 
@@ -86,6 +114,7 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
     setValues(nextValues);
     setManualInput(nextValues.join(', '));
     setInputError(null);
+    setSearchError(null);
   };
 
   const refreshPresets = (): void => {
@@ -108,6 +137,7 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
     setValues(preset.values);
     setManualInput(preset.values.join(', '));
     setInputError(null);
+    setSearchError(null);
   };
 
   const removePreset = (id: string): void => {
@@ -185,6 +215,26 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
               <button className="control-button" onClick={() => setRenamePresetState(null)} type="button">Отмена</button>
             </div>
           )}
+
+          {isBstPage && (
+            <div className="mt-4 grid gap-2 rounded-2xl border border-app bg-surface p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="text-sm text-app-muted" htmlFor="bst-search-input">Найти элемент в BST</label>
+                <input id="bst-search-input" className="control-input w-40" onChange={(event) => setSearchInput(event.target.value)} placeholder="Например: 40" value={searchInput} />
+                <button className="control-button control-button-primary" onClick={runBstSearch} type="button">Показать путь поиска</button>
+              </div>
+              <p className="text-xs leading-5 text-app-muted">Поиск идёт от корня: на каждом узле сравнивается искомое число и выбирается левое или правое поддерево.</p>
+              {searchError !== null && <p className="text-sm text-rose-300">{searchError}</p>}
+            </div>
+          )}
+
+          {isHeapPage && (
+            <div className="mt-4 flex flex-wrap gap-2 rounded-2xl border border-app bg-surface p-3">
+              <button className="control-button control-button-primary" onClick={resetAlgorithm} type="button">Построить min-heap</button>
+              <button className="control-button" onClick={runHeapExtractMin} type="button">Извлечь минимум</button>
+              <p className="basis-full text-xs leading-5 text-app-muted">Извлечение минимума показывает перенос последнего элемента в корень и последующий sift-down через меньшего ребёнка.</p>
+            </div>
+          )}
         </section>
       )}
 
@@ -203,14 +253,7 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
         />
       </section>
 
-      {status === 'completed' && stepsHistory.length > 0 && (
-        <section className="app-panel">
-          <h3 className="text-xl font-semibold text-app-primary">Полный список выполненных шагов</h3>
-          <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-app-muted">
-            {stepsHistory.map((entry) => (<li key={entry}>{entry}</li>))}
-          </ol>
-        </section>
-      )}
+      {status === 'completed' && <StepHistoryPanel steps={stepsHistory} />}
 
       <PlayerControls
         canStepBackward={currentIndex > 0}
@@ -234,8 +277,9 @@ const loadPageAlgorithm = (
   generatorFactory: PageGeneratorFactory,
   values: readonly number[] | undefined,
   loadAlgorithm: ReturnType<typeof useAlgorithmPlayerStore.getState>['loadAlgorithm'],
+  ...extraArgs: readonly number[]
 ): void => {
-  const generator = generatorFactory(values);
+  const generator = generatorFactory(values, ...extraArgs);
   const first = generator.next();
   if (first.done) {
     loadAlgorithm(generator);
@@ -300,6 +344,66 @@ const isGraphFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | 
 const isStructureFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | null): frame is StructureAlgorithmFrame => (frame?.domain === 'tree' || frame?.domain === 'array') && typeof frame.data === 'object' && frame.data !== null && 'cells' in frame.data;
 
 const getTheoryByTitle = (title: string, mode: Mode): TheoryContent => {
+  if (title.includes('Сравнение 6 сортировок')) {
+    return {
+      description: 'Сравнение алгоритмов сортировки выполняется на одинаковом входном массиве, потому что только при равных исходных данных можно корректно сопоставлять число операций. В демонстрации каждый алгоритм получает отдельную копию массива и выполняется независимо от остальных. Сравнения показывают, сколько раз алгоритм сопоставлял два значения или значение с опорным элементом. Записи и обмены показывают, сколько раз менялось содержимое массива или вспомогательной структуры. Эти показатели являются учебной моделью трудоёмкости: они объясняют поведение алгоритма на выбранном наборе данных, но не заменяют асимптотический анализ и не учитывают особенности конкретного оборудования.',
+      complexity: 'Пузырьковая, выбором и вставками: O(n²); слиянием: O(n log n); быстрая: в среднем O(n log n), в худшем O(n²); подсчётом: O(n + k)',
+      useCases: ['Сопоставление алгоритмов при одинаковом входе', 'Изучение роли сравнений и операций записи', 'Проверка корректности результата сортировки', 'Связь пошаговой демонстрации с оценкой сложности'],
+      pseudocodeLines: [
+        'зафиксировать исходный массив',
+        'создать независимую копию для очередного алгоритма',
+        'выполнить алгоритм с подсчётом сравнений и записей',
+        'сохранить результат в таблицу сравнения',
+        'после всех запусков сопоставить полученные показатели',
+      ],
+    };
+  }
+
+  if (title.includes('Блочная сортировка')) {
+    return {
+      description: 'Блочная сортировка делит массив на небольшие блоки, сортирует каждый блок отдельно, а затем объединяет блоки в один общий упорядоченный результат. Такой подход полезен, когда данные удобно обрабатывать частями: сначала каждая часть становится понятной сама по себе, а потом блоки сливаются в общий порядок. В учебной модели это помогает увидеть идею «разбей, упорядочь локально и потом собери вместе».',
+      complexity: 'Зависит от способа локальной сортировки и слияния; в учебной схеме обычно O(n log n) или хуже при неудачном размере блоков',
+      useCases: ['Понимание разбиения на блоки', 'Обработка данных частями', 'Подготовка к внешней сортировке', 'Демонстрация локального порядка внутри блоков'],
+      pseudocodeLines: [
+        'разбить массив на блоки фиксированного размера',
+        'отсортировать каждый блок отдельно',
+        'сравнивать первые элементы блоков',
+        'выбирать минимальный кандидат и записывать его в результат',
+        'повторять, пока все блоки не будут объединены',
+      ],
+    };
+  }
+
+  if (title.includes('Сортировка подсчётом')) {
+    return {
+      description: 'Сортировка подсчётом не сравнивает элементы между собой. Вместо этого она считает, сколько раз встречается каждое значение, а затем восстанавливает отсортированный массив по этим счётчикам. Этот метод особенно удобен для целых чисел с небольшим диапазоном значений, потому что работа идёт по частотам, а не по сравнениям.',
+      complexity: 'O(n + k), где n — количество элементов, а k — размер диапазона значений',
+      useCases: ['Сортировка целых чисел', 'Подсчёт частот', 'Ситуации с небольшим диапазоном ключей', 'Понимание алгоритмов без сравнений'],
+      pseudocodeLines: [
+        'создать массив счётчиков count',
+        'пройти по входным значениям и увеличить нужный счётчик',
+        'идти по count слева направо',
+        'по каждому ненулевому счётчику записывать соответствующее значение в результат',
+        'повторять, пока счётчики не станут нулевыми',
+      ],
+    };
+  }
+
+  if (title.includes('Поразрядная сортировка')) {
+    return {
+      description: 'Поразрядная сортировка упорядочивает числа по цифрам: сначала по младшему разряду, затем по следующему и так далее. Важно, что каждый проход должен быть стабильным, иначе порядок, полученный на более старшем разряде, разрушится. Алгоритм особенно полезен для целых чисел и строк фиксированной длины, когда удобно сравнивать не целиком число, а отдельные разряды.',
+      complexity: 'O(d · (n + k)), где d — число разрядов, n — количество элементов, k — размер алфавита разряда',
+      useCases: ['Сортировка больших наборов целых чисел', 'Работа с фиксированной длиной ключей', 'Понимание стабильных проходов по разрядам', 'Разделение отрицательных и неотрицательных значений'],
+      pseudocodeLines: [
+        'выбрать младший разряд и выполнить стабильную сортировку',
+        'перейти к следующему разряду',
+        'повторять, пока разряды не закончатся',
+        'для отрицательных чисел обработать модуль отдельно',
+        'объединить отрицательные и неотрицательные значения в итоговый массив',
+      ],
+    };
+  }
+
   if (title.includes('Двоичное дерево поиска')) {
     return {
       description: 'BST (Binary Search Tree, двоичное дерево поиска) хранит ключи по правилу: слева от узла находятся меньшие значения, справа — большие или равные. Благодаря этому поиск похож на игру «больше/меньше»: на каждом узле мы отбрасываем половину подходящих направлений. В реальных системах идея лежит в основе индексов, словарей и поиска диапазонов, но качество зависит от высоты дерева.',
@@ -323,16 +427,79 @@ const getTheoryByTitle = (title: string, mode: Mode): TheoryContent => {
     };
   }
 
+  if (title.includes('Биномиальная куча')) {
+    return {
+      description: 'Биномиальная куча — это очередь с приоритетом, представленная не одним деревом, а лесом биномиальных деревьев. Биномиальное дерево Bk содержит 2^k узлов и получается связыванием двух деревьев B(k−1): корень с меньшим ключом остаётся сверху, второй корень становится его ребёнком. В корректной биномиальной куче для каждой степени хранится не более одного дерева, поэтому корневой список похож на двоичную запись количества элементов. Минимальный элемент ищется среди корней, а вставка работает как сложение с переносом: дерево степени 0 добавляется в корневой список, а одинаковые степени последовательно объединяются.',
+      complexity: 'insert: O(log n), find-min: O(log n), union: O(log n), extract-min: O(log n)',
+      useCases: ['Очереди с приоритетом', 'Быстрое объединение нескольких куч', 'Алгоритмы на графах', 'Изучение лесов деревьев и операции union'],
+      pseudocodeLines: [
+        'создать дерево B0 из нового ключа',
+        'добавить дерево в корневой список',
+        'найти две кучи одинаковой степени',
+        'оставить меньший корень родителем',
+        'повторять связывание, пока степени корней не станут уникальными',
+        'минимум искать среди корней деревьев',
+      ],
+    };
+  }
+
+  if (title.includes('метод цепочек')) {
+    return {
+      description: 'Метод цепочек хранит все элементы, попавшие в одну хеш-ячейку, в отдельном списке. Хеш-функция вычисляет индекс корзины, а коллизия не разрушает данные: новые ключи просто добавляются в цепочку этой корзины. Такая схема проста для понимания и хорошо демонстрирует идею коллизий, но длина цепочек влияет на время поиска.',
+      complexity: 'insert/search: O(1) в среднем, O(n) в худшем случае',
+      useCases: ['Хранение словарей', 'Краевые случаи коллизий', 'Обучение обработке конфликтов', 'Первые хеш-таблицы в курсах структур данных'],
+      pseudocodeLines: [
+        'вычислить index = hash(key) mod m',
+        'перейти в корзину index',
+        'если корзина не пуста, зафиксировать коллизию',
+        'добавить ключ в цепочку корзины',
+        'поиск повторяет тот же путь в пределах одной корзины',
+      ],
+    };
+  }
+
+  if (title.includes('открытая адресация')) {
+    return {
+      description: 'Открытая адресация хранит все ключи прямо в массиве таблицы. Если начальная ячейка занята, алгоритм не создаёт цепочку, а перебирает следующие позиции по правилу пробирования. Поэтому важно, чтобы в таблице оставались свободные ячейки: при высокой заполненности длина пробирования быстро растёт.',
+      complexity: 'insert/search: O(1) в среднем, O(n) в худшем случае',
+      useCases: ['Компактное хранение ключей', 'Быстрый доступ к ячейкам массива', 'Линейное и квадратичное пробирование', 'Изучение влияния заполненности таблицы'],
+      pseudocodeLines: [
+        'вычислить начальный индекс по hash(key)',
+        'проверить текущую ячейку',
+        'если она занята, перейти к следующей по правилу пробирования',
+        'если найдено пустое место, записать ключ',
+        'при поиске повторить ту же последовательность проб',
+      ],
+    };
+  }
+
+  if (title.includes('блочная адресация')) {
+    return {
+      description: 'Блочная адресация группирует ячейки в блоки. Ключ сначала попадает в основной блок, а если в нём нет места, то создаётся overflow-блок. Такая схема помогает объяснить, как устроено переполнение внутри хеш-структуры и почему поиск идёт не по всей таблице, а по связанной цепочке блоков.',
+      complexity: 'insert/search: O(1) в среднем, зависит от длины цепочки блоков',
+      useCases: ['Блочные хеш-структуры', 'Обучение переполнению блоков', 'Локальная групповая обработка данных', 'Сценарии с ограничением размера блока'],
+      pseudocodeLines: [
+        'вычислить основной блок по hash(key)',
+        'проверить, есть ли место в блоке',
+        'если блок заполнен, создать overflow-блок',
+        'добавить ключ в overflow-блок',
+        'поиск проверяет основной блок и цепочку переполнения',
+      ],
+    };
+  }
+
   if (title.includes('Куча')) {
     return {
-      description: 'Куча (heap) — почти полное бинарное дерево, обычно хранимое в массиве. В min-heap ключ родителя не больше ключей детей, поэтому минимум всегда в корне. В max-heap наоборот: в корне максимум.',
-      complexity: 'insert/extract: O(log n), peek: O(1)',
+      description: 'Бинарная куча хранит приоритеты в форме почти полного бинарного дерева. Благодаря почти полной форме дерево удобно представлять массивом: для индекса i дети находятся в 2i+1 и 2i+2. В min-heap каждый родитель не больше своих детей, поэтому корень всегда содержит минимальный ключ. Вставка сохраняет форму дерева добавлением в конец массива, а затем восстанавливает порядок подъёмом элемента вверх. Извлечение минимума удаляет корень, переносит последний элемент в корень и восстанавливает порядок опусканием вниз через меньшего ребёнка.',
+      complexity: 'insert/extract-min: O(log n), peek-min: O(1), построение последовательными вставками: O(n log n)',
       useCases: ['Очередь с приоритетом', 'Планировщики задач', 'Алгоритм Дейкстры/Прима', 'Heap Sort и обработка потока событий'],
       pseudocodeLines: [
-        'insert: добавить элемент в конец',
-        'sift-up до восстановления инварианта',
-        'extract: заменить корень последним элементом',
-        'sift-down до восстановления инварианта',
+        'добавить новый ключ в конец массива',
+        'пока родитель больше ребёнка, выполнить sift-up',
+        'для extract-min сохранить значение корня',
+        'перенести последний элемент в корень',
+        'сравнить текущий узел с детьми',
+        'менять с меньшим ребёнком, пока свойство кучи не восстановлено',
       ],
     };
   }
@@ -371,9 +538,9 @@ const getTheoryByTitle = (title: string, mode: Mode): TheoryContent => {
 export const algorithmRouteRegistry = {
   '/trees/bst': { title: 'Двоичное дерево поиска', mode: 'structure' as const, generatorFactory: bstScenario },
   '/trees/balanced-bst': { title: 'Сбалансированное двоичное дерево поиска', mode: 'structure' as const, generatorFactory: balancedBstScenario },
-  '/hash/open-chaining': { title: 'Открытые хеш-таблицы (закрытая адресация)', mode: 'structure' as const, generatorFactory: hashOpenScenario },
-  '/hash/open-addressing': { title: 'Закрытые хеш-таблицы (открытая адресация)', mode: 'structure' as const, generatorFactory: hashClosedScenario },
-  '/hash/block-addressing': { title: 'Закрытые хеш-таблицы (с использованием блоков)', mode: 'structure' as const, generatorFactory: hashBlockScenario },
+  '/hash/open-chaining': { title: 'Хеш-таблица: метод цепочек', mode: 'structure' as const, generatorFactory: hashOpenScenario },
+  '/hash/open-addressing': { title: 'Хеш-таблица: открытая адресация', mode: 'structure' as const, generatorFactory: hashClosedScenario },
+  '/hash/block-addressing': { title: 'Хеш-таблица: блочная адресация', mode: 'structure' as const, generatorFactory: hashBlockScenario },
   '/heaps/heap': { title: 'Куча', mode: 'structure' as const, generatorFactory: heapScenario },
   '/heaps/binomial': { title: 'Биномиальная куча', mode: 'structure' as const, generatorFactory: binomialHeapScenario },
   '/sorting/compare': { title: 'Сравнение 6 сортировок', mode: 'array' as const, generatorFactory: compareSortsDemo },
