@@ -79,19 +79,19 @@ const renderRoute = (
 
 
   if (route === '/structures/stack-array') {
-    return <StructuresPage initialDemo="stack-array" />;
+    return <StructuresPage initialDemo="stack-array-push" />;
   }
 
   if (route === '/structures/stack-list') {
-    return <StructuresPage initialDemo="stack-list" />;
+    return <StructuresPage initialDemo="stack-list-push" />;
   }
 
   if (route === '/structures/queue-array') {
-    return <StructuresPage initialDemo="queue-array" />;
+    return <StructuresPage initialDemo="queue-array-enqueue" />;
   }
 
   if (route === '/structures/queue-list') {
-    return <StructuresPage initialDemo="queue-list" />;
+    return <StructuresPage initialDemo="queue-list-enqueue" />;
   }
 
   if (route === '/structures/indexing') {

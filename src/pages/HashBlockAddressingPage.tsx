@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { hashBlockAddressingScenario } from '@/algorithms/structures/hashTable';
 import { PlayerControls } from '@/components/player/PlayerControls';
+import { StepHistoryPanel } from '@/components/player/StepHistoryPanel';
 import { StructureVisualizer } from '@/components/visualizers/structures/StructureVisualizer';
 import { loadStructurePresets, saveStructurePreset } from '@/lib/storage';
 import { useAlgorithmPlayerStore } from '@/stores';
@@ -85,12 +86,7 @@ export function HashBlockAddressingPage() {
 
       <StructureVisualizer frame={frame} />
 
-      {status === 'completed' && history.length > 0 && (
-        <section className="app-panel">
-          <h3 className="text-xl font-semibold text-app-primary">Полный список выполненных шагов</h3>
-          <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-app-muted">{history.map((entry, index) => <li key={`${index}-${entry}`}>{entry}</li>)}</ol>
-        </section>
-      )}
+      {status === 'completed' && <StepHistoryPanel steps={history} />}
 
       <PlayerControls canStepBackward={currentIndex > 0} canStepForward={status !== 'completed'} currentIndex={currentIndex} onNextStep={nextStep} onPause={pause} onPlay={play} onPrevStep={prevStep} onReset={() => run(values, blockCount, blockSize, loadAlgorithm)} onSpeedChange={setPlaybackSpeed} playbackSpeedMs={playbackSpeedMs} status={status} totalFrames={frames.length} />
     </div>

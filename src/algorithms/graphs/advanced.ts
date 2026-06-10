@@ -109,7 +109,7 @@ export function* connectedComponentsDemo(): Generator<GraphAlgorithmFrame, void,
     [],
     4,
     `Компоненты связности найдены: ${componentMembers.length}. Состав: ${componentMembers.map((members, index) => `#${index + 1}=[${members.join(', ')}]`).join('; ')}.`,
-    createGraphMeta('A', visited, [], traversed),
+    { ...createGraphMeta('A', visited, [], traversed), componentCount: componentMembers.length, components: componentMembers },
   );
 }
 
@@ -204,7 +204,7 @@ export function* dijkstraDemo(): Generator<GraphAlgorithmFrame, void, unknown> {
     [],
     5,
     `Дейкстра завершён: кратчайшие расстояния от ${start}: ${distances}.`,
-    createGraphMeta(start, visited, [], traversed),
+    { ...createGraphMeta(start, visited, [], traversed), distances: graph.nodes.map((node) => `${node.id}=${formatDistance(dist.get(node.id)!)}`) },
   );
 }
 
@@ -293,7 +293,7 @@ export function* mstDemo(): Generator<GraphAlgorithmFrame, void, unknown> {
     [],
     4,
     `MST завершено: выбраны рёбра [${[...traversed].join(', ')}], суммарный вес = ${totalWeight}.`,
-    createGraphMeta('A', visited, [], traversed),
+    { ...createGraphMeta('A', visited, [], traversed), mstEdgeIds: [...traversed], totalWeight },
   );
 }
 

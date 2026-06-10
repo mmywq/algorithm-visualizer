@@ -188,14 +188,24 @@ export const useAlgorithmPlayerStore = create<AlgorithmPlayerStore>()(
 
   setPlaybackSpeed: (playbackSpeedMs) => {
     const nextPlaybackSpeedMs = clampPlaybackSpeed(playbackSpeedMs);
-    const { status, timerId } = get();
+    const { status, timerId, generator } = get();
 
     clearPlaybackTimer(timerId);
-    set({ playbackSpeedMs: nextPlaybackSpeedMs, timerId: null });
 
-    if (status === 'running') {
-      get().play();
+    if (status !== 'running' || generator === null) {
+      set({ playbackSpeedMs: nextPlaybackSpeedMs, timerId: null });
+      return;
     }
+
+    const newTimerId = window.setInterval(() => {
+      const frame = get().nextStep();
+
+      if (frame === null) {
+        get().pause();
+      }
+    }, nextPlaybackSpeedMs);
+
+    set({ playbackSpeedMs: nextPlaybackSpeedMs, timerId: newTimerId, status: 'running' });
   },
 }), {
   name: 'av-player-preferences',

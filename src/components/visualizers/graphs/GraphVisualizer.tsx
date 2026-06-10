@@ -4,13 +4,17 @@ import ReactFlow, {
   applyNodeChanges,
   Background,
   Controls,
+  Handle,
   MarkerType,
+  Position,
   type Connection,
   type Edge,
   type EdgeChange,
-  type OnInit,
   type Node,
   type NodeChange,
+  type NodeProps,
+  ConnectionMode,
+  type OnInit,
 } from 'reactflow';
 import { useState, type MouseEvent } from 'react';
 import type { GraphAlgorithmFrame, GraphEdge, GraphNode, GraphPosition, GraphSnapshot } from '@/types';
@@ -19,15 +23,18 @@ import 'reactflow/dist/style.css';
 interface GraphVisualizerProps {
   readonly frame: GraphAlgorithmFrame | null;
   readonly graph: GraphSnapshot;
+  readonly title?: string;
   readonly editable?: boolean;
   readonly onGraphChange?: (graph: GraphSnapshot) => void;
   readonly onAddNodeAt?: (position: GraphPosition) => void;
 }
 
-export function GraphVisualizer({ frame, graph, editable = false, onGraphChange, onAddNodeAt }: GraphVisualizerProps) {
+const nodeTypes = { graphNode: GraphNodeView };
+
+export function GraphVisualizer({ frame, graph, title = 'Граф', editable = false, onGraphChange, onAddNodeAt }: GraphVisualizerProps) {
   const [projectFlowPosition, setProjectFlowPosition] = useState<((position: GraphPosition) => GraphPosition) | null>(null);
-  const sourceGraph = editable ? graph : (frame?.data ?? graph);
-  const nodes = sourceGraph.nodes.map((node) => toReactFlowNode(node, frame));
+  const sourceGraph = frame?.data ?? graph;
+  const nodes = sourceGraph.nodes.map((node) => toReactFlowNode(node, frame, editable));
   const edges = sourceGraph.edges.map((edge) => toReactFlowEdge(edge, frame));
 
   const onNodesChange = (changes: NodeChange[]): void => {
@@ -109,7 +116,7 @@ export function GraphVisualizer({ frame, graph, editable = false, onGraphChange,
           <p className="text-sm font-semibold uppercase tracking-[0.28em] text-violet-300">
             Визуализация графа
           </p>
-          <h2 className="mt-2 text-2xl font-bold text-app-primary">Обход графа</h2>
+          <h2 className="mt-2 text-2xl font-bold text-app-primary">{title}</h2>
         </div>
         <div className="rounded-2xl border border-app bg-surface px-4 py-3 text-sm text-app-muted">
           Активная строка псевдокода: <span className="font-semibold text-violet-200">{frame?.pseudocode.line ?? '—'}</span>
@@ -118,10 +125,12 @@ export function GraphVisualizer({ frame, graph, editable = false, onGraphChange,
 
       <div className="h-[460px] overflow-hidden rounded-2xl border border-app bg-surface">
         <ReactFlow
+          connectionMode={ConnectionMode.Loose}
           edges={edges}
-          fitView
+          fitView={nodes.length > 0}
           maxZoom={1.5}
           minZoom={0.5}
+          nodeTypes={nodeTypes}
           nodes={nodes}
           nodesDraggable={editable}
           nodesConnectable={editable}
@@ -143,7 +152,7 @@ export function GraphVisualizer({ frame, graph, editable = false, onGraphChange,
 
       <div className="mt-5 grid gap-3 md:grid-cols-[1fr_auto] md:items-start">
         <p className="min-h-12 rounded-2xl border border-app bg-surface px-4 py-3 text-sm leading-6 text-app-muted">
-          {frame?.message ?? 'Загрузите BFS или DFS, чтобы увидеть пошаговый обход графа.'}
+          {frame?.message ?? 'Загрузите алгоритм, чтобы увидеть пошаговую работу графа.'}
         </p>
         <div className="space-y-3">
           <GraphLegend />
@@ -164,7 +173,7 @@ function GraphLegend() {
       <LegendItem color="bg-slate-400" label="обычная вершина" />
       <LegendItem color="bg-emerald-500" label="пройденное ребро" />
       <LegendItem color="bg-violet-500" label="активное ребро" />
-      <div className="mt-2 text-[11px] text-app-muted">В режиме редактирования можно двигать узлы, соединять их мышкой, выделять/удалять связи и дважды кликнуть по пустому месту для новой вершины; координаты учитывают zoom/pan.</div>
+      <div className="mt-2 text-[11px] text-app-muted">В режиме редактирования можно двигать вершины, соединять их мышкой, выделять/удалять связи и дважды кликнуть по пустому месту для новой вершины.</div>
     </div>
   );
 }
@@ -212,29 +221,16 @@ function LegendItem({ color, label }: LegendItemProps) {
   );
 }
 
-const toReactFlowNode = (node: GraphNode, frame: GraphAlgorithmFrame | null): Node => {
+const toReactFlowNode = (node: GraphNode, frame: GraphAlgorithmFrame | null, showHandles: boolean): Node => {
   const tone = getNodeTone(node.id, frame);
 
   return {
     id: node.id,
-    data: { label: node.label },
+    type: 'graphNode',
+    data: { label: node.label, background: tone.background, border: tone.border, shadow: tone.shadow, showHandles },
     deletable: true,
     position: node.position,
     selectable: true,
-    style: {
-      width: 64,
-      height: 64,
-      alignItems: 'center',
-      background: tone.background,
-      border: `2px solid ${tone.border}`,
-      borderRadius: 999,
-      boxShadow: tone.shadow,
-      color: '#f8fafc',
-      display: 'flex',
-      fontSize: 18,
-      fontWeight: 800,
-      justifyContent: 'center',
-    },
   };
 };
 
@@ -249,12 +245,13 @@ const toReactFlowEdge = (edge: GraphEdge, frame: GraphAlgorithmFrame | null): Ed
     target: edge.target,
     animated: isActive,
     deletable: true,
+    interactionWidth: 26,
     ...(edge.weight === undefined ? {} : { label: edge.weight.toString() }),
     data: { directed: edge.directed, weight: edge.weight },
     ...(edge.directed ? { markerEnd: { type: MarkerType.ArrowClosed, color } } : {}),
     style: {
       stroke: color,
-      strokeWidth: isActive || isTraversed ? 3 : 2,
+      strokeWidth: isActive || isTraversed ? 4 : 3,
     },
   };
 };
@@ -306,3 +303,43 @@ const getNodeTone = (nodeId: string, frame: GraphAlgorithmFrame | null) => {
     shadow: '0 0 0 rgba(0, 0, 0, 0)',
   };
 };
+
+
+function GraphNodeView({ data, selected }: NodeProps<{ label: string; background: string; border: string; shadow: string; showHandles: boolean }>) {
+  return (
+    <div
+      className={selected ? 'relative flex h-[76px] w-[76px] items-center justify-center rounded-full text-slate-50 ring-2 ring-violet-300/35' : 'relative flex h-[76px] w-[76px] items-center justify-center rounded-full text-slate-50'}
+      style={{ background: data.background, border: `2px solid ${data.border}`, boxShadow: data.shadow }}
+    >
+      {data.showHandles && (
+        <>
+          <Handle
+            className="!h-2.5 !w-2.5 !border !border-white !bg-violet-300 !opacity-70"
+            id="left"
+            position={Position.Left}
+            type="target"
+          />
+          <Handle
+            className="!h-2.5 !w-2.5 !border !border-white !bg-violet-300 !opacity-70"
+            id="right"
+            position={Position.Right}
+            type="source"
+          />
+          <Handle
+            className="!h-2.5 !w-2.5 !border !border-white !bg-violet-300 !opacity-70"
+            id="top"
+            position={Position.Top}
+            type="target"
+          />
+          <Handle
+            className="!h-2.5 !w-2.5 !border !border-white !bg-violet-300 !opacity-70"
+            id="bottom"
+            position={Position.Bottom}
+            type="source"
+          />
+        </>
+      )}
+      <span className="text-base font-extrabold">{data.label}</span>
+    </div>
+  );
+}

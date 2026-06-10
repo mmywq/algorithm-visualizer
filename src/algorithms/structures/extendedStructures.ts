@@ -97,6 +97,60 @@ export function* bstScenario(inputValues?: readonly number[]): Generator<Structu
   yield frame(step, 'complete', 'completed', snapshot('Дерево BST', cells), 'Построение BST завершено. Теперь можно проследить путь поиска любого ключа через последовательность сравнений от корня.', 'index', 6);
 }
 
+const buildBstCells = (values: readonly number[]): Array<number | null> => {
+  const cells: Array<number | null> = Array.from({ length: 15 }, () => null);
+
+  for (const value of values) {
+    let index = 0;
+    while (index < cells.length && cells[index] !== null) {
+      const current = cells[index]!;
+      index = value < current ? 2 * index + 1 : 2 * index + 2;
+    }
+
+    if (index < cells.length) {
+      cells[index] = value;
+    }
+  }
+
+  return cells;
+};
+
+export function* bstSearchScenario(inputValues: readonly number[], target: number): Generator<StructureAlgorithmFrame, void, unknown> {
+  const cells = buildBstCells(inputValues);
+  let step = 0;
+  const snapshotData = snapshot('Дерево BST', cells);
+  const path: number[] = [];
+  let index = 0;
+
+  yield frame(step++, 'initial', 'running', snapshotData, `Интерактивный поиск начинается с корня. Ищем ключ ${target} в дереве BST, построенном по текущему набору значений.`, 'index', 1, 0, { searchTarget: target, pointers: { search: 0 } });
+
+  while (index < cells.length) {
+    const current = cells[index];
+    if (current === null || current === undefined) {
+      yield frame(step++, 'inspect', 'running', snapshotData, `Переходим к позиции ${index}, но узел отсутствует. Следовательно, ключ ${target} не найден в дереве.`, 'index', 6, undefined, { searchTarget: target, searchPath: path, pointers: { search: index } });
+      yield frame(step, 'complete', 'completed', snapshotData, `Поиск завершён: ключ ${target} отсутствует. Проверенный путь: ${path.join(' → ')} → ${index}.`, 'index', 6, undefined, { searchTarget: target, searchPath: path, pointers: { search: index } });
+      return;
+    }
+
+    path.push(index);
+    yield frame(step++, 'inspect', 'running', snapshotData, `Сравниваем искомый ключ ${target} с узлом ${current} в позиции ${index}.`, 'index', 2, index, { searchTarget: target, searchPath: [...path], pointers: { search: index } });
+
+    if (target === current) {
+      yield frame(step++, 'push', 'running', snapshotData, `Ключ ${target} найден. Путь поиска: ${path.join(' → ')}.`, 'index', 5, index, { searchTarget: target, searchPath: [...path], pointers: { search: index } });
+      yield frame(step, 'complete', 'completed', snapshotData, `Поиск завершён успешно: ключ ${target} найден по пути ${path.join(' → ')}.`, 'index', 6, index, { searchTarget: target, searchPath: [...path], pointers: { search: index } });
+      return;
+    }
+
+    const goLeft = target < current;
+    const nextIndex = goLeft ? 2 * index + 1 : 2 * index + 2;
+    yield frame(step++, 'inspect', 'running', snapshotData, `${target} ${goLeft ? '<' : '≥'} ${current}: переходим ${goLeft ? 'в левое' : 'в правое'} поддерево.`, 'index', 3, index, { searchTarget: target, searchPath: [...path], pointers: { search: index } });
+    index = nextIndex;
+  }
+
+  yield frame(step, 'complete', 'completed', snapshotData, `Поиск завершён: ключ ${target} не найден. Проверенный путь: ${path.join(' → ')}.`, 'index', 6, undefined, { searchTarget: target, searchPath: path });
+}
+
+
 
 export const balancedBstScenario = (inputValues?: readonly number[]) =>
   avlScenario(inputValues !== undefined && inputValues.length > 0 ? inputValues : [50, 30, 70, 20, 40, 60, 80]);
@@ -197,18 +251,309 @@ export function* heapScenario(inputValues?: readonly number[]): Generator<Struct
   );
 }
 
-export const binomialHeapScenario = () => runScenario({
-  title: 'Биномиальная куча',
-  operation: 'push',
-  values: [18, 7, 24, 3, 12, 30],
-  messages: [
-    'Каждый вставленный элемент создаёт биномиальное дерево степени 0.',
-    'Операция union сливает корневые списки по возрастанию степеней.',
-    'Деревья одинаковой степени объединяются, сохраняя свойство min-heap.',
-    'extract-min выбирает корень с минимальным ключом и повторно объединяет поддеревья.',
-  ],
-  pseudocodeLines: [1, 2, 3, 4],
+const buildMinHeap = (values: readonly number[]): number[] => {
+  const heap: number[] = [];
+
+  for (const value of values) {
+    heap.push(value);
+    let index = heap.length - 1;
+    while (index > 0) {
+      const parentIndex = Math.floor((index - 1) / 2);
+      if (heap[parentIndex]! <= heap[index]!) break;
+      [heap[parentIndex], heap[index]] = [heap[index]!, heap[parentIndex]!];
+      index = parentIndex;
+    }
+  }
+
+  return heap;
+};
+
+export function* heapExtractMinScenario(inputValues?: readonly number[]): Generator<StructureAlgorithmFrame, void, unknown> {
+  const sourceValues = inputValues !== undefined && inputValues.length > 0 ? [...inputValues] : [40, 15, 60, 5, 30, 55];
+  const heap = buildMinHeap(sourceValues);
+  let step = 0;
+
+  const heapSnapshot = () => snapshot('Бинарная min-куча', heap);
+
+  yield frame(
+    step++,
+    'initial',
+    'running',
+    heapSnapshot(),
+    `Сначала рассматриваем уже построенную min-heap по значениям [${sourceValues.join(', ')}]. Минимум находится в корне: ${heap[0] ?? '—'}.`,
+    'pop',
+    1,
+    heap.length > 0 ? 0 : undefined,
+    { pointers: heap.length > 0 ? { root: 0 } : {} },
+  );
+
+  if (heap.length === 0) {
+    yield frame(step, 'complete', 'completed', heapSnapshot(), 'Куча пуста, извлекать нечего.', 'pop', 6);
+    return;
+  }
+
+  const removed = heap[0]!;
+  const last = heap.pop()!;
+
+  if (heap.length === 0) {
+    yield frame(
+      step,
+      'complete',
+      'completed',
+      heapSnapshot(),
+      `Извлекаем единственный элемент ${removed}. Куча стала пустой.`,
+      'pop',
+      6,
+    );
+    return;
+  }
+
+  heap[0] = last;
+  yield frame(
+    step++,
+    'pop',
+    'running',
+    heapSnapshot(),
+    `Удаляем корень ${removed}. Последний элемент ${last} переносим в корень, чтобы сохранить форму почти полного бинарного дерева. Теперь нужно выполнить sift-down.`,
+    'pop',
+    2,
+    0,
+    { pointers: { current: 0 } },
+  );
+
+  let index = 0;
+  while (true) {
+    const leftIndex = 2 * index + 1;
+    const rightIndex = 2 * index + 2;
+    let smallestIndex = index;
+
+    if (leftIndex < heap.length && heap[leftIndex]! < heap[smallestIndex]!) {
+      smallestIndex = leftIndex;
+    }
+    if (rightIndex < heap.length && heap[rightIndex]! < heap[smallestIndex]!) {
+      smallestIndex = rightIndex;
+    }
+
+    const pointers: Record<string, number> = { current: index };
+    if (leftIndex < heap.length) pointers.left = leftIndex;
+    if (rightIndex < heap.length) pointers.right = rightIndex;
+    pointers.min = smallestIndex;
+
+    yield frame(
+      step++,
+      'compare',
+      'running',
+      heapSnapshot(),
+      `Sift-down: сравниваем узел ${heap[index]} с детьми${leftIndex < heap.length ? ` слева ${heap[leftIndex]}` : ''}${rightIndex < heap.length ? ` и справа ${heap[rightIndex]}` : ''}. Наименьший среди них находится в индексе ${smallestIndex}.`,
+      'pop',
+      3,
+      index,
+      { pointers },
+    );
+
+    if (smallestIndex === index) {
+      yield frame(
+        step++,
+        'inspect',
+        'running',
+        heapSnapshot(),
+        `Обмен не нужен: узел ${heap[index]} не больше своих детей. Свойство min-heap восстановлено.`,
+        'pop',
+        5,
+        index,
+        { pointers: { current: index } },
+      );
+      break;
+    }
+
+    const parentValue = heap[index]!;
+    const childValue = heap[smallestIndex]!;
+    [heap[index], heap[smallestIndex]] = [heap[smallestIndex]!, heap[index]!];
+
+    yield frame(
+      step++,
+      'swap',
+      'running',
+      heapSnapshot(),
+      `Меняем ${parentValue} и ${childValue}: меньший ребёнок поднимается выше, а ${parentValue} опускается на индекс ${smallestIndex}.`,
+      'pop',
+      4,
+      smallestIndex,
+      { pointers: { current: smallestIndex } },
+    );
+
+    index = smallestIndex;
+  }
+
+  yield frame(
+    step,
+    'complete',
+    'completed',
+    heapSnapshot(),
+    `Извлечение завершено: удалён минимум ${removed}. Новая куча [${heap.join(', ')}], новый корень ${heap[0] ?? '—'}.`,
+    'pop',
+    6,
+    0,
+    { pointers: { root: 0 } },
+  );
+}
+
+
+interface BinomialHeapNode {
+  readonly id: string;
+  readonly value: number;
+  readonly children: readonly BinomialHeapNode[];
+}
+
+interface BinomialTreeViewNode {
+  readonly id: string;
+  readonly value: number;
+  readonly degree: number;
+  readonly children: readonly BinomialTreeViewNode[];
+}
+
+const getBinomialDegree = (tree: BinomialHeapNode): number => tree.children.length;
+
+const linkBinomialTrees = (first: BinomialHeapNode, second: BinomialHeapNode): BinomialHeapNode => {
+  if (first.value <= second.value) {
+    return { ...first, children: [second, ...first.children] };
+  }
+  return { ...second, children: [first, ...second.children] };
+};
+
+const sortBinomialRoots = (roots: readonly BinomialHeapNode[]): BinomialHeapNode[] =>
+  [...roots].sort((left, right) => getBinomialDegree(left) - getBinomialDegree(right) || left.value - right.value);
+
+const findDuplicateDegreePair = (roots: readonly BinomialHeapNode[]): [number, number] | null => {
+  const seen = new Map<number, number>();
+  for (let index = 0; index < roots.length; index += 1) {
+    const degree = getBinomialDegree(roots[index]!);
+    const previousIndex = seen.get(degree);
+    if (previousIndex !== undefined) return [previousIndex, index];
+    seen.set(degree, index);
+  }
+  return null;
+};
+
+const toBinomialTreeView = (node: BinomialHeapNode): BinomialTreeViewNode => ({
+  id: node.id,
+  value: node.value,
+  degree: getBinomialDegree(node),
+  children: node.children.map(toBinomialTreeView),
 });
+
+const binomialSnapshot = (roots: readonly BinomialHeapNode[]): StructureSnapshot => ({
+  label: 'Биномиальная куча',
+  cells: roots.map((root, index) => ({ id: `binomial-root-${index}`, value: root.value })),
+});
+
+const binomialMeta = (
+  roots: readonly BinomialHeapNode[],
+  extra: Partial<StructureAlgorithmFrame['meta']> = {},
+): Partial<StructureAlgorithmFrame['meta']> => ({
+  binomialTrees: roots.map(toBinomialTreeView),
+  ...extra,
+});
+
+export function* binomialHeapScenario(inputValues?: readonly number[]): Generator<StructureAlgorithmFrame, void, unknown> {
+  const insertionOrder = inputValues !== undefined && inputValues.length > 0 ? [...inputValues] : [18, 7, 24, 3, 12, 30];
+  let roots: BinomialHeapNode[] = [];
+  let step = 0;
+  let nodeCounter = 0;
+
+  yield frame(
+    step++,
+    'initial',
+    'running',
+    binomialSnapshot(roots),
+    `Начинаем построение биномиальной min-heap. Вставляем ключи по порядку: ${insertionOrder.join(', ')}. Корневой список сначала пуст.`,
+    'push',
+    1,
+    undefined,
+    binomialMeta(roots),
+  );
+
+  for (const value of insertionOrder) {
+    const singleton: BinomialHeapNode = { id: `binomial-${nodeCounter++}`, value, children: [] };
+    roots = sortBinomialRoots([...roots, singleton]);
+
+    yield frame(
+      step++,
+      'push',
+      'running',
+      binomialSnapshot(roots),
+      `Вставляем ${value}: создаём биномиальное дерево B0, то есть один узел степени 0, и добавляем его в корневой список.`,
+      'push',
+      1,
+      undefined,
+      binomialMeta(roots, { activeNodeIds: [singleton.id] }),
+    );
+
+    let duplicatePair = findDuplicateDegreePair(roots);
+    while (duplicatePair !== null) {
+      const [leftIndex, rightIndex] = duplicatePair;
+      const leftTree = roots[leftIndex]!;
+      const rightTree = roots[rightIndex]!;
+      const degree = getBinomialDegree(leftTree);
+
+      yield frame(
+        step++,
+        'compare',
+        'running',
+        binomialSnapshot(roots),
+        `В корневом списке есть два дерева степени ${degree}: с корнями ${leftTree.value} и ${rightTree.value}. В биномиальной куче не должно быть двух деревьев одной степени, поэтому их нужно связать.`,
+        'push',
+        3,
+        undefined,
+        binomialMeta(roots, { activeNodeIds: [leftTree.id, rightTree.id] }),
+      );
+
+      const linked = linkBinomialTrees(leftTree, rightTree);
+      roots = roots.filter((_, index) => index !== leftIndex && index !== rightIndex);
+      roots = sortBinomialRoots([...roots, linked]);
+
+      yield frame(
+        step++,
+        'swap',
+        'running',
+        binomialSnapshot(roots),
+        `Связываем деревья: меньший корень ${linked.value} остаётся корнем, а второй корень становится его ребёнком. Получилось дерево степени ${getBinomialDegree(linked)}.`,
+        'push',
+        4,
+        undefined,
+        binomialMeta(roots, { activeNodeIds: [linked.id] }),
+      );
+
+      duplicatePair = findDuplicateDegreePair(roots);
+    }
+
+    const degrees = roots.map((root) => getBinomialDegree(root)).join(', ');
+    yield frame(
+      step++,
+      'inspect',
+      'running',
+      binomialSnapshot(roots),
+      `После вставки ${value} корневой список упорядочен по степеням: [${degrees}]. У каждой степени теперь не больше одного дерева.`,
+      'push',
+      5,
+      undefined,
+      binomialMeta(roots),
+    );
+  }
+
+  const minRoot = roots.reduce<BinomialHeapNode | null>((best, root) => (best === null || root.value < best.value ? root : best), null);
+  yield frame(
+    step,
+    'complete',
+    'completed',
+    binomialSnapshot(roots),
+    `Построение биномиальной min-heap завершено. Корни деревьев: ${roots.map((root) => `${root.value} (степень ${getBinomialDegree(root)})`).join('; ')}. Минимальный ключ находится среди корней: ${minRoot?.value ?? '—'}.`,
+    'push',
+    6,
+    undefined,
+    binomialMeta(roots, minRoot === null ? {} : { activeNodeIds: [minRoot.id] }),
+  );
+}
 
 
 const createRandomUniqueValues = (size: number, min: number, max: number): number[] => {
