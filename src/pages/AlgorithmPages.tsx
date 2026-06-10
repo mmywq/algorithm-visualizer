@@ -165,7 +165,6 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
       <section className="rounded-3xl border border-app bg-surface p-6">
         <h1 className="text-3xl font-bold text-app-primary">{title}</h1>
         <p className="mt-3 max-w-4xl text-sm leading-6 text-app-muted">
-          Единый шаблон страницы: входные данные сверху, визуализация слева, теория и пояснение текущего шага справа, история шагов появляется после завершения.
         </p>
       </section>
 
@@ -241,8 +240,9 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
       <section className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
         <div>
           {mode === 'array' && <ArrayVisualizer frame={isArrayFrame(frame) ? frame : null} />}
-          {mode === 'graph' && <GraphVisualizer frame={isGraphFrame(frame) ? frame : null} graph={isGraphFrame(frame) ? frame.data : { nodes: [], edges: [] }} />}
+          {mode === 'graph' && <GraphVisualizer frame={isGraphFrame(frame) ? frame : null} graph={isGraphFrame(frame) ? frame.data : { nodes: [], edges: [] }} title={title} />}
           {mode === 'structure' && <StructureVisualizer frame={isStructureFrame(frame) ? frame : null} />}
+          {mode === 'graph' && status === 'completed' && isGraphFrame(frame) && <GraphResultPanel title={title} frame={frame} />}
         </div>
         <StepTutorPanel
           complexity={theory.complexity}
@@ -342,6 +342,35 @@ const getDefaultValues = (title: string, mode: Mode): readonly number[] => {
 const isArrayFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | null): frame is ArrayAlgorithmFrame => frame?.domain === 'array' && Array.isArray(frame.data) && frame.data.every((item) => typeof item === 'object' && item !== null && 'value' in item);
 const isGraphFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | null): frame is GraphAlgorithmFrame => frame?.domain === 'graph';
 const isStructureFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | null): frame is StructureAlgorithmFrame => (frame?.domain === 'tree' || frame?.domain === 'array') && typeof frame.data === 'object' && frame.data !== null && 'cells' in frame.data;
+
+function GraphResultPanel({ title, frame }: { readonly title: string; readonly frame: GraphAlgorithmFrame }) {
+  const meta = frame.meta as Record<string, unknown>;
+  let summary = frame.description ?? frame.message;
+
+  if (title === 'Компоненты связности') {
+    const components = Array.isArray(meta.components) ? meta.components as readonly string[][] : [];
+    const componentCount = typeof meta.componentCount === 'number' ? meta.componentCount : components.length;
+    summary = componentCount > 0
+      ? `Найдено ${componentCount} компонент связности. Состав: ${components.map((members, index) => `#${index + 1}=[${members.join(', ')}]`).join('; ')}.`
+      : summary;
+  } else if (title === 'Алгоритм Дейкстры') {
+    const distances = Array.isArray(meta.distances) ? meta.distances as readonly string[] : [];
+    summary = distances.length > 0
+      ? `Кратчайшие расстояния от ${frame.meta.startNodeId}: ${distances.join(', ')}.`
+      : summary;
+  } else if (title === 'Минимальное остовное дерево') {
+    const mstEdgeIds = Array.isArray(meta.mstEdgeIds) ? meta.mstEdgeIds as readonly string[] : [];
+    const totalWeight = typeof meta.totalWeight === 'number' ? meta.totalWeight : null;
+    summary = `Выбраны рёбра MST: ${mstEdgeIds.length > 0 ? mstEdgeIds.join(', ') : '—'}.${totalWeight === null ? '' : ` Суммарный вес = ${totalWeight}.`}`;
+  }
+
+  return (
+    <section className="mt-4 rounded-2xl border border-app bg-surface p-4 text-sm leading-6 text-app-muted">
+      <h3 className="text-lg font-semibold text-app-primary">Вывод</h3>
+      <p className="mt-2">{summary}</p>
+    </section>
+  );
+}
 
 const getTheoryByTitle = (title: string, mode: Mode): TheoryContent => {
   if (title.includes('Сравнение 6 сортировок')) {

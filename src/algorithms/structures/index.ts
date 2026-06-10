@@ -1,1 +1,15 @@
-export { indexingDemo, queueArrayDemo, queueListDemo, stackArrayDemo, stackListDemo } from './stackQueue';
+export {
+  indexingDemo,
+  queueArrayDequeueDemo,
+  queueArrayDemo,
+  queueArrayEnqueueDemo,
+  queueListDequeueDemo,
+  queueListDemo,
+  queueListEnqueueDemo,
+  stackArrayDemo,
+  stackArrayPopDemo,
+  stackArrayPushDemo,
+  stackListDemo,
+  stackListPopDemo,
+  stackListPushDemo,
+} from './stackQueue';

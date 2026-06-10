@@ -301,7 +301,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.28em] text-violet-300">Графы без страха</p>
-            <h1 className="mt-2 text-4xl font-bold tracking-tight text-app-primary">Обход графа: пошаговая сеть</h1>
+            <h1 className="mt-2 text-4xl font-bold tracking-tight text-app-primary">Графы: пошаговый разбор</h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-app-muted">
               Вершины — это объекты, рёбра — связи между ними. Ниже можно собрать граф вручную, перетащить вершины мышкой, соединить их линиями на холсте или изменить список и матрицу смежности — все представления синхронизируются автоматически, чтобы было видно, как данные переходят из одного вида в другой.
             </p>
@@ -324,7 +324,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
         <div className="mt-5 grid gap-3 rounded-2xl border border-app bg-surface p-4 text-sm text-app-muted xl:grid-cols-3">
           <div className="rounded-xl border border-app bg-slate-950/40 p-3">
             <p className="font-semibold text-app-primary">Что показывает этот раздел</p>
-            <p className="mt-2 leading-6">Обход графа показывает, в каком порядке алгоритм посещает вершины и по каким рёбрам он переходит дальше. Это помогает понимать поиск путей, связность и работу алгоритмов, которые строят маршрут шаг за шагом.</p>
+            <p className="mt-2 leading-6">Обход графа показывает порядок посещения вершин и переходов по рёбрам. Это помогает понять связность, поиск путей и различие между обходом в ширину и обходом в глубину.</p>
           </div>
           <div className="rounded-xl border border-app bg-slate-950/40 p-3">
             <p className="font-semibold text-app-primary">BFS</p>
@@ -431,7 +431,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
         )}
       </section>
 
-      <GraphVisualizer editable frame={graphFrame} graph={displayedGraph} onAddNodeAt={addNodeAtPosition} onGraphChange={commitGraph} />
+      <GraphVisualizer editable={status !== 'running'} frame={graphFrame} graph={displayedGraph} title="Обход графа" onAddNodeAt={addNodeAtPosition} onGraphChange={commitGraph} />
 
       <section className="grid gap-4 lg:grid-cols-2">
         <div className="app-panel">
@@ -872,24 +872,6 @@ const applyForceLayout = (nodes: GraphSnapshot['nodes'], edges: readonly GraphEd
       const dist = Math.max(1, Math.hypot(dx, dy));
       const desired = 150;
       const pull = (dist - desired) * 0.008;
-      const fx = (dx / dist) * pull;
-      const fy = (dy / dist) * pull;
-      source.position.x += fx;
-      source.position.y += fy;
-      target.position.x -= fx;
-      target.position.y -= fy;
-    }
-
-    for (const edge of edges) {
-      const source = points.find((point) => point.id === edge.source);
-      const target = points.find((point) => point.id === edge.target);
-      if (source === undefined || target === undefined) continue;
-
-      const dx = target.position.x - source.position.x;
-      const dy = target.position.y - source.position.y;
-      const dist = Math.max(1, Math.hypot(dx, dy));
-      const desired = 135;
-      const pull = (dist - desired) * 0.01;
       const fx = (dx / dist) * pull;
       const fy = (dy / dist) * pull;
       source.position.x += fx;

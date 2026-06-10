@@ -23,6 +23,7 @@ import 'reactflow/dist/style.css';
 interface GraphVisualizerProps {
   readonly frame: GraphAlgorithmFrame | null;
   readonly graph: GraphSnapshot;
+  readonly title?: string;
   readonly editable?: boolean;
   readonly onGraphChange?: (graph: GraphSnapshot) => void;
   readonly onAddNodeAt?: (position: GraphPosition) => void;
@@ -30,10 +31,10 @@ interface GraphVisualizerProps {
 
 const nodeTypes = { graphNode: GraphNodeView };
 
-export function GraphVisualizer({ frame, graph, editable = false, onGraphChange, onAddNodeAt }: GraphVisualizerProps) {
+export function GraphVisualizer({ frame, graph, title = 'Граф', editable = false, onGraphChange, onAddNodeAt }: GraphVisualizerProps) {
   const [projectFlowPosition, setProjectFlowPosition] = useState<((position: GraphPosition) => GraphPosition) | null>(null);
-  const sourceGraph = editable ? graph : (frame?.data ?? graph);
-  const nodes = sourceGraph.nodes.map((node) => toReactFlowNode(node, frame));
+  const sourceGraph = frame?.data ?? graph;
+  const nodes = sourceGraph.nodes.map((node) => toReactFlowNode(node, frame, editable));
   const edges = sourceGraph.edges.map((edge) => toReactFlowEdge(edge, frame));
 
   const onNodesChange = (changes: NodeChange[]): void => {
@@ -115,7 +116,7 @@ export function GraphVisualizer({ frame, graph, editable = false, onGraphChange,
           <p className="text-sm font-semibold uppercase tracking-[0.28em] text-violet-300">
             Визуализация графа
           </p>
-          <h2 className="mt-2 text-2xl font-bold text-app-primary">Обход графа</h2>
+          <h2 className="mt-2 text-2xl font-bold text-app-primary">{title}</h2>
         </div>
         <div className="rounded-2xl border border-app bg-surface px-4 py-3 text-sm text-app-muted">
           Активная строка псевдокода: <span className="font-semibold text-violet-200">{frame?.pseudocode.line ?? '—'}</span>
@@ -126,7 +127,7 @@ export function GraphVisualizer({ frame, graph, editable = false, onGraphChange,
         <ReactFlow
           connectionMode={ConnectionMode.Loose}
           edges={edges}
-          fitView
+          fitView={nodes.length > 0}
           maxZoom={1.5}
           minZoom={0.5}
           nodeTypes={nodeTypes}
@@ -151,7 +152,7 @@ export function GraphVisualizer({ frame, graph, editable = false, onGraphChange,
 
       <div className="mt-5 grid gap-3 md:grid-cols-[1fr_auto] md:items-start">
         <p className="min-h-12 rounded-2xl border border-app bg-surface px-4 py-3 text-sm leading-6 text-app-muted">
-          {frame?.message ?? 'Загрузите BFS или DFS, чтобы увидеть пошаговый обход графа.'}
+          {frame?.message ?? 'Загрузите алгоритм, чтобы увидеть пошаговую работу графа.'}
         </p>
         <div className="space-y-3">
           <GraphLegend />
@@ -172,7 +173,7 @@ function GraphLegend() {
       <LegendItem color="bg-slate-400" label="обычная вершина" />
       <LegendItem color="bg-emerald-500" label="пройденное ребро" />
       <LegendItem color="bg-violet-500" label="активное ребро" />
-      <div className="mt-2 text-[11px] text-app-muted">В режиме редактирования можно двигать узлы, соединять их мышкой, выделять/удалять связи и дважды кликнуть по пустому месту для новой вершины; координаты учитывают zoom/pan.</div>
+      <div className="mt-2 text-[11px] text-app-muted">В режиме редактирования можно двигать вершины, соединять их мышкой, выделять/удалять связи и дважды кликнуть по пустому месту для новой вершины.</div>
     </div>
   );
 }
@@ -220,13 +221,13 @@ function LegendItem({ color, label }: LegendItemProps) {
   );
 }
 
-const toReactFlowNode = (node: GraphNode, frame: GraphAlgorithmFrame | null): Node => {
+const toReactFlowNode = (node: GraphNode, frame: GraphAlgorithmFrame | null, showHandles: boolean): Node => {
   const tone = getNodeTone(node.id, frame);
 
   return {
     id: node.id,
     type: 'graphNode',
-    data: { label: node.label, background: tone.background, border: tone.border, shadow: tone.shadow },
+    data: { label: node.label, background: tone.background, border: tone.border, shadow: tone.shadow, showHandles },
     deletable: true,
     position: node.position,
     selectable: true,
@@ -304,36 +305,40 @@ const getNodeTone = (nodeId: string, frame: GraphAlgorithmFrame | null) => {
 };
 
 
-function GraphNodeView({ data, selected }: NodeProps<{ label: string; background: string; border: string; shadow: string }>) {
+function GraphNodeView({ data, selected }: NodeProps<{ label: string; background: string; border: string; shadow: string; showHandles: boolean }>) {
   return (
     <div
-      className={selected ? 'relative flex h-[84px] w-[84px] items-center justify-center rounded-full text-slate-50 ring-4 ring-violet-300/30' : 'relative flex h-[84px] w-[84px] items-center justify-center rounded-full text-slate-50'}
+      className={selected ? 'relative flex h-[76px] w-[76px] items-center justify-center rounded-full text-slate-50 ring-2 ring-violet-300/35' : 'relative flex h-[76px] w-[76px] items-center justify-center rounded-full text-slate-50'}
       style={{ background: data.background, border: `2px solid ${data.border}`, boxShadow: data.shadow }}
     >
-      <Handle
-        className="!h-6 !w-6 !border-2 !border-white !bg-violet-400"
-        id="left"
-        position={Position.Left}
-        type="target"
-      />
-      <Handle
-        className="!h-6 !w-6 !border-2 !border-white !bg-violet-400"
-        id="right"
-        position={Position.Right}
-        type="source"
-      />
-      <Handle
-        className="!h-6 !w-6 !border-2 !border-white !bg-violet-400"
-        id="top"
-        position={Position.Top}
-        type="target"
-      />
-      <Handle
-        className="!h-6 !w-6 !border-2 !border-white !bg-violet-400"
-        id="bottom"
-        position={Position.Bottom}
-        type="source"
-      />
+      {data.showHandles && (
+        <>
+          <Handle
+            className="!h-2.5 !w-2.5 !border !border-white !bg-violet-300 !opacity-70"
+            id="left"
+            position={Position.Left}
+            type="target"
+          />
+          <Handle
+            className="!h-2.5 !w-2.5 !border !border-white !bg-violet-300 !opacity-70"
+            id="right"
+            position={Position.Right}
+            type="source"
+          />
+          <Handle
+            className="!h-2.5 !w-2.5 !border !border-white !bg-violet-300 !opacity-70"
+            id="top"
+            position={Position.Top}
+            type="target"
+          />
+          <Handle
+            className="!h-2.5 !w-2.5 !border !border-white !bg-violet-300 !opacity-70"
+            id="bottom"
+            position={Position.Bottom}
+            type="source"
+          />
+        </>
+      )}
       <span className="text-base font-extrabold">{data.label}</span>
     </div>
   );

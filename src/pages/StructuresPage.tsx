@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { indexingDemo, queueArrayDemo, queueListDemo, stackArrayDemo, stackListDemo } from '@/algorithms/structures';
+import { indexingDemo, queueArrayDequeueDemo, queueArrayEnqueueDemo, queueListDequeueDemo, queueListEnqueueDemo, stackArrayPopDemo, stackArrayPushDemo, stackListPopDemo, stackListPushDemo } from '@/algorithms/structures';
 import { PlayerControls } from '@/components/player/PlayerControls';
 import { StepHistoryPanel } from '@/components/player/StepHistoryPanel';
 import { StepTutorPanel } from '@/components/player/StepTutorPanel';
@@ -8,7 +8,7 @@ import { loadStructurePresets, removeStructurePreset, renameStructurePreset, sav
 import { useAlgorithmPlayerStore } from '@/stores';
 import type { AlgorithmFrame, StructureAlgorithmFrame } from '@/types';
 
-type DemoKey = 'stack-array' | 'stack-list' | 'queue-array' | 'queue-list' | 'indexing';
+type DemoKey = 'stack-array-push' | 'stack-array-pop' | 'stack-list-push' | 'stack-list-pop' | 'queue-array-enqueue' | 'queue-array-dequeue' | 'queue-list-enqueue' | 'queue-list-dequeue' | 'indexing';
 
 const MIN_VALUE = -100;
 const MAX_VALUE = 100;
@@ -16,33 +16,61 @@ const MIN_VALUES = 2;
 const MAX_VALUES = 16;
 
 const theoryByDemo: Record<DemoKey, { title: string; description: string; complexity: string; useCases: readonly string[]; pseudocodeLines: readonly string[] }> = {
-  'stack-array': {
-    title: 'Стек на массиве (LIFO)',
-    description: 'Стек — линейная структура данных с доступом только к одному концу, который называется вершиной. Правило LIFO означает, что последним добавленный элемент становится первым доступным для удаления. В массивной реализации элементы размещаются в последовательных ячейках, а индекс top хранит положение текущей вершины. Если top = -1, стек пуст.',
-    complexity: 'push/pop: O(1), просмотр всех элементов: O(n), память: O(n)',
-    useCases: ['Стек вызовов функций', 'Проверка скобочных последовательностей', 'Откат действий', 'Итеративный обход в глубину'],
-    pseudocodeLines: ['создать массив и установить top = -1', 'push: увеличить top', 'записать значение в a[top]', 'pop: прочитать a[top]', 'очистить a[top] и уменьшить top', 'завершить при top = -1'],
+  'stack-array-push': {
+    title: 'Стек на массиве: push (LIFO)',
+    description: 'Стек — линейная структура данных с доступом только к одному концу, который называется вершиной. Правило LIFO означает, что последним добавленный элемент становится первым доступным для удаления. В этом режиме отдельно показывается только операция push: увеличение top и запись нового значения в вершину стека.',
+    complexity: 'push: O(1), просмотр всех элементов: O(n), память: O(n)',
+    useCases: ['Добавление элемента в вершину стека', 'Подготовка данных перед обратным обходом', 'Откат действий', 'Работа со стеком вызовов'],
+    pseudocodeLines: ['создать массив и установить top = -1', 'push: увеличить top', 'записать значение в a[top]', 'остановиться после добавления всех элементов'],
   },
-  'stack-list': {
-    title: 'Стек на связном списке',
-    description: 'В связной реализации стек хранится как последовательность узлов, где каждый узел содержит значение и ссылку на следующий узел. Вершина стека совпадает с головой списка head. Добавление создаёт новый узел перед текущей головой, а удаление переставляет head на следующий узел. Размер структуры не требует заранее фиксированной ёмкости.',
-    complexity: 'push/pop: O(1), память: O(n) на значения и ссылки',
+  'stack-array-pop': {
+    title: 'Стек на массиве: pop (LIFO)',
+    description: 'Стек — линейная структура данных с доступом только к одному концу, который называется вершиной. Правило LIFO означает, что последним добавленный элемент становится первым доступным для удаления. В этом режиме отдельно показывается только операция pop: чтение текущей вершины, очистка ячейки и сдвиг указателя top вниз.',
+    complexity: 'pop: O(1), просмотр всех элементов: O(n), память: O(n)',
+    useCases: ['Удаление последнего добавленного элемента', 'Возврат из рекурсивных вызовов', 'Отмена действий', 'Проверка соответствия скобок'],
+    pseudocodeLines: ['проверить, что top не равен -1', 'прочитать a[top]', 'очистить a[top]', 'уменьшить top', 'завершить при top = -1'],
+  },
+  'stack-list-push': {
+    title: 'Стек на связном списке: push',
+    description: 'В связной реализации стек хранится как последовательность узлов, где каждый узел содержит значение и ссылку на следующий узел. Вершина стека совпадает с головой списка head. В этом режиме отдельно показывается только push: создание нового узла и перенос head на него.',
+    complexity: 'push: O(1), память: O(n) на значения и ссылки',
     useCases: ['Стек переменного размера', 'Рекурсивные и итеративные обходы', 'История переходов', 'Алгоритмы с частыми вставками в начало'],
-    pseudocodeLines: ['head указывает на вершину стека', 'push: создать новый узел', 'связать новый узел со старым head', 'назначить новый узел как head', 'pop: прочитать head', 'переставить head на следующий узел'],
+    pseudocodeLines: ['head указывает на вершину стека', 'push: создать новый узел', 'связать новый узел со старым head', 'назначить новый узел как head'],
   },
-  'queue-array': {
-    title: 'Очередь на массиве (FIFO)',
-    description: 'Очередь — линейная структура данных, в которой добавление выполняется в хвост, а удаление — из головы. Правило FIFO означает, что раньше добавленный элемент обслуживается раньше. В массивной реализации head хранит индекс первого элемента, а tail — позицию следующей вставки. Очередь пуста, когда head и tail равны.',
-    complexity: 'enqueue/dequeue: O(1), просмотр всех элементов: O(n), память: O(n)',
+  'stack-list-pop': {
+    title: 'Стек на связном списке: pop',
+    description: 'В связной реализации стек хранится как последовательность узлов, где каждый узел содержит значение и ссылку на следующий узел. Вершина стека совпадает с головой списка head. В этом режиме отдельно показывается только pop: чтение значения в head и перенос головы на следующий узел.',
+    complexity: 'pop: O(1), память: O(n) на значения и ссылки',
+    useCases: ['Стек переменного размера', 'Рекурсивные и итеративные обходы', 'История переходов', 'Алгоритмы с частыми вставками в начало'],
+    pseudocodeLines: ['head указывает на вершину стека', 'pop: прочитать head', 'переставить head на следующий узел'],
+  },
+  'queue-array-enqueue': {
+    title: 'Очередь на массиве: enqueue (FIFO)',
+    description: 'Очередь — линейная структура данных, в которой добавление выполняется в хвост, а удаление — из головы. Правило FIFO означает, что раньше добавленный элемент обслуживается раньше. В этом режиме отдельно показывается только операция enqueue: запись нового элемента в позицию tail и сдвиг хвоста очереди.',
+    complexity: 'enqueue: O(1), просмотр всех элементов: O(n), память: O(n)',
     useCases: ['Планирование задач', 'Буферы сообщений', 'Поиск в ширину', 'Обработка событий в порядке поступления'],
-    pseudocodeLines: ['установить head = 0 и tail = 0', 'enqueue: записать значение в a[tail]', 'увеличить tail', 'dequeue: прочитать a[head]', 'очистить a[head] и увеличить head', 'завершить при head = tail'],
+    pseudocodeLines: ['установить head = 0 и tail = 0', 'enqueue: записать значение в a[tail]', 'увеличить tail', 'остановиться после добавления всех элементов'],
   },
-  'queue-list': {
-    title: 'Очередь на связном списке',
-    description: 'Связная очередь хранит два указателя: head на первый узел и tail на последний узел. Добавление создаёт новый узел после tail, а удаление извлекает узел head. Такая организация сохраняет порядок FIFO и позволяет выполнять основные операции без сдвига элементов массива.',
-    complexity: 'enqueue/dequeue: O(1), память: O(n) на значения и ссылки',
+  'queue-array-dequeue': {
+    title: 'Очередь на массиве: dequeue (FIFO)',
+    description: 'Очередь — линейная структура данных, в которой добавление выполняется в хвост, а удаление — из головы. Правило FIFO означает, что раньше добавленный элемент обслуживается раньше. В этом режиме отдельно показывается только операция dequeue: чтение головы очереди, очистка ячейки и сдвиг head вправо.',
+    complexity: 'dequeue: O(1), просмотр всех элементов: O(n), память: O(n)',
+    useCases: ['Извлечение задач в порядке поступления', 'Буферы сообщений', 'Поиск в ширину', 'Потоковая обработка данных'],
+    pseudocodeLines: ['установить head = 0 и tail = длина очереди', 'dequeue: прочитать a[head]', 'очистить a[head]', 'увеличить head', 'завершить при head = tail'],
+  },
+  'queue-list-enqueue': {
+    title: 'Очередь на связном списке: enqueue',
+    description: 'Связная очередь хранит два указателя: head на первый узел и tail на последний узел. Добавление создаёт новый узел после tail, а удаление извлекает узел head. В этом режиме отдельно показывается только enqueue: присоединение узла в конец списка и обновление tail.',
+    complexity: 'enqueue: O(1), память: O(n) на значения и ссылки',
     useCases: ['Очереди неизвестного заранее размера', 'Потоки запросов', 'Очередь печати', 'Моделирование процессов обслуживания'],
-    pseudocodeLines: ['head указывает на первый узел, tail — на последний', 'enqueue: создать новый узел', 'присоединить его после tail', 'обновить tail', 'dequeue: прочитать head', 'переставить head на следующий узел'],
+    pseudocodeLines: ['head указывает на первый узел, tail — на последний', 'enqueue: создать новый узел', 'присоединить его после tail', 'обновить tail'],
+  },
+  'queue-list-dequeue': {
+    title: 'Очередь на связном списке: dequeue',
+    description: 'Связная очередь хранит два указателя: head на первый узел и tail на последний узел. Добавление создаёт новый узел после tail, а удаление извлекает узел head. В этом режиме отдельно показывается только dequeue: чтение головы и перенос head на следующий узел.',
+    complexity: 'dequeue: O(1), память: O(n) на значения и ссылки',
+    useCases: ['Очереди неизвестного заранее размера', 'Потоки запросов', 'Очередь печати', 'Моделирование процессов обслуживания'],
+    pseudocodeLines: ['head указывает на первый узел, tail — на последний', 'dequeue: прочитать head', 'переставить head на следующий узел'],
   },
   indexing: {
     title: 'Индексирование массива',
@@ -57,7 +85,7 @@ interface StructuresPageProps {
   readonly initialDemo?: DemoKey;
 }
 
-export function StructuresPage({ initialDemo = 'stack-array' }: StructuresPageProps) {
+export function StructuresPage({ initialDemo = 'stack-array-push' }: StructuresPageProps) {
   const [demoKey, setDemoKey] = useState<DemoKey>(initialDemo);
   const [showHelp, setShowHelp] = useState(false);
   const [manualInput, setManualInput] = useState('8, 3, 5, 1, 9');
@@ -112,10 +140,14 @@ export function StructuresPage({ initialDemo = 'stack-array' }: StructuresPagePr
       <section className="app-panel">
         <div className="flex items-center justify-between gap-3"><h1 className="text-3xl font-bold text-app-primary">Базовые структуры данных</h1><button className="control-button" type="button" onClick={() => setShowHelp(true)}>Справка</button></div>
         <div className="mt-4 flex flex-wrap gap-2">
-          <button className="control-button" onClick={() => setDemoKey('stack-array')} type="button">Стек (массив)</button>
-          <button className="control-button" onClick={() => setDemoKey('stack-list')} type="button">Стек (список)</button>
-          <button className="control-button" onClick={() => setDemoKey('queue-array')} type="button">Очередь (массив)</button>
-          <button className="control-button" onClick={() => setDemoKey('queue-list')} type="button">Очередь (список)</button>
+          <button className="control-button" onClick={() => setDemoKey('stack-array-push')} type="button">Стек push (массив)</button>
+          <button className="control-button" onClick={() => setDemoKey('stack-array-pop')} type="button">Стек pop (массив)</button>
+          <button className="control-button" onClick={() => setDemoKey('stack-list-push')} type="button">Стек push (список)</button>
+          <button className="control-button" onClick={() => setDemoKey('stack-list-pop')} type="button">Стек pop (список)</button>
+          <button className="control-button" onClick={() => setDemoKey('queue-array-enqueue')} type="button">Очередь enqueue (массив)</button>
+          <button className="control-button" onClick={() => setDemoKey('queue-array-dequeue')} type="button">Очередь dequeue (массив)</button>
+          <button className="control-button" onClick={() => setDemoKey('queue-list-enqueue')} type="button">Очередь enqueue (список)</button>
+          <button className="control-button" onClick={() => setDemoKey('queue-list-dequeue')} type="button">Очередь dequeue (список)</button>
           <button className="control-button" onClick={() => setDemoKey('indexing')} type="button">Индексирование</button>
         </div>
 
@@ -201,15 +233,23 @@ const parseStructureValues = (source: string): { ok: true; values: readonly numb
 
 const runDemo = (demoKey: DemoKey, values: readonly number[], loadAlgorithm: ReturnType<typeof useAlgorithmPlayerStore.getState>['loadAlgorithm']) => {
   const generator =
-    demoKey === 'stack-array'
-      ? stackArrayDemo({ values })
-      : demoKey === 'stack-list'
-        ? stackListDemo({ values })
-        : demoKey === 'queue-array'
-          ? queueArrayDemo({ values })
-          : demoKey === 'queue-list'
-            ? queueListDemo({ values })
-            : indexingDemo({ values });
+    demoKey === 'stack-array-push'
+      ? stackArrayPushDemo({ values })
+      : demoKey === 'stack-array-pop'
+        ? stackArrayPopDemo({ values })
+        : demoKey === 'stack-list-push'
+          ? stackListPushDemo({ values })
+          : demoKey === 'stack-list-pop'
+            ? stackListPopDemo({ values })
+            : demoKey === 'queue-array-enqueue'
+              ? queueArrayEnqueueDemo({ values })
+              : demoKey === 'queue-array-dequeue'
+                ? queueArrayDequeueDemo({ values })
+                : demoKey === 'queue-list-enqueue'
+                  ? queueListEnqueueDemo({ values })
+                  : demoKey === 'queue-list-dequeue'
+                    ? queueListDequeueDemo({ values })
+                    : indexingDemo({ values });
   const first = generator.next();
   if (first.done) loadAlgorithm(generator); else loadAlgorithm(generator, { initialFrame: first.value });
 };
