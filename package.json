@@ -10,21 +10,21 @@
     "typecheck": "tsc -b --pretty"
   },
   "dependencies": {
+    "framer-motion": "^11.18.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "zustand": "^4.5.7",
-    "framer-motion": "^11.18.2",
-    "reactflow": "^11.11.4"
+    "reactflow": "^11.11.4",
+    "zustand": "^4.5.7"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^5.4.19",
-    "typescript": "^5.8.3",
-    "tailwindcss": "^3.4.17",
-    "postcss": "^8.5.3",
-    "autoprefixer": "^10.4.21",
     "@types/node": "^22.15.17",
     "@types/react": "^18.3.22",
-    "@types/react-dom": "^18.3.7"
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.8.3",
+    "vite": "^5.4.19"
   }
 }

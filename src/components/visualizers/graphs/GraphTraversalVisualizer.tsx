@@ -866,18 +866,6 @@ const applyForceLayout = (nodes: GraphSnapshot['nodes'], edges: readonly GraphEd
         b.position.x += fx;
         b.position.y += fy;
       }
-
-      const dx = target.position.x - source.position.x;
-      const dy = target.position.y - source.position.y;
-      const dist = Math.max(1, Math.hypot(dx, dy));
-      const desired = 150;
-      const pull = (dist - desired) * 0.008;
-      const fx = (dx / dist) * pull;
-      const fy = (dy / dist) * pull;
-      source.position.x += fx;
-      source.position.y += fy;
-      target.position.x -= fx;
-      target.position.y -= fy;
     }
 
     for (const edge of edges) {
