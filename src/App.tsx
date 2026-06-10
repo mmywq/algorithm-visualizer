@@ -110,7 +110,9 @@ const renderRoute = (
     return (
       <AlgorithmPage
         generatorFactory={configuredPage.generatorFactory}
+        key={route}
         mode={configuredPage.mode}
+        route={route}
         title={configuredPage.title}
       />
     );

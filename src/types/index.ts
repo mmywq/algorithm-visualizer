@@ -34,3 +34,10 @@ export type {
   StructureCell,
   StructureSnapshot,
 } from './structure';
+
+export type {
+  AlgorithmTheory,
+  ComplexityRow,
+  PseudocodeLine,
+  TermDefinition,
+} from './theory';

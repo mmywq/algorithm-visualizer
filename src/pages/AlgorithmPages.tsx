@@ -2,15 +2,17 @@ import { useEffect, useMemo, useState } from 'react';
 import { compareSortsDemo, blockSortDemo, countingSortDemo, radixSortDemo } from '@/algorithms/sorting/extra';
 import { connectedComponentsDemo, dijkstraDemo, mstDemo } from '@/algorithms/graphs';
 import { balancedBstScenario, binomialHeapScenario, bstScenario, bstSearchScenario, hashBlockScenario, hashClosedScenario, hashOpenScenario, heapExtractMinScenario, heapScenario } from '@/algorithms/structures/extendedStructures';
+import { DataInputPanel } from '@/components/common/DataInputPanel';
+import { ResultPanel } from '@/components/common/ResultPanel';
+import { StepExplainPanel } from '@/components/common/StepExplainPanel';
+import { TheoryPanel } from '@/components/common/TheoryPanel';
 import { PlayerControls } from '@/components/player/PlayerControls';
-import { StepHistoryPanel } from '@/components/player/StepHistoryPanel';
-import { StepTutorPanel } from '@/components/player/StepTutorPanel';
 import { ArrayVisualizer } from '@/components/visualizers/arrays/ArrayVisualizer';
 import { GraphVisualizer } from '@/components/visualizers/graphs/GraphVisualizer';
 import { StructureVisualizer } from '@/components/visualizers/structures/StructureVisualizer';
-import { loadArrayPresets, loadStructurePresets, removeArrayPreset, removeStructurePreset, renameArrayPreset, renameStructurePreset, saveArrayPreset, saveStructurePreset } from '@/lib/storage';
 import { useAlgorithmPlayerStore } from '@/stores';
-import type { AlgorithmFrame, ArrayAlgorithmFrame, ArrayPreset, GraphAlgorithmFrame, StructureAlgorithmFrame } from '@/types';
+import type { AlgorithmFrame, AlgorithmTheory, ArrayAlgorithmFrame, GraphAlgorithmFrame, StructureAlgorithmFrame } from '@/types';
+import { algorithmTheoryByRoute, fallbackTheory } from './theoryContent';
 
 type Mode = 'array' | 'graph' | 'structure';
 
@@ -20,33 +22,16 @@ type PageGeneratorFactory = (
 ) => Generator<AlgorithmFrame<unknown, Record<string, unknown>>, void, unknown>;
 
 interface AlgorithmPageProps {
+  readonly route: string;
   readonly title: string;
   readonly mode: Mode;
   readonly generatorFactory: PageGeneratorFactory;
 }
 
-interface TheoryContent {
-  readonly description: string;
-  readonly complexity: string;
-  readonly useCases: readonly string[];
-  readonly pseudocodeLines: readonly string[];
-}
-
-const MIN_INPUT_VALUE = -100;
-const MAX_INPUT_VALUE = 100;
-const MIN_INPUT_SIZE = 2;
-const MAX_INPUT_SIZE = 16;
-
-export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPageProps) {
+export function AlgorithmPage({ route, title, mode, generatorFactory }: AlgorithmPageProps) {
   const [values, setValues] = useState<readonly number[]>(() => getDefaultValues(title, mode));
-  const [manualInput, setManualInput] = useState(() => getDefaultValues(title, mode).join(', '));
-  const [inputError, setInputError] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState('');
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [presetName, setPresetName] = useState('');
-  const [renamePresetState, setRenamePresetState] = useState<{ id: string; name: string } | null>(null);
-  const [arrayPresets, setArrayPresets] = useState(loadArrayPresets());
-  const [structurePresets, setStructurePresets] = useState(loadStructurePresets());
 
   const currentFrame = useAlgorithmPlayerStore((state) => state.currentFrame);
   const currentIndex = useAlgorithmPlayerStore((state) => state.currentIndex);
@@ -61,7 +46,6 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
   const status = useAlgorithmPlayerStore((state) => state.status);
 
   const canUseNumericInput = mode !== 'graph';
-  const presets = mode === 'structure' ? structurePresets : arrayPresets;
   const isBstPage = title === 'Двоичное дерево поиска';
   const isHeapPage = title === 'Куча';
 
@@ -70,10 +54,12 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
   }, [canUseNumericInput, generatorFactory, loadAlgorithm, values]);
 
   const frame = currentFrame;
-  const theory = getTheoryByTitle(title, mode);
+  const theory: AlgorithmTheory = algorithmTheoryByRoute[route] ?? fallbackTheory(mode);
   const stepsHistory = useMemo(() => frames.map((stepFrame) => stepFrame.description ?? stepFrame.message), [frames]);
+  const isCompleted = status === 'completed';
 
   const resetAlgorithm = (): void => {
+    setSearchError(null);
     loadPageAlgorithm(generatorFactory, canUseNumericInput ? values : undefined, loadAlgorithm);
   };
 
@@ -81,7 +67,7 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
     const trimmed = searchInput.trim();
     const target = Number(trimmed);
     if (trimmed.length === 0 || Number.isInteger(target) === false || Number.isFinite(target) === false) {
-      setSearchError('Введите целое число, которое нужно найти в BST.');
+      setSearchError('Введите целое число, которое нужно найти в дереве.');
       return;
     }
     setSearchError(null);
@@ -98,143 +84,46 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
     loadPageAlgorithm(heapExtractMinScenario, values, loadAlgorithm);
   };
 
-  const applyValues = (): void => {
-    const parsed = parseInputValues(manualInput);
-    if (!parsed.ok) {
-      setInputError(parsed.error);
-      return;
-    }
-    setInputError(null);
-    setSearchError(null);
-    setValues(parsed.values);
-  };
-
-  const randomizeValues = (): void => {
-    const nextValues = createRandomValues(Math.min(MAX_INPUT_SIZE, Math.max(8, values.length)), mode === 'structure');
-    setValues(nextValues);
-    setManualInput(nextValues.join(', '));
-    setInputError(null);
-    setSearchError(null);
-  };
-
-  const refreshPresets = (): void => {
-    setArrayPresets(loadArrayPresets());
-    setStructurePresets(loadStructurePresets());
-  };
-
-  const savePreset = (): void => {
-    const name = presetName.trim() || `${title} ${new Date().toLocaleTimeString()}`;
-    if (mode === 'structure') {
-      saveStructurePreset(name, values);
-    } else {
-      saveArrayPreset(name, values);
-    }
-    setPresetName('');
-    refreshPresets();
-  };
-
-  const loadPreset = (preset: ArrayPreset): void => {
-    setValues(preset.values);
-    setManualInput(preset.values.join(', '));
-    setInputError(null);
-    setSearchError(null);
-  };
-
-  const removePreset = (id: string): void => {
-    if (mode === 'structure') {
-      removeStructurePreset(id);
-    } else {
-      removeArrayPreset(id);
-    }
-    refreshPresets();
-  };
-
-  const renamePreset = (): void => {
-    if (renamePresetState === null) return;
-    if (mode === 'structure') {
-      renameStructurePreset(renamePresetState.id, renamePresetState.name);
-    } else {
-      renameArrayPreset(renamePresetState.id, renamePresetState.name);
-    }
-    setRenamePresetState(null);
-    refreshPresets();
-  };
-
   return (
     <div className="flex w-full flex-col gap-6">
-      <section className="rounded-3xl border border-app bg-surface p-6">
+      <section className="app-panel">
         <h1 className="text-3xl font-bold text-app-primary">{title}</h1>
-        <p className="mt-3 max-w-4xl text-sm leading-6 text-app-muted">
-        </p>
+        {theory.intro.length > 0 && (
+          <p className="mt-3 max-w-4xl text-sm leading-6 text-app-muted">{theory.intro[0]}</p>
+        )}
       </section>
 
+      <TheoryPanel theory={theory} />
+
       {canUseNumericInput && (
-        <section className="app-panel">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <label className="block flex-1 text-sm text-app-muted">
-              Введите целые числа через запятую
-              <input
-                className="control-input mt-2 w-full"
-                onChange={(event) => setManualInput(event.target.value)}
-                placeholder="Например: 42, -7, 0, 15"
-                value={manualInput}
-              />
-              <span className="mt-2 block text-xs text-slate-400">
-                Диапазон строго от {MIN_INPUT_VALUE} до {MAX_INPUT_VALUE}. Пустая строка, текст и полностью одинаковый набор вроде 0, 0, 0 не запускаются: так мы избегаем неинформативной демонстрации.
-              </span>
-            </label>
-            <div className="flex flex-wrap gap-2">
-              <button className="control-button control-button-primary" onClick={applyValues} type="button">Применить значения</button>
-              <button className="control-button" onClick={randomizeValues} type="button">Случайные −100…100</button>
-              <input className="control-input" onChange={(event) => setPresetName(event.target.value)} placeholder="Имя пресета" value={presetName} />
-              <button className="control-button" onClick={savePreset} type="button">Сохранить пресет</button>
-            </div>
-          </div>
-
-          <p className="mt-3 text-sm text-app-muted">Текущий набор: <strong className="text-app-primary">[{values.join(', ')}]</strong></p>
-          {inputError !== null && <p className="mt-2 text-sm text-rose-300">{inputError}</p>}
-
-          {presets.length > 0 && (
-            <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-              {presets.slice(0, 8).map((preset) => (
-                <div className="flex items-center gap-2" key={preset.id}>
-                  <button className="control-button flex-1" onClick={() => loadPreset(preset)} type="button">{preset.name}</button>
-                  <button className="control-button" onClick={() => setRenamePresetState({ id: preset.id, name: preset.name })} type="button">Переим.</button>
-                  <button className="control-button" onClick={() => removePreset(preset.id)} type="button">Удалить</button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {renamePresetState !== null && (
-            <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-app bg-surface p-3">
-              <p className="text-sm text-app-muted">Новое имя пресета</p>
-              <input className="control-input" onChange={(event) => setRenamePresetState({ ...renamePresetState, name: event.target.value })} value={renamePresetState.name} />
-              <button className="control-button" onClick={renamePreset} type="button">Сохранить</button>
-              <button className="control-button" onClick={() => setRenamePresetState(null)} type="button">Отмена</button>
-            </div>
-          )}
-
+        <DataInputPanel
+          maxSize={16}
+          minSize={2}
+          onApply={(nextValues) => { setSearchError(null); setValues(nextValues); }}
+          storageKind={mode === 'structure' ? 'structure' : 'array'}
+          uniqueRandom={mode === 'structure'}
+          values={values}
+        >
           {isBstPage && (
-            <div className="mt-4 grid gap-2 rounded-2xl border border-app bg-surface p-3">
+            <div className="mt-4 grid gap-2 rounded-2xl border border-app bg-surface p-4">
               <div className="flex flex-wrap items-center gap-2">
-                <label className="text-sm text-app-muted" htmlFor="bst-search-input">Найти элемент в BST</label>
-                <input id="bst-search-input" className="control-input w-40" onChange={(event) => setSearchInput(event.target.value)} placeholder="Например: 40" value={searchInput} />
+                <label className="text-sm text-app-muted" htmlFor="bst-search-input">Найти элемент в дереве</label>
+                <input className="control-input w-40" id="bst-search-input" onChange={(event) => setSearchInput(event.target.value)} placeholder="Например: 40" value={searchInput} />
                 <button className="control-button control-button-primary" onClick={runBstSearch} type="button">Показать путь поиска</button>
               </div>
-              <p className="text-xs leading-5 text-app-muted">Поиск идёт от корня: на каждом узле сравнивается искомое число и выбирается левое или правое поддерево.</p>
+              <p className="text-xs leading-5 text-app-muted">Поиск идёт от корня: на каждом узле искомое число сравнивается с ключом узла, и алгоритм переходит в левое или правое поддерево.</p>
               {searchError !== null && <p className="text-sm text-rose-300">{searchError}</p>}
             </div>
           )}
 
           {isHeapPage && (
-            <div className="mt-4 flex flex-wrap gap-2 rounded-2xl border border-app bg-surface p-3">
+            <div className="mt-4 flex flex-wrap gap-2 rounded-2xl border border-app bg-surface p-4">
               <button className="control-button control-button-primary" onClick={resetAlgorithm} type="button">Построить min-heap</button>
               <button className="control-button" onClick={runHeapExtractMin} type="button">Извлечь минимум</button>
-              <p className="basis-full text-xs leading-5 text-app-muted">Извлечение минимума показывает перенос последнего элемента в корень и последующий sift-down через меньшего ребёнка.</p>
+              <p className="basis-full text-xs leading-5 text-app-muted">Извлечение минимума показывает перенос последнего элемента в корень и последующее «просеивание вниз» через меньшего ребёнка.</p>
             </div>
           )}
-        </section>
+        </DataInputPanel>
       )}
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
@@ -242,18 +131,9 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
           {mode === 'array' && <ArrayVisualizer frame={isArrayFrame(frame) ? frame : null} />}
           {mode === 'graph' && <GraphVisualizer frame={isGraphFrame(frame) ? frame : null} graph={isGraphFrame(frame) ? frame.data : { nodes: [], edges: [] }} title={title} />}
           {mode === 'structure' && <StructureVisualizer frame={isStructureFrame(frame) ? frame : null} />}
-          {mode === 'graph' && status === 'completed' && isGraphFrame(frame) && <GraphResultPanel title={title} frame={frame} />}
         </div>
-        <StepTutorPanel
-          complexity={theory.complexity}
-          frame={frame}
-          pseudocodeLines={theory.pseudocodeLines}
-          title={theory.description}
-          useCases={theory.useCases}
-        />
+        <StepExplainPanel frame={frame} pseudocode={theory.pseudocode} />
       </section>
-
-      {status === 'completed' && <StepHistoryPanel steps={stepsHistory} />}
 
       <PlayerControls
         canStepBackward={currentIndex > 0}
@@ -269,6 +149,8 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
         status={status}
         totalFrames={frames.length}
       />
+
+      {isCompleted && <ResultPanel steps={stepsHistory} summary={buildResultSummary(title, frame)} />}
     </div>
   );
 }
@@ -288,49 +170,6 @@ const loadPageAlgorithm = (
   }
 };
 
-const parseInputValues = (source: string): { ok: true; values: readonly number[] } | { ok: false; error: string } => {
-  const segments = source.split(',').map((value) => value.trim()).filter((value) => value.length > 0);
-  if (segments.length === 0) {
-    return { ok: false, error: 'Введите хотя бы два целых числа через запятую.' };
-  }
-
-  const values: number[] = [];
-  for (const segment of segments) {
-    if (/^-?\d+$/.test(segment) === false) {
-      return { ok: false, error: `Недопустимое значение «${segment}». Используйте только целые числа.` };
-    }
-    const value = Number(segment);
-    if (value < MIN_INPUT_VALUE || value > MAX_INPUT_VALUE) {
-      return { ok: false, error: `Число ${value} вне диапазона ${MIN_INPUT_VALUE}…${MAX_INPUT_VALUE}.` };
-    }
-    values.push(value);
-  }
-
-  if (values.length < MIN_INPUT_SIZE) {
-    return { ok: false, error: `Введите минимум ${MIN_INPUT_SIZE} числа.` };
-  }
-  if (values.length > MAX_INPUT_SIZE) {
-    return { ok: false, error: `Слишком много значений: максимум ${MAX_INPUT_SIZE}.` };
-  }
-  if (new Set(values).size === 1) {
-    return { ok: false, error: 'Все значения одинаковые. Такой набор корректен математически, но не показывает ветвления/сравнения; добавьте хотя бы одно отличающееся число.' };
-  }
-
-  return { ok: true, values };
-};
-
-const createRandomValues = (size: number, unique: boolean): readonly number[] => {
-  if (!unique) {
-    return Array.from({ length: size }, () => Math.floor(Math.random() * (MAX_INPUT_VALUE - MIN_INPUT_VALUE + 1)) + MIN_INPUT_VALUE);
-  }
-
-  const values = new Set<number>();
-  while (values.size < size) {
-    values.add(Math.floor(Math.random() * (MAX_INPUT_VALUE - MIN_INPUT_VALUE + 1)) + MIN_INPUT_VALUE);
-  }
-  return [...values];
-};
-
 const getDefaultValues = (title: string, mode: Mode): readonly number[] => {
   if (mode === 'array') return [34, -12, 56, 7, 7, 89, -3, 22];
   if (title.includes('хеш')) return [12, 22, 32, 42, 52];
@@ -343,225 +182,34 @@ const isArrayFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | 
 const isGraphFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | null): frame is GraphAlgorithmFrame => frame?.domain === 'graph';
 const isStructureFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | null): frame is StructureAlgorithmFrame => (frame?.domain === 'tree' || frame?.domain === 'array') && typeof frame.data === 'object' && frame.data !== null && 'cells' in frame.data;
 
-function GraphResultPanel({ title, frame }: { readonly title: string; readonly frame: GraphAlgorithmFrame }) {
-  const meta = frame.meta as Record<string, unknown>;
-  let summary = frame.description ?? frame.message;
-
-  if (title === 'Компоненты связности') {
-    const components = Array.isArray(meta.components) ? meta.components as readonly string[][] : [];
-    const componentCount = typeof meta.componentCount === 'number' ? meta.componentCount : components.length;
-    summary = componentCount > 0
-      ? `Найдено ${componentCount} компонент связности. Состав: ${components.map((members, index) => `#${index + 1}=[${members.join(', ')}]`).join('; ')}.`
-      : summary;
-  } else if (title === 'Алгоритм Дейкстры') {
-    const distances = Array.isArray(meta.distances) ? meta.distances as readonly string[] : [];
-    summary = distances.length > 0
-      ? `Кратчайшие расстояния от ${frame.meta.startNodeId}: ${distances.join(', ')}.`
-      : summary;
-  } else if (title === 'Минимальное остовное дерево') {
-    const mstEdgeIds = Array.isArray(meta.mstEdgeIds) ? meta.mstEdgeIds as readonly string[] : [];
-    const totalWeight = typeof meta.totalWeight === 'number' ? meta.totalWeight : null;
-    summary = `Выбраны рёбра MST: ${mstEdgeIds.length > 0 ? mstEdgeIds.join(', ') : '—'}.${totalWeight === null ? '' : ` Суммарный вес = ${totalWeight}.`}`;
+const buildResultSummary = (title: string, frame: AlgorithmFrame<unknown, Record<string, unknown>> | null): string | null => {
+  if (frame === null) {
+    return null;
   }
 
-  return (
-    <section className="mt-4 rounded-2xl border border-app bg-surface p-4 text-sm leading-6 text-app-muted">
-      <h3 className="text-lg font-semibold text-app-primary">Вывод</h3>
-      <p className="mt-2">{summary}</p>
-    </section>
-  );
-}
+  const fallback = frame.description ?? frame.message;
 
-const getTheoryByTitle = (title: string, mode: Mode): TheoryContent => {
-  if (title.includes('Сравнение 6 сортировок')) {
-    return {
-      description: 'Сравнение алгоритмов сортировки выполняется на одинаковом входном массиве, потому что только при равных исходных данных можно корректно сопоставлять число операций. В демонстрации каждый алгоритм получает отдельную копию массива и выполняется независимо от остальных. Сравнения показывают, сколько раз алгоритм сопоставлял два значения или значение с опорным элементом. Записи и обмены показывают, сколько раз менялось содержимое массива или вспомогательной структуры. Эти показатели являются учебной моделью трудоёмкости: они объясняют поведение алгоритма на выбранном наборе данных, но не заменяют асимптотический анализ и не учитывают особенности конкретного оборудования.',
-      complexity: 'Пузырьковая, выбором и вставками: O(n²); слиянием: O(n log n); быстрая: в среднем O(n log n), в худшем O(n²); подсчётом: O(n + k)',
-      useCases: ['Сопоставление алгоритмов при одинаковом входе', 'Изучение роли сравнений и операций записи', 'Проверка корректности результата сортировки', 'Связь пошаговой демонстрации с оценкой сложности'],
-      pseudocodeLines: [
-        'зафиксировать исходный массив',
-        'создать независимую копию для очередного алгоритма',
-        'выполнить алгоритм с подсчётом сравнений и записей',
-        'сохранить результат в таблицу сравнения',
-        'после всех запусков сопоставить полученные показатели',
-      ],
-    };
+  if (isGraphFrame(frame)) {
+    const meta = frame.meta as Record<string, unknown>;
+    if (title === 'Компоненты связности') {
+      const components = Array.isArray(meta.components) ? meta.components as readonly string[][] : [];
+      const componentCount = typeof meta.componentCount === 'number' ? meta.componentCount : components.length;
+      if (componentCount > 0) {
+        return `Найдено компонент связности: ${componentCount}. Состав: ${components.map((members, index) => `№${index + 1} — [${members.join(', ')}]`).join('; ')}.`;
+      }
+    } else if (title === 'Алгоритм Дейкстры') {
+      const distances = Array.isArray(meta.distances) ? meta.distances as readonly string[] : [];
+      if (distances.length > 0) {
+        return `Кратчайшие расстояния от вершины ${String(meta.startNodeId ?? '')}: ${distances.join(', ')}.`;
+      }
+    } else if (title === 'Минимальное остовное дерево') {
+      const mstEdgeIds = Array.isArray(meta.mstEdgeIds) ? meta.mstEdgeIds as readonly string[] : [];
+      const totalWeight = typeof meta.totalWeight === 'number' ? meta.totalWeight : null;
+      return `В остовное дерево вошли рёбра: ${mstEdgeIds.length > 0 ? mstEdgeIds.join(', ') : '—'}.${totalWeight === null ? '' : ` Суммарный вес: ${totalWeight}.`}`;
+    }
   }
 
-  if (title.includes('Блочная сортировка')) {
-    return {
-      description: 'Блочная сортировка делит массив на небольшие блоки, сортирует каждый блок отдельно, а затем объединяет блоки в один общий упорядоченный результат. Такой подход полезен, когда данные удобно обрабатывать частями: сначала каждая часть становится понятной сама по себе, а потом блоки сливаются в общий порядок. В учебной модели это помогает увидеть идею «разбей, упорядочь локально и потом собери вместе».',
-      complexity: 'Зависит от способа локальной сортировки и слияния; в учебной схеме обычно O(n log n) или хуже при неудачном размере блоков',
-      useCases: ['Понимание разбиения на блоки', 'Обработка данных частями', 'Подготовка к внешней сортировке', 'Демонстрация локального порядка внутри блоков'],
-      pseudocodeLines: [
-        'разбить массив на блоки фиксированного размера',
-        'отсортировать каждый блок отдельно',
-        'сравнивать первые элементы блоков',
-        'выбирать минимальный кандидат и записывать его в результат',
-        'повторять, пока все блоки не будут объединены',
-      ],
-    };
-  }
-
-  if (title.includes('Сортировка подсчётом')) {
-    return {
-      description: 'Сортировка подсчётом не сравнивает элементы между собой. Вместо этого она считает, сколько раз встречается каждое значение, а затем восстанавливает отсортированный массив по этим счётчикам. Этот метод особенно удобен для целых чисел с небольшим диапазоном значений, потому что работа идёт по частотам, а не по сравнениям.',
-      complexity: 'O(n + k), где n — количество элементов, а k — размер диапазона значений',
-      useCases: ['Сортировка целых чисел', 'Подсчёт частот', 'Ситуации с небольшим диапазоном ключей', 'Понимание алгоритмов без сравнений'],
-      pseudocodeLines: [
-        'создать массив счётчиков count',
-        'пройти по входным значениям и увеличить нужный счётчик',
-        'идти по count слева направо',
-        'по каждому ненулевому счётчику записывать соответствующее значение в результат',
-        'повторять, пока счётчики не станут нулевыми',
-      ],
-    };
-  }
-
-  if (title.includes('Поразрядная сортировка')) {
-    return {
-      description: 'Поразрядная сортировка упорядочивает числа по цифрам: сначала по младшему разряду, затем по следующему и так далее. Важно, что каждый проход должен быть стабильным, иначе порядок, полученный на более старшем разряде, разрушится. Алгоритм особенно полезен для целых чисел и строк фиксированной длины, когда удобно сравнивать не целиком число, а отдельные разряды.',
-      complexity: 'O(d · (n + k)), где d — число разрядов, n — количество элементов, k — размер алфавита разряда',
-      useCases: ['Сортировка больших наборов целых чисел', 'Работа с фиксированной длиной ключей', 'Понимание стабильных проходов по разрядам', 'Разделение отрицательных и неотрицательных значений'],
-      pseudocodeLines: [
-        'выбрать младший разряд и выполнить стабильную сортировку',
-        'перейти к следующему разряду',
-        'повторять, пока разряды не закончатся',
-        'для отрицательных чисел обработать модуль отдельно',
-        'объединить отрицательные и неотрицательные значения в итоговый массив',
-      ],
-    };
-  }
-
-  if (title.includes('Двоичное дерево поиска')) {
-    return {
-      description: 'BST (Binary Search Tree, двоичное дерево поиска) хранит ключи по правилу: слева от узла находятся меньшие значения, справа — большие или равные. Благодаря этому поиск похож на игру «больше/меньше»: на каждом узле мы отбрасываем половину подходящих направлений. В реальных системах идея лежит в основе индексов, словарей и поиска диапазонов, но качество зависит от высоты дерева.',
-      complexity: 'Поиск/вставка/удаление: O(h), в среднем O(log n), в худшем O(n)',
-      useCases: ['Индексные структуры', 'Поддержка отсортированного множества', 'Поиск диапазонов', 'Обучение рекурсивному ветвлению'],
-      pseudocodeLines: ['если корень пуст, создаём узел', 'сравнить key с текущим node.key', 'если key < node.key, идём влево', 'иначе идём вправо', 'вставить в первое пустое место', 'повторять, пока ключ не размещён'],
-    };
-  }
-
-  if (title.includes('хеш')) {
-    return {
-      description: 'Хеш-таблица (hash table) хранит пары ключ-значение и получает индекс ячейки через хеш-функцию. Коллизия — ситуация, когда разные ключи попадают в одну ячейку. Для обработки используют цепочки, открытую адресацию или блочное размещение.',
-      complexity: 'В среднем O(1), в худшем O(n)',
-      useCases: ['Словари и кэш', 'Проверка принадлежности', 'Подсчёт частот', 'Ускорение поиска по ключу без полного перебора'],
-      pseudocodeLines: [
-        'index = hash(key) mod m',
-        'если корзина свободна, вставить',
-        'иначе разрешить коллизию',
-        'при поиске проверить соответствующий bucket',
-      ],
-    };
-  }
-
-  if (title.includes('Биномиальная куча')) {
-    return {
-      description: 'Биномиальная куча — это очередь с приоритетом, представленная не одним деревом, а лесом биномиальных деревьев. Биномиальное дерево Bk содержит 2^k узлов и получается связыванием двух деревьев B(k−1): корень с меньшим ключом остаётся сверху, второй корень становится его ребёнком. В корректной биномиальной куче для каждой степени хранится не более одного дерева, поэтому корневой список похож на двоичную запись количества элементов. Минимальный элемент ищется среди корней, а вставка работает как сложение с переносом: дерево степени 0 добавляется в корневой список, а одинаковые степени последовательно объединяются.',
-      complexity: 'insert: O(log n), find-min: O(log n), union: O(log n), extract-min: O(log n)',
-      useCases: ['Очереди с приоритетом', 'Быстрое объединение нескольких куч', 'Алгоритмы на графах', 'Изучение лесов деревьев и операции union'],
-      pseudocodeLines: [
-        'создать дерево B0 из нового ключа',
-        'добавить дерево в корневой список',
-        'найти две кучи одинаковой степени',
-        'оставить меньший корень родителем',
-        'повторять связывание, пока степени корней не станут уникальными',
-        'минимум искать среди корней деревьев',
-      ],
-    };
-  }
-
-  if (title.includes('метод цепочек')) {
-    return {
-      description: 'Метод цепочек хранит все элементы, попавшие в одну хеш-ячейку, в отдельном списке. Хеш-функция вычисляет индекс корзины, а коллизия не разрушает данные: новые ключи просто добавляются в цепочку этой корзины. Такая схема проста для понимания и хорошо демонстрирует идею коллизий, но длина цепочек влияет на время поиска.',
-      complexity: 'insert/search: O(1) в среднем, O(n) в худшем случае',
-      useCases: ['Хранение словарей', 'Краевые случаи коллизий', 'Обучение обработке конфликтов', 'Первые хеш-таблицы в курсах структур данных'],
-      pseudocodeLines: [
-        'вычислить index = hash(key) mod m',
-        'перейти в корзину index',
-        'если корзина не пуста, зафиксировать коллизию',
-        'добавить ключ в цепочку корзины',
-        'поиск повторяет тот же путь в пределах одной корзины',
-      ],
-    };
-  }
-
-  if (title.includes('открытая адресация')) {
-    return {
-      description: 'Открытая адресация хранит все ключи прямо в массиве таблицы. Если начальная ячейка занята, алгоритм не создаёт цепочку, а перебирает следующие позиции по правилу пробирования. Поэтому важно, чтобы в таблице оставались свободные ячейки: при высокой заполненности длина пробирования быстро растёт.',
-      complexity: 'insert/search: O(1) в среднем, O(n) в худшем случае',
-      useCases: ['Компактное хранение ключей', 'Быстрый доступ к ячейкам массива', 'Линейное и квадратичное пробирование', 'Изучение влияния заполненности таблицы'],
-      pseudocodeLines: [
-        'вычислить начальный индекс по hash(key)',
-        'проверить текущую ячейку',
-        'если она занята, перейти к следующей по правилу пробирования',
-        'если найдено пустое место, записать ключ',
-        'при поиске повторить ту же последовательность проб',
-      ],
-    };
-  }
-
-  if (title.includes('блочная адресация')) {
-    return {
-      description: 'Блочная адресация группирует ячейки в блоки. Ключ сначала попадает в основной блок, а если в нём нет места, то создаётся overflow-блок. Такая схема помогает объяснить, как устроено переполнение внутри хеш-структуры и почему поиск идёт не по всей таблице, а по связанной цепочке блоков.',
-      complexity: 'insert/search: O(1) в среднем, зависит от длины цепочки блоков',
-      useCases: ['Блочные хеш-структуры', 'Обучение переполнению блоков', 'Локальная групповая обработка данных', 'Сценарии с ограничением размера блока'],
-      pseudocodeLines: [
-        'вычислить основной блок по hash(key)',
-        'проверить, есть ли место в блоке',
-        'если блок заполнен, создать overflow-блок',
-        'добавить ключ в overflow-блок',
-        'поиск проверяет основной блок и цепочку переполнения',
-      ],
-    };
-  }
-
-  if (title.includes('Куча')) {
-    return {
-      description: 'Бинарная куча хранит приоритеты в форме почти полного бинарного дерева. Благодаря почти полной форме дерево удобно представлять массивом: для индекса i дети находятся в 2i+1 и 2i+2. В min-heap каждый родитель не больше своих детей, поэтому корень всегда содержит минимальный ключ. Вставка сохраняет форму дерева добавлением в конец массива, а затем восстанавливает порядок подъёмом элемента вверх. Извлечение минимума удаляет корень, переносит последний элемент в корень и восстанавливает порядок опусканием вниз через меньшего ребёнка.',
-      complexity: 'insert/extract-min: O(log n), peek-min: O(1), построение последовательными вставками: O(n log n)',
-      useCases: ['Очередь с приоритетом', 'Планировщики задач', 'Алгоритм Дейкстры/Прима', 'Heap Sort и обработка потока событий'],
-      pseudocodeLines: [
-        'добавить новый ключ в конец массива',
-        'пока родитель больше ребёнка, выполнить sift-up',
-        'для extract-min сохранить значение корня',
-        'перенести последний элемент в корень',
-        'сравнить текущий узел с детьми',
-        'менять с меньшим ребёнком, пока свойство кучи не восстановлено',
-      ],
-    };
-  }
-
-  if (mode === 'graph') {
-    return {
-      description: 'Граф описывает объекты (вершины) и связи между ними (рёбра). Алгоритмы графов позволяют находить маршруты, компоненты связности, кратчайшие пути и минимальные остовы.',
-      complexity: 'Часто O(V + E), зависит от задачи',
-      useCases: ['Маршрутизация', 'Социальные графы', 'Сетевой анализ', 'Зависимости задач'],
-      pseudocodeLines: ['инициализировать структуру frontier', 'добавить стартовую вершину', 'извлечь вершину и обработать', 'для соседей добавить непосещённые', 'завершить при пустой frontier'],
-    };
-  }
-
-  if (mode === 'array') {
-    return {
-      description: 'Сортировка упорядочивает элементы по ключу сравнения. После сортировки ускоряются поиск, группировка, слияние наборов и многие этапы обработки данных.',
-      complexity: 'От O(n) до O(n log n) и O(n²)',
-      useCases: ['Подготовка к бинарному поиску', 'Сравнение наборов', 'Обработка данных'],
-      pseudocodeLines: [
-        'выбрать стратегию сортировки',
-        'сравнивать элементы по правилу',
-        'переставлять/сливать элементы',
-        'повторять до полной упорядоченности',
-      ],
-    };
-  }
-
-  return {
-    description: 'Пошаговое объяснение текущего алгоритма с акцентом на инварианты: что уже построено, что проверяется сейчас и почему следующий шаг безопасен.',
-    complexity: 'Зависит от операций',
-    useCases: ['Обучение структурам данных', 'Понимание инвариантов'],
-    pseudocodeLines: ['инициализация', 'основной цикл', 'обработка шага', 'завершение'],
-  };
+  return fallback;
 };
 
 export const algorithmRouteRegistry = {
