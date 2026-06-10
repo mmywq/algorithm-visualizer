@@ -3,6 +3,7 @@ import { compareSortsDemo, blockSortDemo, countingSortDemo, radixSortDemo } from
 import { connectedComponentsDemo, dijkstraDemo, mstDemo } from '@/algorithms/graphs';
 import { balancedBstScenario, binomialHeapScenario, bstScenario, bstSearchScenario, hashBlockScenario, hashClosedScenario, hashOpenScenario, heapExtractMinScenario, heapScenario } from '@/algorithms/structures/extendedStructures';
 import { PlayerControls } from '@/components/player/PlayerControls';
+import { StepHistoryPanel } from '@/components/player/StepHistoryPanel';
 import { StepTutorPanel } from '@/components/player/StepTutorPanel';
 import { ArrayVisualizer } from '@/components/visualizers/arrays/ArrayVisualizer';
 import { GraphVisualizer } from '@/components/visualizers/graphs/GraphVisualizer';
@@ -252,14 +253,7 @@ export function AlgorithmPage({ title, mode, generatorFactory }: AlgorithmPagePr
         />
       </section>
 
-      {status === 'completed' && stepsHistory.length > 0 && (
-        <section className="app-panel">
-          <h3 className="text-xl font-semibold text-app-primary">Полный список выполненных шагов</h3>
-          <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-app-muted">
-            {stepsHistory.map((entry) => (<li key={entry}>{entry}</li>))}
-          </ol>
-        </section>
-      )}
+      {status === 'completed' && <StepHistoryPanel steps={stepsHistory} />}
 
       <PlayerControls
         canStepBackward={currentIndex > 0}
@@ -433,6 +427,67 @@ const getTheoryByTitle = (title: string, mode: Mode): TheoryContent => {
     };
   }
 
+  if (title.includes('Биномиальная куча')) {
+    return {
+      description: 'Биномиальная куча — это очередь с приоритетом, представленная не одним деревом, а лесом биномиальных деревьев. Биномиальное дерево Bk содержит 2^k узлов и получается связыванием двух деревьев B(k−1): корень с меньшим ключом остаётся сверху, второй корень становится его ребёнком. В корректной биномиальной куче для каждой степени хранится не более одного дерева, поэтому корневой список похож на двоичную запись количества элементов. Минимальный элемент ищется среди корней, а вставка работает как сложение с переносом: дерево степени 0 добавляется в корневой список, а одинаковые степени последовательно объединяются.',
+      complexity: 'insert: O(log n), find-min: O(log n), union: O(log n), extract-min: O(log n)',
+      useCases: ['Очереди с приоритетом', 'Быстрое объединение нескольких куч', 'Алгоритмы на графах', 'Изучение лесов деревьев и операции union'],
+      pseudocodeLines: [
+        'создать дерево B0 из нового ключа',
+        'добавить дерево в корневой список',
+        'найти две кучи одинаковой степени',
+        'оставить меньший корень родителем',
+        'повторять связывание, пока степени корней не станут уникальными',
+        'минимум искать среди корней деревьев',
+      ],
+    };
+  }
+
+  if (title.includes('метод цепочек')) {
+    return {
+      description: 'Метод цепочек хранит все элементы, попавшие в одну хеш-ячейку, в отдельном списке. Хеш-функция вычисляет индекс корзины, а коллизия не разрушает данные: новые ключи просто добавляются в цепочку этой корзины. Такая схема проста для понимания и хорошо демонстрирует идею коллизий, но длина цепочек влияет на время поиска.',
+      complexity: 'insert/search: O(1) в среднем, O(n) в худшем случае',
+      useCases: ['Хранение словарей', 'Краевые случаи коллизий', 'Обучение обработке конфликтов', 'Первые хеш-таблицы в курсах структур данных'],
+      pseudocodeLines: [
+        'вычислить index = hash(key) mod m',
+        'перейти в корзину index',
+        'если корзина не пуста, зафиксировать коллизию',
+        'добавить ключ в цепочку корзины',
+        'поиск повторяет тот же путь в пределах одной корзины',
+      ],
+    };
+  }
+
+  if (title.includes('открытая адресация')) {
+    return {
+      description: 'Открытая адресация хранит все ключи прямо в массиве таблицы. Если начальная ячейка занята, алгоритм не создаёт цепочку, а перебирает следующие позиции по правилу пробирования. Поэтому важно, чтобы в таблице оставались свободные ячейки: при высокой заполненности длина пробирования быстро растёт.',
+      complexity: 'insert/search: O(1) в среднем, O(n) в худшем случае',
+      useCases: ['Компактное хранение ключей', 'Быстрый доступ к ячейкам массива', 'Линейное и квадратичное пробирование', 'Изучение влияния заполненности таблицы'],
+      pseudocodeLines: [
+        'вычислить начальный индекс по hash(key)',
+        'проверить текущую ячейку',
+        'если она занята, перейти к следующей по правилу пробирования',
+        'если найдено пустое место, записать ключ',
+        'при поиске повторить ту же последовательность проб',
+      ],
+    };
+  }
+
+  if (title.includes('блочная адресация')) {
+    return {
+      description: 'Блочная адресация группирует ячейки в блоки. Ключ сначала попадает в основной блок, а если в нём нет места, то создаётся overflow-блок. Такая схема помогает объяснить, как устроено переполнение внутри хеш-структуры и почему поиск идёт не по всей таблице, а по связанной цепочке блоков.',
+      complexity: 'insert/search: O(1) в среднем, зависит от длины цепочки блоков',
+      useCases: ['Блочные хеш-структуры', 'Обучение переполнению блоков', 'Локальная групповая обработка данных', 'Сценарии с ограничением размера блока'],
+      pseudocodeLines: [
+        'вычислить основной блок по hash(key)',
+        'проверить, есть ли место в блоке',
+        'если блок заполнен, создать overflow-блок',
+        'добавить ключ в overflow-блок',
+        'поиск проверяет основной блок и цепочку переполнения',
+      ],
+    };
+  }
+
   if (title.includes('Куча')) {
     return {
       description: 'Бинарная куча хранит приоритеты в форме почти полного бинарного дерева. Благодаря почти полной форме дерево удобно представлять массивом: для индекса i дети находятся в 2i+1 и 2i+2. В min-heap каждый родитель не больше своих детей, поэтому корень всегда содержит минимальный ключ. Вставка сохраняет форму дерева добавлением в конец массива, а затем восстанавливает порядок подъёмом элемента вверх. Извлечение минимума удаляет корень, переносит последний элемент в корень и восстанавливает порядок опусканием вниз через меньшего ребёнка.',
@@ -483,9 +538,9 @@ const getTheoryByTitle = (title: string, mode: Mode): TheoryContent => {
 export const algorithmRouteRegistry = {
   '/trees/bst': { title: 'Двоичное дерево поиска', mode: 'structure' as const, generatorFactory: bstScenario },
   '/trees/balanced-bst': { title: 'Сбалансированное двоичное дерево поиска', mode: 'structure' as const, generatorFactory: balancedBstScenario },
-  '/hash/open-chaining': { title: 'Открытые хеш-таблицы (закрытая адресация)', mode: 'structure' as const, generatorFactory: hashOpenScenario },
-  '/hash/open-addressing': { title: 'Закрытые хеш-таблицы (открытая адресация)', mode: 'structure' as const, generatorFactory: hashClosedScenario },
-  '/hash/block-addressing': { title: 'Закрытые хеш-таблицы (с использованием блоков)', mode: 'structure' as const, generatorFactory: hashBlockScenario },
+  '/hash/open-chaining': { title: 'Хеш-таблица: метод цепочек', mode: 'structure' as const, generatorFactory: hashOpenScenario },
+  '/hash/open-addressing': { title: 'Хеш-таблица: открытая адресация', mode: 'structure' as const, generatorFactory: hashClosedScenario },
+  '/hash/block-addressing': { title: 'Хеш-таблица: блочная адресация', mode: 'structure' as const, generatorFactory: hashBlockScenario },
   '/heaps/heap': { title: 'Куча', mode: 'structure' as const, generatorFactory: heapScenario },
   '/heaps/binomial': { title: 'Биномиальная куча', mode: 'structure' as const, generatorFactory: binomialHeapScenario },
   '/sorting/compare': { title: 'Сравнение 6 сортировок', mode: 'array' as const, generatorFactory: compareSortsDemo },

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import { bfs, dfs } from '@/algorithms/graphs';
 import { PlayerControls } from '@/components/player/PlayerControls';
+import { StepHistoryPanel } from '@/components/player/StepHistoryPanel';
 import { loadGraphPresets, loadSettings, removeGraphPreset, renameGraphPreset, saveGraphPreset, saveSettings } from '@/lib/storage';
 import { useAlgorithmPlayerStore } from '@/stores';
 import type { AlgorithmFrame, GraphAlgorithmFrame, GraphEdge, GraphSnapshot, NodeId } from '@/types';
@@ -68,7 +69,8 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
   const status = useAlgorithmPlayerStore((state) => state.status);
 
   const graphFrame = isGraphAlgorithmFrame(currentFrame) ? currentFrame : null;
-  const displayedGraph = status === 'running' || status === 'paused' || status === 'completed' ? graphFrame?.data ?? graph : graph;
+  const displayedGraph = graph;
+  const graphStructureKey = useMemo(() => getGraphStructureKey(graph), [graph]);
   const graphStats = getGraphStats(graph);
   const completedStepHistory = useMemo(
     () => frames.filter(isGraphAlgorithmFrame).map((frame) => frame.description ?? frame.message),
@@ -79,7 +81,7 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
     loadGraphAlgorithm(selectedAlgorithm, graph, startNodeId, loadAlgorithm);
     const settings = loadSettings();
     saveSettings({ ...settings, lastGraphStartNodeId: startNodeId });
-  }, [graph, loadAlgorithm, selectedAlgorithm, startNodeId]);
+  }, [graphStructureKey, loadAlgorithm, selectedAlgorithm, startNodeId]);
 
   useEffect(() => {
     const settings = loadSettings();
@@ -335,6 +337,9 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
         </div>
 
         <div className="mt-5 grid gap-4 xl:grid-cols-[300px_1fr]">
+          <div className="rounded-2xl border border-app bg-surface p-3 text-xs leading-5 text-app-muted xl:col-span-2">
+            Любая правка графа, списка смежности или матрицы меняет одно и то же состояние. После нажатия кнопки применения все три формы синхронизируются: холст показывает вершины и рёбра, список смежности показывает соседей, а матрица — таблицу связей.
+          </div>
           <label className="block text-sm text-app-muted">
             Стартовая вершина обхода
             <select
@@ -530,9 +535,9 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
               </p>
             </div>
           </div>
-          <ol className="mt-4 list-decimal space-y-1 pl-5 text-sm text-app-muted">
-            {completedStepHistory.map((entry, index) => <li key={`${index}-${entry}`}>{entry}</li>)}
-          </ol>
+          <div className="mt-4">
+            <StepHistoryPanel steps={completedStepHistory} title="Пошаговый журнал обхода" />
+          </div>
         </section>
       )}
 
@@ -553,6 +558,17 @@ export function GraphTraversalVisualizer({ defaultStartNodeId = 'A' }: GraphTrav
     </div>
   );
 }
+
+const getGraphStructureKey = (graph: GraphSnapshot): string => {
+  const nodes = [...graph.nodes].map((node) => node.id).sort().join('|');
+  const edges = [...graph.edges]
+    .map((edge) => edge.directed
+      ? `${edge.source}->${edge.target}:${edge.weight ?? ''}`
+      : [edge.source, edge.target].sort().join('--') + `:${edge.weight ?? ''}`)
+    .sort()
+    .join('|');
+  return `${nodes}__${edges}`;
+};
 
 const loadGraphAlgorithm = (
   algorithmKey: GraphAlgorithmKey,
@@ -856,6 +872,24 @@ const applyForceLayout = (nodes: GraphSnapshot['nodes'], edges: readonly GraphEd
       const dist = Math.max(1, Math.hypot(dx, dy));
       const desired = 150;
       const pull = (dist - desired) * 0.008;
+      const fx = (dx / dist) * pull;
+      const fy = (dy / dist) * pull;
+      source.position.x += fx;
+      source.position.y += fy;
+      target.position.x -= fx;
+      target.position.y -= fy;
+    }
+
+    for (const edge of edges) {
+      const source = points.find((point) => point.id === edge.source);
+      const target = points.find((point) => point.id === edge.target);
+      if (source === undefined || target === undefined) continue;
+
+      const dx = target.position.x - source.position.x;
+      const dy = target.position.y - source.position.y;
+      const dist = Math.max(1, Math.hypot(dx, dy));
+      const desired = 135;
+      const pull = (dist - desired) * 0.01;
       const fx = (dx / dist) * pull;
       const fy = (dy / dist) * pull;
       source.position.x += fx;

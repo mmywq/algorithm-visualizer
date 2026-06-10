@@ -399,18 +399,161 @@ export function* heapExtractMinScenario(inputValues?: readonly number[]): Genera
 }
 
 
-export const binomialHeapScenario = () => runScenario({
-  title: 'Биномиальная куча',
-  operation: 'push',
-  values: [18, 7, 24, 3, 12, 30],
-  messages: [
-    'Каждый вставленный элемент создаёт биномиальное дерево степени 0.',
-    'Операция union сливает корневые списки по возрастанию степеней.',
-    'Деревья одинаковой степени объединяются, сохраняя свойство min-heap.',
-    'extract-min выбирает корень с минимальным ключом и повторно объединяет поддеревья.',
-  ],
-  pseudocodeLines: [1, 2, 3, 4],
+interface BinomialHeapNode {
+  readonly id: string;
+  readonly value: number;
+  readonly children: readonly BinomialHeapNode[];
+}
+
+interface BinomialTreeViewNode {
+  readonly id: string;
+  readonly value: number;
+  readonly degree: number;
+  readonly children: readonly BinomialTreeViewNode[];
+}
+
+const getBinomialDegree = (tree: BinomialHeapNode): number => tree.children.length;
+
+const linkBinomialTrees = (first: BinomialHeapNode, second: BinomialHeapNode): BinomialHeapNode => {
+  if (first.value <= second.value) {
+    return { ...first, children: [second, ...first.children] };
+  }
+  return { ...second, children: [first, ...second.children] };
+};
+
+const sortBinomialRoots = (roots: readonly BinomialHeapNode[]): BinomialHeapNode[] =>
+  [...roots].sort((left, right) => getBinomialDegree(left) - getBinomialDegree(right) || left.value - right.value);
+
+const findDuplicateDegreePair = (roots: readonly BinomialHeapNode[]): [number, number] | null => {
+  const seen = new Map<number, number>();
+  for (let index = 0; index < roots.length; index += 1) {
+    const degree = getBinomialDegree(roots[index]!);
+    const previousIndex = seen.get(degree);
+    if (previousIndex !== undefined) return [previousIndex, index];
+    seen.set(degree, index);
+  }
+  return null;
+};
+
+const toBinomialTreeView = (node: BinomialHeapNode): BinomialTreeViewNode => ({
+  id: node.id,
+  value: node.value,
+  degree: getBinomialDegree(node),
+  children: node.children.map(toBinomialTreeView),
 });
+
+const binomialSnapshot = (roots: readonly BinomialHeapNode[]): StructureSnapshot => ({
+  label: 'Биномиальная куча',
+  cells: roots.map((root, index) => ({ id: `binomial-root-${index}`, value: root.value })),
+});
+
+const binomialMeta = (
+  roots: readonly BinomialHeapNode[],
+  extra: Partial<StructureAlgorithmFrame['meta']> = {},
+): Partial<StructureAlgorithmFrame['meta']> => ({
+  binomialTrees: roots.map(toBinomialTreeView),
+  ...extra,
+});
+
+export function* binomialHeapScenario(inputValues?: readonly number[]): Generator<StructureAlgorithmFrame, void, unknown> {
+  const insertionOrder = inputValues !== undefined && inputValues.length > 0 ? [...inputValues] : [18, 7, 24, 3, 12, 30];
+  let roots: BinomialHeapNode[] = [];
+  let step = 0;
+  let nodeCounter = 0;
+
+  yield frame(
+    step++,
+    'initial',
+    'running',
+    binomialSnapshot(roots),
+    `Начинаем построение биномиальной min-heap. Вставляем ключи по порядку: ${insertionOrder.join(', ')}. Корневой список сначала пуст.`,
+    'push',
+    1,
+    undefined,
+    binomialMeta(roots),
+  );
+
+  for (const value of insertionOrder) {
+    const singleton: BinomialHeapNode = { id: `binomial-${nodeCounter++}`, value, children: [] };
+    roots = sortBinomialRoots([...roots, singleton]);
+
+    yield frame(
+      step++,
+      'push',
+      'running',
+      binomialSnapshot(roots),
+      `Вставляем ${value}: создаём биномиальное дерево B0, то есть один узел степени 0, и добавляем его в корневой список.`,
+      'push',
+      1,
+      undefined,
+      binomialMeta(roots, { activeNodeIds: [singleton.id] }),
+    );
+
+    let duplicatePair = findDuplicateDegreePair(roots);
+    while (duplicatePair !== null) {
+      const [leftIndex, rightIndex] = duplicatePair;
+      const leftTree = roots[leftIndex]!;
+      const rightTree = roots[rightIndex]!;
+      const degree = getBinomialDegree(leftTree);
+
+      yield frame(
+        step++,
+        'compare',
+        'running',
+        binomialSnapshot(roots),
+        `В корневом списке есть два дерева степени ${degree}: с корнями ${leftTree.value} и ${rightTree.value}. В биномиальной куче не должно быть двух деревьев одной степени, поэтому их нужно связать.`,
+        'push',
+        3,
+        undefined,
+        binomialMeta(roots, { activeNodeIds: [leftTree.id, rightTree.id] }),
+      );
+
+      const linked = linkBinomialTrees(leftTree, rightTree);
+      roots = roots.filter((_, index) => index !== leftIndex && index !== rightIndex);
+      roots = sortBinomialRoots([...roots, linked]);
+
+      yield frame(
+        step++,
+        'swap',
+        'running',
+        binomialSnapshot(roots),
+        `Связываем деревья: меньший корень ${linked.value} остаётся корнем, а второй корень становится его ребёнком. Получилось дерево степени ${getBinomialDegree(linked)}.`,
+        'push',
+        4,
+        undefined,
+        binomialMeta(roots, { activeNodeIds: [linked.id] }),
+      );
+
+      duplicatePair = findDuplicateDegreePair(roots);
+    }
+
+    const degrees = roots.map((root) => getBinomialDegree(root)).join(', ');
+    yield frame(
+      step++,
+      'inspect',
+      'running',
+      binomialSnapshot(roots),
+      `После вставки ${value} корневой список упорядочен по степеням: [${degrees}]. У каждой степени теперь не больше одного дерева.`,
+      'push',
+      5,
+      undefined,
+      binomialMeta(roots),
+    );
+  }
+
+  const minRoot = roots.reduce<BinomialHeapNode | null>((best, root) => (best === null || root.value < best.value ? root : best), null);
+  yield frame(
+    step,
+    'complete',
+    'completed',
+    binomialSnapshot(roots),
+    `Построение биномиальной min-heap завершено. Корни деревьев: ${roots.map((root) => `${root.value} (степень ${getBinomialDegree(root)})`).join('; ')}. Минимальный ключ находится среди корней: ${minRoot?.value ?? '—'}.`,
+    'push',
+    6,
+    undefined,
+    binomialMeta(roots, minRoot === null ? {} : { activeNodeIds: [minRoot.id] }),
+  );
+}
 
 
 const createRandomUniqueValues = (size: number, min: number, max: number): number[] => {
