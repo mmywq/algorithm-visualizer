@@ -24,6 +24,7 @@ export interface ArrayAlgorithmMeta extends Record<string, unknown> {
   readonly sortedIndices?: readonly number[];
   readonly auxiliaryArray?: readonly number[];
   readonly comparisonRows?: readonly SortComparisonRow[];
+  readonly comparisonInsights?: readonly string[];
 }
 
 export type ArrayAlgorithmFrame = AlgorithmFrame<ArraySnapshot, ArrayAlgorithmMeta>;

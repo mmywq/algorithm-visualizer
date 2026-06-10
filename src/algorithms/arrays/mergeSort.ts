@@ -36,6 +36,7 @@ const createFrame = (
 export function* mergeSort(values: readonly number[]): Generator<ArrayAlgorithmFrame, void, unknown> {
   const items = [...createArrayItems(values)];
   let step = 0;
+  const counters = { comparisons: 0, writes: 0 };
 
   yield createFrame(
     step++,
@@ -43,7 +44,7 @@ export function* mergeSort(values: readonly number[]): Generator<ArrayAlgorithmF
     items,
     [],
     mergeSortPseudocode.initial,
-    'Создаём рабочую копию массива перед запуском Merge Sort.',
+    `Создаётся рабочая копия массива [${values.join(', ')}]. Сортировка слиянием будет делить массив пополам до отдельных элементов, а затем сливать упорядоченные части.`,
     { auxiliaryArray: values },
   );
 
@@ -55,7 +56,7 @@ export function* mergeSort(values: readonly number[]): Generator<ArrayAlgorithmF
       items,
       [],
       mergeSortPseudocode.complete,
-      'Массив уже отсортирован. Merge Sort завершён досрочно.',
+      `Входной массив уже упорядочен. Итоговый массив: [${items.map((item) => item.value).join(', ')}]. Выполнено сравнений: 0, записей: 0.`,
       {
         auxiliaryArray: items.map((item) => item.value),
         sortedIndices: getAllIndices(items),
@@ -63,7 +64,7 @@ export function* mergeSort(values: readonly number[]): Generator<ArrayAlgorithmF
     );
     return;
   }
-  yield* sortRange(items, 0, items.length - 1, () => step++);
+  yield* sortRange(items, 0, items.length - 1, () => step++, counters);
 
   yield createFrame(
     step,
@@ -71,7 +72,7 @@ export function* mergeSort(values: readonly number[]): Generator<ArrayAlgorithmF
     items,
     [],
     mergeSortPseudocode.complete,
-    'Merge Sort завершён: массив полностью отсортирован.',
+    `Сортировка слиянием завершена. Итоговый массив: [${items.map((item) => item.value).join(', ')}]. Выполнено сравнений: ${counters.comparisons}, записей в массив: ${counters.writes}.`,
     {
       auxiliaryArray: items.map((item) => item.value),
       sortedIndices: getAllIndices(items),
@@ -79,11 +80,17 @@ export function* mergeSort(values: readonly number[]): Generator<ArrayAlgorithmF
   );
 }
 
+interface SortCounters {
+  comparisons: number;
+  writes: number;
+}
+
 function* sortRange(
   items: ArrayItem[],
   left: number,
   right: number,
   nextStep: () => number,
+  counters: SortCounters,
 ): Generator<ArrayAlgorithmFrame, void, unknown> {
   if (left >= right) {
     return;
@@ -110,7 +117,7 @@ function* sortRange(
     `Рекурсивно сортируем левую половину [${left}, ${middle}].`,
     { auxiliaryArray: items.map((item) => item.value) },
   );
-  yield* sortRange(items, left, middle, nextStep);
+  yield* sortRange(items, left, middle, nextStep, counters);
 
   yield createFrame(
     nextStep(),
@@ -121,7 +128,7 @@ function* sortRange(
     `Рекурсивно сортируем правую половину [${middle + 1}, ${right}].`,
     { auxiliaryArray: items.map((item) => item.value) },
   );
-  yield* sortRange(items, middle + 1, right, nextStep);
+  yield* sortRange(items, middle + 1, right, nextStep, counters);
 
   if (items[middle]!.value <= items[middle + 1]!.value) {
     yield createFrame(
@@ -136,7 +143,7 @@ function* sortRange(
     return;
   }
 
-  yield* merge(items, left, middle, right, nextStep);
+  yield* merge(items, left, middle, right, nextStep, counters);
 }
 
 function* merge(
@@ -145,6 +152,7 @@ function* merge(
   middle: number,
   right: number,
   nextStep: () => number,
+  counters: SortCounters,
 ): Generator<ArrayAlgorithmFrame, void, unknown> {
   const leftPart = items.slice(left, middle + 1);
   const rightPart = items.slice(middle + 1, right + 1);
@@ -170,6 +178,7 @@ function* merge(
       return;
     }
 
+    counters.comparisons += 1;
     yield createFrame(
       nextStep(),
       'compare',
@@ -191,13 +200,14 @@ function* merge(
       rightIndex += 1;
     }
 
+    counters.writes += 1;
     yield createFrame(
       nextStep(),
       'merge',
       items,
       [writeIndex],
       mergeSortPseudocode.write,
-      `Записываем минимальный доступный элемент в позицию ${writeIndex}.`,
+      `Записываем ${items[writeIndex]!.value} — меньший из двух кандидатов — в позицию ${writeIndex}.`,
       { auxiliaryArray: items.slice(left, right + 1).map((item) => item.value) },
     );
 
@@ -212,6 +222,7 @@ function* merge(
     }
 
     items[writeIndex] = nextItem;
+    counters.writes += 1;
     yield createFrame(
       nextStep(),
       'merge',
@@ -233,6 +244,7 @@ function* merge(
     }
 
     items[writeIndex] = nextItem;
+    counters.writes += 1;
     yield createFrame(
       nextStep(),
       'merge',

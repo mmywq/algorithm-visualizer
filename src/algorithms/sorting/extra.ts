@@ -8,6 +8,7 @@ const createFrame = (
   activeIndices: readonly number[],
   message: string,
   meta: ArrayAlgorithmMeta = {},
+  pseudocodeLine = 1,
 ): ArrayAlgorithmFrame => ({
   step,
   domain: 'array',
@@ -15,7 +16,7 @@ const createFrame = (
   status: phase === 'complete' ? 'completed' : 'running',
   data: cloneArraySnapshot(items),
   activeIds: getArrayItemIds(items, activeIndices),
-  pseudocode: { line: step + 1 },
+  pseudocode: { line: pseudocodeLine },
   message,
   description: message,
   meta,
@@ -35,15 +36,16 @@ export function* countingSortDemo(inputValues?: readonly number[]): Generator<Ar
     'initial',
     items,
     [],
-    `Сортировка подсчётом не сравнивает элементы друг с другом. Сначала строим массив count для диапазона значений от ${min} до ${max}, а затем по этому счётчику восстанавливаем отсортированный массив.`,
+    `Сортировка подсчётом не сравнивает элементы друг с другом. Сначала строится массив count для диапазона значений от ${min} до ${max}, а затем по этому счётчику восстанавливается отсортированный массив.`,
     { auxiliaryArray: [...count] },
+    1,
   );
 
   for (let i = 0; i < items.length; i += 1) {
     const currentValue = items[i]!.value;
     const bucketIndex = currentValue + offset;
     count[bucketIndex] = (count[bucketIndex] ?? 0) + 1;
-    yield createFrame(step++, 'inspect', items, [i], `Считаем значение ${currentValue}: увеличиваем count[${bucketIndex}] до ${count[bucketIndex]}.`, { auxiliaryArray: [...count] });
+    yield createFrame(step++, 'inspect', items, [i], `Просматривается значение ${currentValue}: счётчик count[${bucketIndex}] увеличивается до ${count[bucketIndex]}.`, { auxiliaryArray: [...count] }, 2);
   }
 
   let write = 0;
@@ -52,18 +54,18 @@ export function* countingSortDemo(inputValues?: readonly number[]): Generator<Ar
     while ((count[bucketIndex] ?? 0) > 0) {
       items[write] = { ...items[write]!, value };
       count[bucketIndex] = (count[bucketIndex] ?? 0) - 1;
-      yield createFrame(step++, 'merge', items, [write], `Берём одно значение ${value} из count[${bucketIndex}] и записываем его в позицию ${write}.`, {
+      yield createFrame(step++, 'merge', items, [write], `Из count[${bucketIndex}] извлекается одно значение ${value} и записывается в позицию ${write}.`, {
         auxiliaryArray: [...count],
         sortedIndices: Array.from({ length: write + 1 }, (_, idx) => idx),
-      });
+      }, 4);
       write += 1;
     }
   }
 
-  yield createFrame(step, 'complete', items, [], `Counting Sort завершён: итоговый массив [${items.map((item) => item.value).join(', ')}].`, {
+  yield createFrame(step, 'complete', items, [], `Сортировка подсчётом завершена. Итоговый массив: [${items.map((item) => item.value).join(', ')}]. Сравнений выполнено 0: порядок восстановлен по счётчикам ${count.length} значений диапазона.`, {
     sortedIndices: items.map((_, idx) => idx),
     auxiliaryArray: [...count],
-  });
+  }, 5);
 }
 
 export function* radixSortDemo(inputValues?: readonly number[]): Generator<ArrayAlgorithmFrame, void, unknown> {
@@ -79,8 +81,9 @@ export function* radixSortDemo(inputValues?: readonly number[]): Generator<Array
     'initial',
     items,
     [],
-    `Поразрядная сортировка рассматривает числа по цифрам: сначала единицы, затем десятки, сотни и так далее. Для отрицательных и неотрицательных чисел сортируем модули отдельно, а потом собираем общий результат: отрицательные идут раньше неотрицательных.`,
+    `Поразрядная сортировка рассматривает числа по цифрам: сначала единицы, затем десятки, сотни и так далее. Модули отрицательных и неотрицательных чисел сортируются отдельно, после чего собирается общий результат: отрицательные значения идут раньше неотрицательных.`,
     { auxiliaryArray: [...sourceValues.map((value) => Math.abs(value))] },
+    1,
   );
 
   const sortedNegatives = lsdRadixSort(negatives, 'отрицательных');
@@ -89,17 +92,17 @@ export function* radixSortDemo(inputValues?: readonly number[]): Generator<Array
   const positiveSteps = sortedPositives.steps;
 
   for (const animationStep of negativeSteps) {
-    yield createFrame(step++, animationStep.phase === 'complete' ? 'inspect' : animationStep.phase, createArrayItems(animationStep.values), animationStep.activeIndices, `Radix sort (отрицательные): ${animationStep.message}`, {
+    yield createFrame(step++, animationStep.phase === 'complete' ? 'inspect' : animationStep.phase, createArrayItems(animationStep.values), animationStep.activeIndices, `Отрицательные числа (по модулю): ${animationStep.message}`, {
       ...(animationStep.auxiliaryArray === undefined ? {} : { auxiliaryArray: animationStep.auxiliaryArray }),
       ...(animationStep.sortedIndices === undefined ? {} : { sortedIndices: animationStep.sortedIndices }),
-    });
+    }, 4);
   }
 
   for (const animationStep of positiveSteps) {
-    yield createFrame(step++, animationStep.phase === 'complete' ? 'inspect' : animationStep.phase, createArrayItems(animationStep.values), animationStep.activeIndices, `Radix sort (неотрицательные): ${animationStep.message}`, {
+    yield createFrame(step++, animationStep.phase === 'complete' ? 'inspect' : animationStep.phase, createArrayItems(animationStep.values), animationStep.activeIndices, `Неотрицательные числа: ${animationStep.message}`, {
       ...(animationStep.auxiliaryArray === undefined ? {} : { auxiliaryArray: animationStep.auxiliaryArray }),
       ...(animationStep.sortedIndices === undefined ? {} : { sortedIndices: animationStep.sortedIndices }),
-    });
+    }, animationStep.phase === 'merge' ? 2 : 1);
   }
 
   const finalValues = [...sortedNegatives.sorted.map((value) => -value).reverse(), ...sortedPositives.sorted];
@@ -109,8 +112,9 @@ export function* radixSortDemo(inputValues?: readonly number[]): Generator<Array
     'complete',
     finalItems,
     [],
-    `Radix Sort завершён: отрицательные значения сначала упорядочены по модулю и развернуты, затем к ним добавлены неотрицательные. Итоговый массив [${finalValues.join(', ')}].`,
+    `Поразрядная сортировка завершена. Отрицательные значения упорядочены по модулю и развёрнуты, затем добавлены неотрицательные. Итоговый массив: [${finalValues.join(', ')}].`,
     { sortedIndices: finalItems.map((_, idx) => idx) },
+    5,
   );
 }
 
@@ -125,7 +129,9 @@ export function* blockSortDemo(inputValues?: readonly number[]): Generator<Array
     'initial',
     items,
     [],
-    `Блочная сортировка сначала разбивает массив на блоки фиксированного размера, затем сортирует каждый блок отдельно и в конце сливает их в один отсортированный массив. Для демонстрации используем блоки по ${blockSize} элемента.`,
+    `Блочная сортировка сначала разбивает массив на блоки фиксированного размера, затем сортирует каждый блок отдельно и в конце сливает их в один отсортированный массив. В демонстрации используются блоки по ${blockSize} элемента.`,
+    {},
+    1,
   );
 
   const blocks: Array<Array<number>> = [];
@@ -140,8 +146,9 @@ export function* blockSortDemo(inputValues?: readonly number[]): Generator<Array
       'inspect',
       items,
       range(blockStart, Math.min(blockStart + blockSize, items.length)),
-      `Сортируем блок ${Math.floor(blockStart / blockSize) + 1}: значения [${blockValues.join(', ')}]. После локальной сортировки блок становится упорядоченным сам по себе.`,
+      `Сортируется блок ${Math.floor(blockStart / blockSize) + 1}: значения [${blockValues.join(', ')}]. После локальной сортировки блок упорядочен сам по себе.`,
       { auxiliaryArray: blockValues },
+      2,
     );
   }
 
@@ -164,14 +171,15 @@ export function* blockSortDemo(inputValues?: readonly number[]): Generator<Array
       'merge',
       items,
       [mergedValues.length - 1],
-      `Сравниваем первые элементы блоков и берём минимальный кандидат ${nextCandidate.value} из блока ${nextCandidate.index + 1}. Так постепенно собирается общий отсортированный массив.`,
+      `Сравниваются первые элементы блоков; минимальный кандидат ${nextCandidate.value} из блока ${nextCandidate.index + 1} переносится в результат. Так собирается общий отсортированный массив.`,
       { auxiliaryArray: candidates.map((candidate) => candidate.value), sortedIndices: Array.from({ length: mergedValues.length }, (_, idx) => idx) },
+      4,
     );
   }
 
-  yield createFrame(step, 'complete', items, [], `Block Sort завершён: итоговый массив [${mergedValues.join(', ')}].`, {
+  yield createFrame(step, 'complete', items, [], `Блочная сортировка завершена. Из ${blocks.length} локально отсортированных блоков слиянием получен итоговый массив: [${mergedValues.join(', ')}].`, {
     sortedIndices: items.map((_, idx) => idx),
-  });
+  }, 5);
 }
 
 
@@ -242,7 +250,9 @@ export function* compareSortsDemo(inputValues?: readonly number[]): Generator<Ar
     'initial',
     createArrayItems(baseValues),
     [],
-    `Сравниваем 6 сортировок на одном исходном наборе [${baseValues.join(', ')}]. Каждый алгоритм будет запускаться заново именно с этих значений, поэтому результат предыдущей сортировки не влияет на следующую.`,
+    `Сравниваются 6 сортировок на одном исходном наборе [${baseValues.join(', ')}]. Каждый алгоритм запускается заново именно с этих значений, поэтому результат предыдущей сортировки не влияет на следующую.`,
+    {},
+    1,
   );
 
   const comparisonRows: SortComparisonRow[] = [];
@@ -252,8 +262,9 @@ export function* compareSortsDemo(inputValues?: readonly number[]): Generator<Ar
       'initial',
       createArrayItems(baseValues),
       [],
-      `${run.name}: начинаем с исходного массива [${baseValues.join(', ')}], а не с результата предыдущего алгоритма. ${run.explanation}`,
+      `${run.name}: создаётся независимая копия исходного массива [${baseValues.join(', ')}] — результат предыдущего алгоритма не используется. Принцип: ${run.explanation}`,
       { comparisonRows: [...comparisonRows] },
+      2,
     );
 
     for (const animationStep of run.animationSteps) {
@@ -270,6 +281,7 @@ export function* compareSortsDemo(inputValues?: readonly number[]): Generator<Ar
           ...(animationStep.auxiliaryArray === undefined ? {} : { auxiliaryArray: animationStep.auxiliaryArray }),
           comparisonRows: [...comparisonRows],
         },
+        3,
       );
     }
 
@@ -279,8 +291,9 @@ export function* compareSortsDemo(inputValues?: readonly number[]): Generator<Ar
       'inspect',
       createArrayItems(run.sorted),
       [],
-      `${run.name} завершена. Из исходного массива [${baseValues.join(', ')}] получен результат [${run.sorted.join(', ')}]. Сравнений: ${run.comparisons}, записей/обменов: ${run.writes}.`,
+      `${run.name} завершена. Из исходного массива [${baseValues.join(', ')}] получен результат [${run.sorted.join(', ')}]. Сравнений: ${run.comparisons}, записей/обменов: ${run.writes}. Показатели сохранены в таблицу сравнения.`,
       { sortedIndices: run.sorted.map((_, index) => index), comparisonRows: [...comparisonRows] },
+      4,
     );
   }
 
@@ -291,10 +304,56 @@ export function* compareSortsDemo(inputValues?: readonly number[]): Generator<Ar
     'complete',
     createArrayItems(bestByOperations.sorted),
     [],
-    `Сравнение 6 сортировок завершено. Все алгоритмы стартовали с [${baseValues.join(', ')}] и дали одинаковый отсортированный результат [${bestByOperations.sorted.join(', ')}]. На этом наборе меньше всего измеренных операций у «${bestByOperations.name}»: сравнений ${bestByOperations.comparisons}, записей/обменов ${bestByOperations.writes}. Это учебная оценка по числу операций для данного набора, а не абсолютная скорость на любом компьютере.`,
-    { sortedIndices: bestByOperations.sorted.map((_, index) => index), comparisonRows: finalRows },
+    `Сравнение 6 сортировок завершено. Все алгоритмы стартовали с [${baseValues.join(', ')}] и получили одинаковый результат [${bestByOperations.sorted.join(', ')}]. Меньше всего операций на этом наборе выполнила «${bestByOperations.name}»: ${bestByOperations.comparisons} сравнений и ${bestByOperations.writes} записей/обменов. Подробные выводы — под таблицей сравнения.`,
+    { sortedIndices: bestByOperations.sorted.map((_, index) => index), comparisonRows: finalRows, comparisonInsights: buildComparisonInsights(baseValues, runs, bestByOperations) },
+    5,
   );
 }
+
+const buildComparisonInsights = (
+  baseValues: readonly number[],
+  runs: readonly SortSimulationResult[],
+  best: SortSimulationResult,
+): readonly string[] => {
+  const n = baseValues.length;
+  const byName = new Map(runs.map((run) => [run.name, run]));
+  const bubble = byName.get('Пузырьковая сортировка');
+  const selection = byName.get('Сортировка выбором');
+  const insertion = byName.get('Сортировка вставками');
+  const merge = byName.get('Сортировка слиянием');
+  const quick = byName.get('Быстрая сортировка');
+  const counting = byName.get('Сортировка подсчётом');
+  const worst = runs.reduce((acc, current) => (current.comparisons + current.writes > acc.comparisons + acc.writes ? current : acc), runs[0]!);
+  const min = Math.min(...baseValues);
+  const max = Math.max(...baseValues);
+  const insights: string[] = [];
+
+  insights.push(
+    `По сумме измеренных сравнений и записей в массив наименьший показатель у «${best.name}» (${best.comparisons + best.writes}), наибольший — у «${worst.name}» (${worst.comparisons + worst.writes}). В подсчёт входят только операции над сортируемым массивом.`,
+  );
+
+  if (bubble !== undefined && selection !== undefined && insertion !== undefined && merge !== undefined && quick !== undefined) {
+    const quadraticAvg = Math.round((bubble.comparisons + selection.comparisons + insertion.comparisons) / 3);
+    insights.push(
+      `Квадратичные алгоритмы (пузырьковая, выбором, вставками) выполнили в среднем ${quadraticAvg} сравнений, тогда как сортировка слиянием — ${merge.comparisons}, а быстрая — ${quick.comparisons}. При n = ${n} разница умеренная, но с ростом n она увеличивается: n² растёт значительно быстрее, чем n·log n.`,
+    );
+    insights.push(
+      `Сортировка выбором сделала ${selection.comparisons} сравнений — столько же, сколько и в любом другом случае при данном n: она всегда просматривает весь остаток массива. Зато обменов у неё мало (${selection.writes}) — это её сильная сторона, когда перемещение данных дорого.`,
+    );
+  }
+
+  if (counting !== undefined) {
+    insights.push(
+      `Сортировка подсчётом не выполнила ни одного сравнения: она подсчитывает частоты значений. Платой служит вспомогательный массив на весь диапазон от ${min} до ${max} (${max - min + 1} ячеек), поэтому метод выгоден только при небольшом диапазоне значений.`,
+    );
+  }
+
+  insights.push(
+    `Все шесть алгоритмов получили одинаковый отсортированный массив — различие не в ответе, а в цене его получения: числе сравнений, объёме перемещений данных и дополнительной памяти. Подсчёт операций является учебной моделью трудоёмкости для данного набора и не заменяет асимптотический анализ.`,
+  );
+
+  return insights;
+};
 
 const toComparisonRow = (result: SortSimulationResult): SortComparisonRow => ({
   name: result.name,

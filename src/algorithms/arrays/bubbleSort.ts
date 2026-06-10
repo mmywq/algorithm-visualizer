@@ -34,6 +34,8 @@ const createFrame = (
 export function* bubbleSort(values: readonly number[]): Generator<ArrayAlgorithmFrame, void, unknown> {
   const items = [...createArrayItems(values)];
   let step = 0;
+  let comparisons = 0;
+  let swaps = 0;
 
   yield createFrame(
     step++,
@@ -41,7 +43,7 @@ export function* bubbleSort(values: readonly number[]): Generator<ArrayAlgorithm
     items,
     [],
     bubbleSortPseudocode.initial,
-    'Создаём рабочую копию массива перед запуском Bubble Sort.',
+    `Создаётся рабочая копия массива [${values.join(', ')}]. Пузырьковая сортировка будет многократно проходить по массиву, сравнивая соседние элементы.`,
     { sortedIndices: [] },
   );
 
@@ -52,7 +54,7 @@ export function* bubbleSort(values: readonly number[]): Generator<ArrayAlgorithm
       items,
       [],
       bubbleSortPseudocode.complete,
-      'Массив уже отсортирован. Bubble Sort завершён досрочно без лишних проходов.',
+      `Входной массив уже упорядочен, обмены не требуются. Итоговый массив: [${items.map((item) => item.value).join(', ')}]. Выполнено сравнений: 0, обменов: 0.`,
       { sortedIndices: getAllIndices(items) },
     );
     return;
@@ -72,6 +74,7 @@ export function* bubbleSort(values: readonly number[]): Generator<ArrayAlgorithm
 
     for (let current = 0; current < end; current += 1) {
       const next = current + 1;
+      comparisons += 1;
 
       yield createFrame(
         step++,
@@ -79,7 +82,7 @@ export function* bubbleSort(values: readonly number[]): Generator<ArrayAlgorithm
         items,
         [current, next],
         bubbleSortPseudocode.compare,
-        `Сравниваем элементы ${items[current]!.value} и ${items[next]!.value}.`,
+        `Сравниваются соседние элементы: ${items[current]!.value} (позиция ${current}) и ${items[next]!.value} (позиция ${next}).`,
         {
           comparingIndices: [current, next],
           sortedIndices: getSortedSuffixIndices(items, end),
@@ -92,6 +95,7 @@ export function* bubbleSort(values: readonly number[]): Generator<ArrayAlgorithm
         items[next] = currentItem;
 
         swapped = true;
+        swaps += 1;
 
         yield createFrame(
           step++,
@@ -99,7 +103,7 @@ export function* bubbleSort(values: readonly number[]): Generator<ArrayAlgorithm
           items,
           [current, next],
           bubbleSortPseudocode.swap,
-          'Меняем элементы местами, потому что левый элемент больше правого.',
+          `${items[next]!.value} > ${items[current]!.value}, поэтому элементы меняются местами. Большее значение смещается к концу массива.`,
           {
             swappingIndices: [current, next],
             sortedIndices: getSortedSuffixIndices(items, end),
@@ -125,7 +129,7 @@ export function* bubbleSort(values: readonly number[]): Generator<ArrayAlgorithm
         items,
         [],
         bubbleSortPseudocode.complete,
-        'Массив уже отсортирован: останавливаем алгоритм досрочно.',
+        `Проход не потребовал обменов — массив упорядочен, алгоритм останавливается досрочно. Итоговый массив: [${items.map((item) => item.value).join(', ')}]. Выполнено сравнений: ${comparisons}, обменов: ${swaps}.`,
         { sortedIndices: getAllIndices(items) },
       );
       return;
@@ -138,7 +142,7 @@ export function* bubbleSort(values: readonly number[]): Generator<ArrayAlgorithm
     items,
     [],
     bubbleSortPseudocode.complete,
-    'Bubble Sort завершён: массив полностью отсортирован.',
+    `Пузырьковая сортировка завершена. Итоговый массив: [${items.map((item) => item.value).join(', ')}]. Выполнено сравнений: ${comparisons}, обменов: ${swaps}.`,
     { sortedIndices: getAllIndices(items) },
   );
 }
