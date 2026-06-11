@@ -404,6 +404,7 @@ function TreeView({ frame }: { readonly frame: StructureAlgorithmFrame | null })
   const searchPath = Array.isArray(frame?.meta.searchPath)
     ? (frame?.meta.searchPath as readonly number[])
     : [];
+  const isHeap = (frame?.data.label ?? '').toLowerCase().includes('куча');
   const nodes = buildTreeLayout(frame?.data.cells ?? [], frame?.meta.activeIndex, searchPath);
   const visibleNodes = nodes.filter((node) => node.value !== null || node.isActive || node.isInSearchPath);
   const visibleNodeIndexes = new Set(visibleNodes.map((node) => node.index));
@@ -464,6 +465,40 @@ function TreeView({ frame }: { readonly frame: StructureAlgorithmFrame | null })
           );
         })}
       </div>
+
+      {isHeap && <HeapArrayStrip frame={frame} />}
+    </div>
+  );
+}
+
+function HeapArrayStrip({ frame }: { readonly frame: StructureAlgorithmFrame | null }) {
+  const cells = (frame?.data.cells ?? []).filter((cell) => cell.value !== null);
+  if (cells.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-4 border-t border-slate-800 pt-4">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Та же куча в виде массива</p>
+      <div className="flex flex-wrap gap-1.5">
+        {cells.map((cell, index) => (
+          <div className="flex flex-col items-center gap-1" key={cell.id}>
+            <div
+              className={
+                frame?.meta.activeIndex === index
+                  ? 'flex h-11 min-w-11 items-center justify-center rounded-lg border-2 border-cyan-300 bg-cyan-500/30 px-2 text-sm font-bold text-cyan-100'
+                  : 'flex h-11 min-w-11 items-center justify-center rounded-lg border border-slate-600 bg-slate-900 px-2 text-sm font-bold text-slate-100'
+              }
+            >
+              {cell.value}
+            </div>
+            <span className="font-mono text-[10px] text-slate-500">{index}</span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 text-xs leading-5 text-slate-400">
+        Дерево и массив — два представления одной кучи: у элемента с индексом i дети находятся в ячейках 2i+1 и 2i+2, родитель — в ячейке (i−1)/2 с округлением вниз.
+      </p>
     </div>
   );
 }
