@@ -8,6 +8,29 @@ interface ResultPanelProps {
 
 export function ResultPanel({ summary, steps, inputSummary }: ResultPanelProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+
+  const copyReport = (): void => {
+    const lines: string[] = [];
+    if (inputSummary !== undefined) lines.push(`Вход: ${inputSummary}`);
+    if (summary !== null) lines.push(`Итог: ${summary}`);
+    if (steps.length > 0) {
+      lines.push('', 'Журнал шагов:');
+      steps.forEach((entry, index) => lines.push(`${index + 1}. ${entry}`));
+    }
+    const text = lines.join('\n');
+
+    const markCopied = (): void => {
+      setIsCopied(true);
+      window.setTimeout(() => setIsCopied(false), 2000);
+    };
+
+    if (navigator.clipboard?.writeText !== undefined) {
+      navigator.clipboard.writeText(text).then(markCopied).catch(() => fallbackCopy(text, markCopied));
+    } else {
+      fallbackCopy(text, markCopied);
+    }
+  };
 
   return (
     <section className="rounded-3xl border-2 border-accent/40 bg-surface p-5">
@@ -30,9 +53,14 @@ export function ResultPanel({ summary, steps, inputSummary }: ResultPanelProps) 
 
       {steps.length > 0 && (
         <div className="mt-3">
-          <button className="control-button" onClick={() => setIsExpanded((current) => !current)} type="button">
-            {isExpanded ? 'Скрыть журнал шагов' : `Показать журнал — ${steps.length} ${formatStepsWord(steps.length)}`}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button className="control-button" onClick={() => setIsExpanded((current) => !current)} type="button">
+              {isExpanded ? 'Скрыть журнал шагов' : `Показать журнал — ${steps.length} ${formatStepsWord(steps.length)}`}
+            </button>
+            <button className="control-button" onClick={copyReport} type="button">
+              {isCopied ? 'Скопировано ✓' : 'Скопировать отчёт'}
+            </button>
+          </div>
 
           {isExpanded && (
             <ol className="mt-3 max-h-[420px] list-decimal space-y-1 overflow-y-auto rounded-2xl border border-app bg-surface p-4 pl-10 text-sm leading-6 text-app-muted">
@@ -44,6 +72,21 @@ export function ResultPanel({ summary, steps, inputSummary }: ResultPanelProps) 
     </section>
   );
 }
+
+const fallbackCopy = (text: string, onDone: () => void): void => {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  try {
+    document.execCommand('copy');
+    onDone();
+  } finally {
+    document.body.removeChild(textarea);
+  }
+};
 
 const formatStepsWord = (count: number): string => {
   const mod100 = count % 100;

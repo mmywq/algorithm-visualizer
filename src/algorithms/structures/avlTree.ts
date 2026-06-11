@@ -1,85 +1,43 @@
 import type { StructureAlgorithmFrame, StructureSnapshot } from '@/types';
 
-interface AvlNode {
-  readonly value: number;
-  readonly height: number;
-  readonly left: AvlNode | null;
-  readonly right: AvlNode | null;
-}
-
-interface AvlEvent {
-  readonly message: string;
-  readonly line: number;
-  readonly activeValue?: number;
+interface MutNode {
+  value: number;
+  height: number;
+  left: MutNode | null;
+  right: MutNode | null;
 }
 
 const MAX_CELLS = 31;
 
-const height = (node: AvlNode | null): number => node?.height ?? 0;
-const balanceFactor = (node: AvlNode | null): number => node === null ? 0 : height(node.left) - height(node.right);
-const withHeight = (node: Omit<AvlNode, 'height'>): AvlNode => ({ ...node, height: 1 + Math.max(height(node.left), height(node.right)) });
+const heightOf = (node: MutNode | null): number => node?.height ?? 0;
 
-const rotateRight = (root: AvlNode): AvlNode => {
-  const pivot = root.left;
-  if (pivot === null) return root;
-  const movedSubtree = pivot.right;
-  const newRight = withHeight({ value: root.value, left: movedSubtree, right: root.right });
-  return withHeight({ value: pivot.value, left: pivot.left, right: newRight });
+const updateHeight = (node: MutNode): void => {
+  node.height = 1 + Math.max(heightOf(node.left), heightOf(node.right));
 };
 
-const rotateLeft = (root: AvlNode): AvlNode => {
-  const pivot = root.right;
-  if (pivot === null) return root;
-  const movedSubtree = pivot.left;
-  const newLeft = withHeight({ value: root.value, left: root.left, right: movedSubtree });
-  return withHeight({ value: pivot.value, left: newLeft, right: pivot.right });
+const balanceFactor = (node: MutNode): number => heightOf(node.left) - heightOf(node.right);
+
+const rotateRight = (node: MutNode): MutNode => {
+  const pivot = node.left!;
+  node.left = pivot.right;
+  pivot.right = node;
+  updateHeight(node);
+  updateHeight(pivot);
+  return pivot;
 };
 
-const insert = (node: AvlNode | null, value: number, events: AvlEvent[]): AvlNode => {
-  if (node === null) {
-    events.push({ activeValue: value, line: 3, message: `Пустая позиция найдена: создаём новый узел ${value}.` });
-    return { value, height: 1, left: null, right: null };
-  }
-
-  if (value < node.value) {
-    events.push({ activeValue: node.value, line: 2, message: `${value} < ${node.value}: идём в левое поддерево.` });
-    node = withHeight({ value: node.value, left: insert(node.left, value, events), right: node.right });
-  } else {
-    events.push({ activeValue: node.value, line: 2, message: `${value} ≥ ${node.value}: идём в правое поддерево.` });
-    node = withHeight({ value: node.value, left: node.left, right: insert(node.right, value, events) });
-  }
-
-  const balance = balanceFactor(node);
-  events.push({ activeValue: node.value, line: 4, message: `Проверяем баланс узла ${node.value}: высота слева ${height(node.left)}, справа ${height(node.right)}, баланс = ${balance}.` });
-
-  if (balance > 1 && node.left !== null && value < node.left.value) {
-    events.push({ activeValue: node.value, line: 5, message: `Случай LL: левое поддерево узла ${node.value} слишком высокое. Выполняем малый правый поворот.` });
-    return rotateRight(node);
-  }
-
-  if (balance < -1 && node.right !== null && value >= node.right.value) {
-    events.push({ activeValue: node.value, line: 5, message: `Случай RR: правое поддерево узла ${node.value} слишком высокое. Выполняем малый левый поворот.` });
-    return rotateLeft(node);
-  }
-
-  if (balance > 1 && node.left !== null && value >= node.left.value) {
-    events.push({ activeValue: node.value, line: 6, message: `Случай LR: сначала левый поворот у левого ребёнка, затем правый поворот у узла ${node.value}.` });
-    const newLeft = rotateLeft(node.left);
-    return rotateRight(withHeight({ value: node.value, left: newLeft, right: node.right }));
-  }
-
-  if (balance < -1 && node.right !== null && value < node.right.value) {
-    events.push({ activeValue: node.value, line: 6, message: `Случай RL: сначала правый поворот у правого ребёнка, затем левый поворот у узла ${node.value}.` });
-    const newRight = rotateRight(node.right);
-    return rotateLeft(withHeight({ value: node.value, left: node.left, right: newRight }));
-  }
-
-  return node;
+const rotateLeft = (node: MutNode): MutNode => {
+  const pivot = node.right!;
+  node.right = pivot.left;
+  pivot.left = node;
+  updateHeight(node);
+  updateHeight(pivot);
+  return pivot;
 };
 
-const toSnapshot = (root: AvlNode | null): StructureSnapshot => {
+const toSnapshot = (root: MutNode | null): StructureSnapshot => {
   const values: Array<number | null> = Array.from({ length: MAX_CELLS }, () => null);
-  const visit = (node: AvlNode | null, index: number): void => {
+  const visit = (node: MutNode | null, index: number): void => {
     if (node === null || index >= MAX_CELLS) return;
     values[index] = node.value;
     visit(node.left, 2 * index + 1);
@@ -95,9 +53,16 @@ const findIndex = (snapshot: StructureSnapshot, value: number | undefined): numb
   return index < 0 ? undefined : index;
 };
 
-const createFrame = (step: number, root: AvlNode | null, event: AvlEvent, phase: StructureAlgorithmFrame['phase'] = 'inspect'): StructureAlgorithmFrame => {
+const createFrame = (
+  step: number,
+  root: MutNode | null,
+  message: string,
+  line: number,
+  activeValue?: number,
+  phase: StructureAlgorithmFrame['phase'] = 'inspect',
+): StructureAlgorithmFrame => {
   const data = toSnapshot(root);
-  const activeIndex = findIndex(data, event.activeValue);
+  const activeIndex = findIndex(data, activeValue);
   return {
     step,
     domain: 'tree',
@@ -105,9 +70,9 @@ const createFrame = (step: number, root: AvlNode | null, event: AvlEvent, phase:
     status: phase === 'complete' ? 'completed' : 'running',
     data,
     activeIds: activeIndex === undefined ? [] : [data.cells[activeIndex]?.id ?? ''],
-    pseudocode: { line: event.line },
-    message: event.message,
-    description: event.message,
+    pseudocode: { line },
+    message,
+    description: message,
     meta: {
       operation: 'index',
       ...(activeIndex === undefined ? {} : { activeIndex, pointerIndex: activeIndex }),
@@ -116,24 +81,175 @@ const createFrame = (step: number, root: AvlNode | null, event: AvlEvent, phase:
 };
 
 export function* avlScenario(values: readonly number[]): Generator<StructureAlgorithmFrame, void, unknown> {
-  let root: AvlNode | null = null;
+  let root: MutNode | null = null;
   let step = 0;
+  let rotationCount = 0;
 
-  yield createFrame(step++, root, {
-    line: 1,
-    message: `AVL-дерево — самобалансирующееся BST. После каждой вставки проверяем баланс высот и при необходимости выполняем повороты. Порядок вставки: ${values.join(', ')}.`,
-  }, 'initial');
+  yield createFrame(
+    step++,
+    root,
+    `АВЛ-дерево — самобалансирующееся дерево поиска: после каждой вставки проверяются балансы узлов на пути, и при перекосе выполняется поворот. Порядок вставки: ${values.join(', ')}.`,
+    1,
+    undefined,
+    'initial',
+  );
 
   for (const value of values) {
-    const events: AvlEvent[] = [{ ...(root === null ? {} : { activeValue: root.value }), line: 1, message: `Начинаем вставку ${value} от корня дерева.` }];
-    root = insert(root, value, events);
-    for (const event of events) {
-      yield createFrame(step++, root, event, event.line === 3 ? 'push' : 'inspect');
+    if (root === null) {
+      root = { value, height: 1, left: null, right: null };
+      yield createFrame(step++, root, `Дерево пусто: ключ ${value} становится корнем.`, 1, value, 'push');
+      continue;
+    }
+
+    // спуск по правилу дерева поиска — кадры показывают дерево до вставки
+    const path: MutNode[] = [];
+    let node: MutNode = root;
+    let created: MutNode | null = null;
+    let createdSide = 'левый';
+
+    yield createFrame(step++, root, `Вставка ключа ${value}: сравнения начинаются от корня ${root.value}.`, 1, root.value);
+
+    while (created === null) {
+      path.push(node);
+      const goLeft = value < node.value;
+      yield createFrame(
+        step++,
+        root,
+        `${value} ${goLeft ? '<' : '≥'} ${node.value}: переходим в ${goLeft ? 'левое' : 'правое'} поддерево узла ${node.value}.`,
+        1,
+        node.value,
+      );
+
+      if (goLeft) {
+        if (node.left === null) {
+          created = { value, height: 1, left: null, right: null };
+          node.left = created;
+          createdSide = 'левый';
+        } else {
+          node = node.left;
+        }
+      } else {
+        if (node.right === null) {
+          created = { value, height: 1, left: null, right: null };
+          node.right = created;
+          createdSide = 'правый';
+        } else {
+          node = node.right;
+        }
+      }
+    }
+
+    yield createFrame(
+      step++,
+      root,
+      `Достигнута пустая позиция: ключ ${value} вставлен как ${createdSide} ребёнок узла ${path[path.length - 1]!.value}. Теперь проверяются балансы узлов на пути вставки — снизу вверх.`,
+      2,
+      value,
+      'push',
+    );
+
+    // подъём по пути вставки: обновление высот и проверка балансов
+    for (let i = path.length - 1; i >= 0; i -= 1) {
+      const current = path[i]!;
+      updateHeight(current);
+      const balance = balanceFactor(current);
+
+      if (Math.abs(balance) <= 1) {
+        yield createFrame(
+          step++,
+          root,
+          `Узел ${current.value}: высота слева ${heightOf(current.left)}, справа ${heightOf(current.right)}, баланс-фактор ${balance} — в допустимых пределах.`,
+          3,
+          current.value,
+        );
+        continue;
+      }
+
+      // обнаружен перекос: дерево на экране в этот момент действительно разбалансировано
+      const parent = i > 0 ? path[i - 1]! : null;
+      const attach = (oldChild: MutNode, newChild: MutNode): void => {
+        if (parent === null) {
+          root = newChild;
+        } else if (parent.left === oldChild) {
+          parent.left = newChild;
+        } else {
+          parent.right = newChild;
+        }
+      };
+
+      rotationCount += 1;
+
+      if (balance > 1) {
+        const leftChild = current.left!;
+        if (balanceFactor(leftChild) >= 0) {
+          yield createFrame(
+            step++,
+            root,
+            `Узел ${current.value}: баланс-фактор ${balance} — перекос влево «по прямой» (случай LL). Требуется малый правый поворот вокруг ${current.value}.`,
+            4,
+            current.value,
+          );
+          const newRoot = rotateRight(current);
+          attach(current, newRoot);
+          yield createFrame(step++, root, `Правый поворот выполнен: корнем поддерева стал узел ${newRoot.value}, узел ${current.value} опустился вправо. Баланс восстановлен.`, 4, newRoot.value, 'swap');
+        } else {
+          yield createFrame(
+            step++,
+            root,
+            `Узел ${current.value}: баланс-фактор ${balance} — перекос влево «зигзагом» (случай LR). Сначала левый поворот вокруг ${leftChild.value}.`,
+            4,
+            current.value,
+          );
+          current.left = rotateLeft(leftChild);
+          yield createFrame(step++, root, `Первый поворот выполнен: в левом поддереве поднялся узел ${current.left.value}. Перекос стал «прямым» — остаётся правый поворот вокруг ${current.value}.`, 4, current.left.value, 'swap');
+          const newRoot = rotateRight(current);
+          attach(current, newRoot);
+          yield createFrame(step++, root, `Второй поворот выполнен: корнем поддерева стал узел ${newRoot.value}. Баланс восстановлен.`, 4, newRoot.value, 'swap');
+        }
+      } else {
+        const rightChild = current.right!;
+        if (balanceFactor(rightChild) <= 0) {
+          yield createFrame(
+            step++,
+            root,
+            `Узел ${current.value}: баланс-фактор ${balance} — перекос вправо «по прямой» (случай RR). Требуется малый левый поворот вокруг ${current.value}.`,
+            4,
+            current.value,
+          );
+          const newRoot = rotateLeft(current);
+          attach(current, newRoot);
+          yield createFrame(step++, root, `Левый поворот выполнен: корнем поддерева стал узел ${newRoot.value}, узел ${current.value} опустился влево. Баланс восстановлен.`, 4, newRoot.value, 'swap');
+        } else {
+          yield createFrame(
+            step++,
+            root,
+            `Узел ${current.value}: баланс-фактор ${balance} — перекос вправо «зигзагом» (случай RL). Сначала правый поворот вокруг ${rightChild.value}.`,
+            4,
+            current.value,
+          );
+          current.right = rotateRight(rightChild);
+          yield createFrame(step++, root, `Первый поворот выполнен: в правом поддереве поднялся узел ${current.right.value}. Перекос стал «прямым» — остаётся левый поворот вокруг ${current.value}.`, 4, current.right.value, 'swap');
+          const newRoot = rotateLeft(current);
+          attach(current, newRoot);
+          yield createFrame(step++, root, `Второй поворот выполнен: корнем поддерева стал узел ${newRoot.value}. Баланс восстановлен.`, 4, newRoot.value, 'swap');
+        }
+      }
+
+      // при вставке в АВЛ-дерево достаточно одной балансировки;
+      // выше по пути обновляются только высоты
+      for (let j = i - 1; j >= 0; j -= 1) {
+        updateHeight(path[j]!);
+      }
+      break;
     }
   }
 
-  yield createFrame(step, root, {
-    line: 7,
-    message: 'Построение AVL-дерева завершено. Для каждого узла разность высот левого и правого поддерева находится в пределах -1, 0 или 1.',
-  }, 'complete');
+  yield createFrame(
+    step,
+    root,
+    `Построение AVL-дерева завершено: вставлено ${values.length} ключей, выполнено поворотов: ${rotationCount}. Высота дерева — ${heightOf(root)}; для каждого узла разность высот поддеревьев находится в пределах от −1 до 1, поэтому поиск гарантированно выполняется за O(log n).`,
+    5,
+    undefined,
+    'complete',
+  );
 }
