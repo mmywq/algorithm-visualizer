@@ -78,24 +78,11 @@ const renderRoute = (
   }
 
 
-  if (route === '/structures/stack-array') {
-    return <StructuresPage initialDemo="stack-array-push" />;
-  }
-
-  if (route === '/structures/stack-list') {
-    return <StructuresPage initialDemo="stack-list-push" />;
-  }
-
-  if (route === '/structures/queue-array') {
-    return <StructuresPage initialDemo="queue-array-enqueue" />;
-  }
-
-  if (route === '/structures/queue-list') {
-    return <StructuresPage initialDemo="queue-list-enqueue" />;
-  }
-
-  if (route === '/structures/indexing') {
-    return <StructuresPage initialDemo="indexing" />;
+  if (route.startsWith('/structures/')) {
+    const structureKey = route.replace('/structures/', '') as 'stack-array' | 'stack-list' | 'queue-array' | 'queue-list' | 'indexing';
+    if (['stack-array', 'stack-list', 'queue-array', 'queue-list', 'indexing'].includes(structureKey)) {
+      return <StructuresPage key={route} structureKey={structureKey} />;
+    }
   }
 
 

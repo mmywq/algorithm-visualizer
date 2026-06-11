@@ -37,6 +37,7 @@ export function StructureVisualizer({ frame }: StructureVisualizerProps) {
     lowerLabel.includes('куча') === true;
   const isLinkedListLike = lowerLabel.includes('список') === true;
   const isBinomialHeap = lowerLabel.includes('биномиальная') === true;
+  const isStackArray = lowerLabel.includes('стек') === true && !isLinkedListLike;
   const binomialTrees = getBinomialTrees(frame);
 
   return (
@@ -51,29 +52,100 @@ export function StructureVisualizer({ frame }: StructureVisualizerProps) {
         <TreeView frame={frame} />
       ) : isLinkedListLike ? (
         <LinkedListView frame={frame} />
+      ) : isStackArray ? (
+        <StackArrayView frame={frame} />
       ) : (
-        <div className="mt-4 flex flex-wrap gap-3">
-          {snapshot?.cells.map((cell, index) => (
-            <div className="relative" key={cell.id}>
-              {Object.entries(frame?.meta.pointers ?? {}).filter(([, pointerIndex]) => pointerIndex === index).map(([label]) => (
-                <PointerBadge label={label} key={label} />
-              ))}
-              <div
-                className={
-                  frame?.meta.activeIndex === index
-                    ? 'h-16 w-16 rounded-xl border border-cyan-300 bg-cyan-500/30 text-center leading-[4rem] text-cyan-100'
-                    : 'h-16 w-16 rounded-xl border border-slate-700 bg-slate-950 text-center leading-[4rem] text-slate-200'
-                }
-              >
-                {cell.value ?? '·'}
-              </div>
-            </div>
-          ))}
-        </div>
+        <ArrayCellsView frame={frame} />
       )}
 
-      <p className="mt-4 text-slate-300">{frame?.message ?? 'Запустите плеер для демонстрации.'}</p>
+      <p className="mt-4 min-h-[72px] rounded-2xl border border-slate-800 bg-slate-950/40 px-4 py-3 text-sm leading-6 text-slate-300">{frame?.message ?? 'Нажмите «Старт» или листайте шаги кнопками — здесь появится описание текущего действия.'}</p>
     </section>
+  );
+}
+
+function StackArrayView({ frame }: { readonly frame: StructureAlgorithmFrame | null }) {
+  const cells = frame?.data.cells ?? [];
+  const pointers = frame?.meta.pointers ?? {};
+  const reversed = [...cells].map((cell, index) => ({ cell, index })).reverse();
+
+  return (
+    <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-950/50 p-4">
+      <div className="flex flex-col items-center gap-1.5">
+        {reversed.map(({ cell, index }) => {
+          const isActive = frame?.meta.activeIndex === index;
+          const pointerLabels = Object.entries(pointers).filter(([, pointerIndex]) => pointerIndex === index).map(([name]) => name);
+          const isEmpty = cell.value === null;
+          return (
+            <div className="flex w-full items-center justify-center gap-3" key={cell.id}>
+              <span className="w-16 text-right font-mono text-xs text-slate-500">a[{index}]</span>
+              <div
+                className={
+                  isActive
+                    ? 'flex h-11 w-28 items-center justify-center rounded-lg border-2 border-cyan-300 bg-cyan-500/30 text-base font-bold text-cyan-100'
+                    : isEmpty
+                      ? 'flex h-11 w-28 items-center justify-center rounded-lg border border-dashed border-slate-700 bg-slate-950 text-base text-slate-600'
+                      : 'flex h-11 w-28 items-center justify-center rounded-lg border border-slate-600 bg-slate-900 text-base font-bold text-slate-100'
+                }
+              >
+                {cell.value ?? '∅'}
+              </div>
+              <span className="flex w-32 flex-wrap items-center gap-1">
+                {pointerLabels.map((name) => (
+                  <span className="rounded bg-violet-500 px-1.5 py-0.5 text-[10px] font-semibold text-white" key={name}>
+                    ← {getPointerLabel(name)}
+                  </span>
+                ))}
+              </span>
+            </div>
+          );
+        })}
+        <div className="mt-1 h-1 w-44 rounded bg-slate-600" />
+      </div>
+      <p className="mt-3 text-center text-xs leading-5 text-slate-400">
+        Стек растёт снизу вверх: основание — внизу, вершина (top) — вверху. Добавление и удаление выполняются только через вершину.
+      </p>
+    </div>
+  );
+}
+
+function ArrayCellsView({ frame }: { readonly frame: StructureAlgorithmFrame | null }) {
+  const cells = frame?.data.cells ?? [];
+  const pointers = frame?.meta.pointers ?? {};
+
+  return (
+    <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950/50 p-4">
+      <div className="flex items-start justify-center gap-2">
+        {cells.map((cell, index) => {
+          const isActive = frame?.meta.activeIndex === index;
+          const pointerLabels = Object.entries(pointers).filter(([, pointerIndex]) => pointerIndex === index).map(([name]) => name);
+          const isEmpty = cell.value === null;
+          return (
+            <div className="flex w-16 shrink-0 flex-col items-center gap-1.5" key={cell.id}>
+              <span className="font-mono text-xs text-slate-500">{index}</span>
+              <div
+                className={
+                  isActive
+                    ? 'flex h-14 w-full items-center justify-center rounded-xl border-2 border-cyan-300 bg-cyan-500/30 text-base font-bold text-cyan-100'
+                    : isEmpty
+                      ? 'flex h-14 w-full items-center justify-center rounded-xl border border-dashed border-slate-700 bg-slate-950 text-base text-slate-600'
+                      : 'flex h-14 w-full items-center justify-center rounded-xl border border-slate-600 bg-slate-900 text-base font-bold text-slate-100'
+                }
+              >
+                {cell.value ?? '∅'}
+              </div>
+              <div className="flex min-h-10 flex-col items-center gap-1">
+                {pointerLabels.map((name) => (
+                  <span className="whitespace-nowrap rounded bg-violet-500 px-1.5 py-0.5 text-center text-[10px] font-semibold text-white" key={name}>
+                    ↑ {getPointerLabel(name)}
+                  </span>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+        {cells.length === 0 && <p className="self-center text-sm text-slate-400">Структура пуста.</p>}
+      </div>
+    </div>
   );
 }
 
