@@ -39,10 +39,6 @@ const makeFrame = (
 const createArrayStorage = (values: readonly number[], capacity: number): (number | null)[] =>
   Array.from({ length: Math.max(capacity, values.length) }, (_, index) => values[index] ?? null);
 
-export function* stackArrayDemo(input: DemoInput): Generator<StructureAlgorithmFrame, void, unknown> {
-  yield* stackArrayPushDemo(input);
-}
-
 export function* stackArrayPushDemo({ values, capacity = 8 }: DemoInput): Generator<StructureAlgorithmFrame, void, unknown> {
   const storage: (number | null)[] = Array.from({ length: Math.max(capacity, values.length) }, () => null);
   let top = -1;
@@ -141,10 +137,6 @@ export function* stackArrayPopDemo({ values, capacity = 8 }: DemoInput): Generat
   }
 
   yield makeFrame(step, 'complete', 4, 'Операция pop завершена: все элементы были извлечены сверху вниз, стек пуст.', createSnapshot('Стек pop (массив)', storage), 'pop', undefined, { top: -1 });
-}
-
-export function* queueArrayDemo(input: DemoInput): Generator<StructureAlgorithmFrame, void, unknown> {
-  yield* queueArrayEnqueueDemo(input);
 }
 
 export function* queueArrayEnqueueDemo({ values, capacity = 10 }: DemoInput): Generator<StructureAlgorithmFrame, void, unknown> {
@@ -280,10 +272,6 @@ export function* indexingDemo({ values }: DemoInput): Generator<StructureAlgorit
   yield makeFrame(step, 'complete', 4, `Индексирование завершено: просмотрены позиции от 0 до ${storage.length - 1}, значения массива сохранены без изменения.`, createSnapshot('Индексирование', storage), 'index', undefined, { i: -1 });
 }
 
-export function* stackListDemo(input: DemoInput): Generator<StructureAlgorithmFrame, void, unknown> {
-  yield* stackListPushDemo(input);
-}
-
 export function* stackListPushDemo({ values }: DemoInput): Generator<StructureAlgorithmFrame, void, unknown> {
   const list: (number | null)[] = [];
   let step = 0;
@@ -313,10 +301,6 @@ export function* stackListPopDemo({ values }: DemoInput): Generator<StructureAlg
   }
 
   yield makeFrame(step, 'complete', 4, 'Операция pop завершена: все узлы удалены с головы списка.', createSnapshot('Стек pop (список)', list), 'pop', undefined, { head: -1, top: -1 });
-}
-
-export function* queueListDemo(input: DemoInput): Generator<StructureAlgorithmFrame, void, unknown> {
-  yield* queueListEnqueueDemo(input);
 }
 
 export function* queueListEnqueueDemo({ values }: DemoInput): Generator<StructureAlgorithmFrame, void, unknown> {

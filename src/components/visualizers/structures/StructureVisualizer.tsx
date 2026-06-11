@@ -1,8 +1,28 @@
+import { ColorLegend, type LegendItem } from '@/components/common/ColorLegend';
 import type { StructureAlgorithmFrame } from '@/types';
 
 interface StructureVisualizerProps {
   readonly frame: StructureAlgorithmFrame | null;
 }
+
+const treeLegend: readonly LegendItem[] = [
+  { color: '#06b6d4', label: 'текущий узел' },
+  { color: '#155e75', label: 'узел пути поиска' },
+  { color: '#475569', label: 'остальные узлы' },
+  { color: '#8b5cf6', label: 'указатели' },
+];
+
+const cellsLegend: readonly LegendItem[] = [
+  { color: '#06b6d4', label: 'текущая ячейка' },
+  { color: '#475569', label: 'занятая ячейка' },
+  { color: '#1e293b', label: 'пустая ячейка' },
+  { color: '#8b5cf6', label: 'указатели' },
+];
+
+const hashLegend: readonly LegendItem[] = [
+  { color: '#06b6d4', label: 'активная корзина или ячейка' },
+  { color: '#475569', label: 'остальные корзины' },
+];
 
 interface BinomialTreeViewNode {
   readonly id: string;
@@ -59,6 +79,10 @@ export function StructureVisualizer({ frame }: StructureVisualizerProps) {
       )}
 
       <p className="mt-4 min-h-[72px] rounded-2xl border border-slate-800 bg-slate-950/40 px-4 py-3 text-sm leading-6 text-slate-300">{frame?.message ?? 'Нажмите «Старт» или листайте шаги кнопками — здесь появится описание текущего действия.'}</p>
+
+      <div className="mt-3">
+        <ColorLegend items={snapshot?.buckets !== undefined ? hashLegend : isTreeLike || isBinomialHeap ? treeLegend : cellsLegend} />
+      </div>
     </section>
   );
 }

@@ -42,7 +42,7 @@ export const algorithmCatalog: readonly AlgorithmCategory[] = [
     title: 'Сортировка',
     description: 'Алгоритмы упорядочивания и сравнения эффективности.',
     items: [
-      { id: 'sorting-player', name: 'Визуализация сортировок (Bubble / Merge)', route: '/sorting/player', status: 'ready' },
+      { id: 'sorting-player', name: 'Пузырьковая сортировка и сортировка слиянием', route: '/sorting/player', status: 'ready' },
       { id: 'sorting-compare', name: 'Сравнение разных алгоритмов сортировки (6 видов)', route: '/sorting/compare', status: 'ready' },
       { id: 'block-sort', name: 'Блочная сортировка', route: '/sorting/block', status: 'ready' },
       { id: 'counting-sort', name: 'Сортировка подсчётом', route: '/sorting/counting', status: 'ready' },

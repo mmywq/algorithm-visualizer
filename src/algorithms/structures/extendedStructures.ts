@@ -2,14 +2,6 @@ import { avlScenario } from './avlTree';
 import { hashBlockAddressingScenario, hashChainingScenario, hashOpenAddressingScenario } from './hashTable';
 import type { StructureAlgorithmFrame, StructureSnapshot } from '@/types';
 
-interface DemoScenario {
-  readonly title: string;
-  readonly operation: StructureAlgorithmFrame['meta']['operation'];
-  readonly values: readonly number[];
-  readonly messages: readonly string[];
-  readonly pseudocodeLines?: readonly number[];
-}
-
 const snapshot = (label: string, values: readonly (number | null)[]): StructureSnapshot => ({
   label,
   cells: values.map((value, index) => ({ id: `${label}-${index}`, value })),
@@ -40,31 +32,6 @@ const frame = (
     ...extraMeta,
     ...(activeIndex === undefined ? {} : { activeIndex, pointerIndex: activeIndex }),
   },
-});
-
-function* runScenario(s: DemoScenario): Generator<StructureAlgorithmFrame, void, unknown> {
-  const values = [...s.values] as (number | null)[];
-  let step = 0;
-  const lines = s.pseudocodeLines ?? [1, 2, 3, 4, 5, 6];
-  yield frame(step++, 'initial', 'running', snapshot(s.title, values), s.messages[0] ?? 'Старт.', s.operation, lines[0] ?? 1);
-  for (let i = 0; i < values.length; i += 1) {
-    yield frame(step++, 'inspect', 'running', snapshot(s.title, values), s.messages[(i + 1) % s.messages.length] ?? 'Шаг.', s.operation, lines[(i + 1) % lines.length] ?? 2, i);
-  }
-  yield frame(step, 'complete', 'completed', snapshot(s.title, values), `${s.title}: демонстрация завершена.`, s.operation, lines[lines.length - 1] ?? 6);
-}
-
-export const stackListScenario = () => runScenario({
-  title: 'Стек (список)',
-  operation: 'push',
-  values: [9, 4, 7, 2, 1],
-  messages: ['Создаём связный стек.', 'Добавляем узел в head.', 'Снимаем узел с head.'],
-});
-
-export const queueListScenario = () => runScenario({
-  title: 'Очередь (список)',
-  operation: 'enqueue',
-  values: [3, 8, 5, 1, 6],
-  messages: ['Создаём очередь на списке.', 'Добавляем в tail.', 'Удаляем из head.'],
 });
 
 export function* bstScenario(inputValues?: readonly number[]): Generator<StructureAlgorithmFrame, void, unknown> {
