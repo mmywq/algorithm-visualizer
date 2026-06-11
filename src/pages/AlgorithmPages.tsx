@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { compareSortsDemo, blockSortDemo, countingSortDemo, radixSortDemo } from '@/algorithms/sorting/extra';
 import { balancedBstScenario, binomialHeapScenario, bstScenario, bstSearchScenario, hashBlockScenario, hashClosedScenario, hashOpenScenario, heapExtractMinScenario, heapScenario } from '@/algorithms/structures/extendedStructures';
+import { hashBlockSearchScenario, hashChainingDeleteScenario, hashChainingSearchScenario, hashOpenAddressingSearchScenario } from '@/algorithms/structures/hashTable';
 import { DataInputPanel } from '@/components/common/DataInputPanel';
 import { ResultPanel } from '@/components/common/ResultPanel';
 import { StepExplainPanel } from '@/components/common/StepExplainPanel';
@@ -19,14 +20,26 @@ type PageGeneratorFactory = (
   ...extraArgs: readonly number[]
 ) => Generator<AlgorithmFrame<unknown, Record<string, unknown>>, void, unknown>;
 
+export interface KeyActionsConfig {
+  readonly inputLabel: string;
+  readonly placeholder: string;
+  readonly hint: string;
+  readonly actions: readonly {
+    readonly key: string;
+    readonly label: string;
+    readonly run: (values: readonly number[], target: number) => Generator<AlgorithmFrame<unknown, Record<string, unknown>>, void, unknown>;
+  }[];
+}
+
 interface AlgorithmPageProps {
   readonly route: string;
   readonly title: string;
   readonly mode: Mode;
   readonly generatorFactory: PageGeneratorFactory;
+  readonly keyActions?: KeyActionsConfig | undefined;
 }
 
-export function AlgorithmPage({ route, title, mode, generatorFactory }: AlgorithmPageProps) {
+export function AlgorithmPage({ route, title, mode, generatorFactory, keyActions }: AlgorithmPageProps) {
   const [values, setValues] = useState<readonly number[]>(() => getDefaultValues(title, mode));
   const [searchInput, setSearchInput] = useState('');
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -43,7 +56,6 @@ export function AlgorithmPage({ route, title, mode, generatorFactory }: Algorith
   const setPlaybackSpeed = useAlgorithmPlayerStore((state) => state.setPlaybackSpeed);
   const status = useAlgorithmPlayerStore((state) => state.status);
 
-  const isBstPage = title === 'Двоичное дерево поиска';
   const isHeapPage = title === 'Куча';
 
   useEffect(() => {
@@ -60,15 +72,15 @@ export function AlgorithmPage({ route, title, mode, generatorFactory }: Algorith
     loadPageAlgorithm(generatorFactory, values, loadAlgorithm);
   };
 
-  const runBstSearch = (): void => {
+  const runKeyAction = (run: (values: readonly number[], target: number) => Generator<AlgorithmFrame<unknown, Record<string, unknown>>, void, unknown>): void => {
     const trimmed = searchInput.trim();
     const target = Number(trimmed);
     if (trimmed.length === 0 || Number.isInteger(target) === false || Number.isFinite(target) === false) {
-      setSearchError('Введите целое число, которое нужно найти в дереве.');
+      setSearchError('Введите целое число — ключ для операции.');
       return;
     }
     setSearchError(null);
-    const generator = bstSearchScenario(values, target);
+    const generator = run(values, target);
     const first = generator.next();
     if (first.done) {
       loadAlgorithm(generator);
@@ -100,14 +112,23 @@ export function AlgorithmPage({ route, title, mode, generatorFactory }: Algorith
           uniqueRandom={mode === 'structure'}
           values={values}
         >
-          {isBstPage && (
+          {keyActions !== undefined && (
             <div className="mt-4 grid gap-2 rounded-2xl border border-app bg-surface p-4">
               <div className="flex flex-wrap items-center gap-2">
-                <label className="text-sm text-app-muted" htmlFor="bst-search-input">Найти элемент в дереве</label>
-                <input className="control-input w-40" id="bst-search-input" onChange={(event) => setSearchInput(event.target.value)} placeholder="Например: 40" value={searchInput} />
-                <button className="control-button control-button-primary" onClick={runBstSearch} type="button">Показать путь поиска</button>
+                <label className="text-sm text-app-muted" htmlFor="key-action-input">{keyActions.inputLabel}</label>
+                <input className="control-input w-40" id="key-action-input" onChange={(event) => setSearchInput(event.target.value)} placeholder={keyActions.placeholder} value={searchInput} />
+                {keyActions.actions.map((action, actionIndex) => (
+                  <button
+                    className={actionIndex === 0 ? 'control-button control-button-primary' : 'control-button'}
+                    key={action.key}
+                    onClick={() => runKeyAction(action.run)}
+                    type="button"
+                  >
+                    {action.label}
+                  </button>
+                ))}
               </div>
-              <p className="text-xs leading-5 text-app-muted">Поиск идёт от корня: на каждом узле искомое число сравнивается с ключом узла, и алгоритм переходит в левое или правое поддерево.</p>
+              <p className="text-xs leading-5 text-app-muted">{keyActions.hint}</p>
               {searchError !== null && <p className="text-sm text-rose-300">{searchError}</p>}
             </div>
           )}
@@ -166,7 +187,8 @@ const loadPageAlgorithm = (
 
 const getDefaultValues = (title: string, mode: Mode): readonly number[] => {
   if (mode === 'array') return [34, -12, 56, 7, 7, 89, -3, 22];
-  if (title.includes('хеш')) return [12, 22, 32, 42, 52];
+  // набор подобран так, чтобы во всех трёх схемах хеширования возникали коллизии
+  if (title.includes('хеш') || title.includes('Хеш')) return [12, 19, 31, 24, 8, 14];
   if (title.includes('Куча')) return [40, 15, 60, 5, 30, 55];
   if (title.includes('Двоичное дерево поиска')) return [50, 30, 70, 20, 40, 60, 80];
   return [18, 7, 24, 3, 12, 30];
@@ -175,16 +197,72 @@ const getDefaultValues = (title: string, mode: Mode): readonly number[] => {
 const isArrayFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | null): frame is ArrayAlgorithmFrame => frame?.domain === 'array' && Array.isArray(frame.data) && frame.data.every((item) => typeof item === 'object' && item !== null && 'value' in item);
 const isStructureFrame = (frame: AlgorithmFrame<unknown, Record<string, unknown>> | null): frame is StructureAlgorithmFrame => (frame?.domain === 'tree' || frame?.domain === 'array') && typeof frame.data === 'object' && frame.data !== null && 'cells' in frame.data;
 
-export const algorithmRouteRegistry = {
-  '/trees/bst': { title: 'Двоичное дерево поиска', mode: 'structure' as const, generatorFactory: bstScenario },
-  '/trees/balanced-bst': { title: 'Сбалансированное двоичное дерево поиска', mode: 'structure' as const, generatorFactory: balancedBstScenario },
-  '/hash/open-chaining': { title: 'Хеш-таблица: метод цепочек', mode: 'structure' as const, generatorFactory: hashOpenScenario },
-  '/hash/open-addressing': { title: 'Хеш-таблица: открытая адресация', mode: 'structure' as const, generatorFactory: hashClosedScenario },
-  '/hash/block-addressing': { title: 'Хеш-таблица: блочная адресация', mode: 'structure' as const, generatorFactory: hashBlockScenario },
-  '/heaps/heap': { title: 'Куча', mode: 'structure' as const, generatorFactory: heapScenario },
-  '/heaps/binomial': { title: 'Биномиальная куча', mode: 'structure' as const, generatorFactory: binomialHeapScenario },
-  '/sorting/compare': { title: 'Сравнение 6 сортировок', mode: 'array' as const, generatorFactory: compareSortsDemo },
-  '/sorting/block': { title: 'Блочная сортировка', mode: 'array' as const, generatorFactory: blockSortDemo },
-  '/sorting/counting': { title: 'Сортировка подсчётом', mode: 'array' as const, generatorFactory: countingSortDemo },
-  '/sorting/radix': { title: 'Поразрядная сортировка', mode: 'array' as const, generatorFactory: radixSortDemo },
+interface RegistryEntry {
+  readonly title: string;
+  readonly mode: Mode;
+  readonly generatorFactory: PageGeneratorFactory;
+  readonly keyActions?: KeyActionsConfig;
+}
+
+export const algorithmRouteRegistry: Record<string, RegistryEntry> = {
+  '/trees/bst': {
+    title: 'Двоичное дерево поиска',
+    mode: 'structure',
+    generatorFactory: bstScenario,
+    keyActions: {
+      inputLabel: 'Найти элемент в дереве',
+      placeholder: 'Например: 40',
+      hint: 'Поиск идёт от корня: на каждом узле искомый ключ сравнивается со значением узла, и поиск переходит в левое или правое поддерево. В конце выводится путь сравнений и итог: найден ключ или нет.',
+      actions: [
+        { key: 'search', label: 'Показать путь поиска', run: (values, target) => bstSearchScenario(values, target) },
+      ],
+    },
+  },
+  '/trees/balanced-bst': { title: 'Сбалансированное двоичное дерево поиска', mode: 'structure', generatorFactory: balancedBstScenario },
+  '/hash/open-chaining': {
+    title: 'Хеш-таблица: метод цепочек',
+    mode: 'structure',
+    generatorFactory: hashOpenScenario,
+    keyActions: {
+      inputLabel: 'Операции с ключом',
+      placeholder: 'Например: 22',
+      hint: 'Поиск и удаление начинаются с вычисления h(key) и работают только с одной корзиной: просматривается её цепочка, а не вся таблица. В итоге выводится число сравнений и место ключа.',
+      actions: [
+        { key: 'search', label: 'Найти ключ', run: (values, target) => hashChainingSearchScenario(values, target, 7) },
+        { key: 'delete', label: 'Удалить ключ', run: (values, target) => hashChainingDeleteScenario(values, target, 7) },
+      ],
+    },
+  },
+  '/hash/open-addressing': {
+    title: 'Хеш-таблица: открытая адресация',
+    mode: 'structure',
+    generatorFactory: hashClosedScenario,
+    keyActions: {
+      inputLabel: 'Найти ключ',
+      placeholder: 'Например: 22',
+      hint: 'Поиск повторяет путь пробирования вставки: от «домашней» ячейки h(key) по соседним ячейкам, пока не встретит ключ или пустую ячейку. В итоге выводится число проб — цена коллизий.',
+      actions: [
+        { key: 'search', label: 'Найти ключ', run: (values, target) => hashOpenAddressingSearchScenario(values, target, 11) },
+      ],
+    },
+  },
+  '/hash/block-addressing': {
+    title: 'Хеш-таблица: блочная адресация',
+    mode: 'structure',
+    generatorFactory: hashBlockScenario,
+    keyActions: {
+      inputLabel: 'Найти ключ',
+      placeholder: 'Например: 22',
+      hint: 'Поиск проверяет основной блок h(key) и цепочку его overflow-блоков, не затрагивая чужие блоки. В итоге выводится число просмотренных блоков и сравнений.',
+      actions: [
+        { key: 'search', label: 'Найти ключ', run: (values, target) => hashBlockSearchScenario(values, target, 5, 2) },
+      ],
+    },
+  },
+  '/heaps/heap': { title: 'Куча', mode: 'structure', generatorFactory: heapScenario },
+  '/heaps/binomial': { title: 'Биномиальная куча', mode: 'structure', generatorFactory: binomialHeapScenario },
+  '/sorting/compare': { title: 'Сравнение 6 сортировок', mode: 'array', generatorFactory: compareSortsDemo },
+  '/sorting/block': { title: 'Блочная сортировка', mode: 'array', generatorFactory: blockSortDemo },
+  '/sorting/counting': { title: 'Сортировка подсчётом', mode: 'array', generatorFactory: countingSortDemo },
+  '/sorting/radix': { title: 'Поразрядная сортировка', mode: 'array', generatorFactory: radixSortDemo },
 };

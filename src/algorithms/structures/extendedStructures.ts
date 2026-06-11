@@ -120,34 +120,36 @@ export function* bstSearchScenario(inputValues: readonly number[], target: numbe
   let step = 0;
   const snapshotData = snapshot('Дерево BST', cells);
   const path: number[] = [];
+  const pathValues: number[] = [];
   let index = 0;
 
-  yield frame(step++, 'initial', 'running', snapshotData, `Интерактивный поиск начинается с корня. Ищем ключ ${target} в дереве BST, построенном по текущему набору значений.`, 'index', 1, 0, { searchTarget: target, pointers: { search: 0 } });
+  yield frame(step++, 'initial', 'running', snapshotData, `Поиск начинается с корня. Искомый ключ: ${target}. На каждом узле ключ сравнивается со значением узла, и поиск переходит в левое или правое поддерево.`, 'index', 1, 0, { searchTarget: target, pointers: { search: 0 } });
 
   while (index < cells.length) {
     const current = cells[index];
     if (current === null || current === undefined) {
-      yield frame(step++, 'inspect', 'running', snapshotData, `Переходим к позиции ${index}, но узел отсутствует. Следовательно, ключ ${target} не найден в дереве.`, 'index', 6, undefined, { searchTarget: target, searchPath: path, pointers: { search: index } });
-      yield frame(step, 'complete', 'completed', snapshotData, `Поиск завершён: ключ ${target} отсутствует. Проверенный путь: ${path.join(' → ')} → ${index}.`, 'index', 6, undefined, { searchTarget: target, searchPath: path, pointers: { search: index } });
+      yield frame(step++, 'inspect', 'running', snapshotData, `Переход в поддерево, но узла там нет — достигнута пустая позиция. Ключ ${target} в дереве отсутствует.`, 'index', 6, undefined, { searchTarget: target, searchPath: path, pointers: { search: index } });
+      yield frame(step, 'complete', 'completed', snapshotData, `Поиск завершён: ключ ${target} отсутствует. Пройденный путь: ${pathValues.join(' → ')} → пустое поддерево. Выполнено сравнений: ${pathValues.length}.`, 'index', 6, undefined, { searchTarget: target, searchPath: path });
       return;
     }
 
     path.push(index);
-    yield frame(step++, 'inspect', 'running', snapshotData, `Сравниваем искомый ключ ${target} с узлом ${current} в позиции ${index}.`, 'index', 2, index, { searchTarget: target, searchPath: [...path], pointers: { search: index } });
+    pathValues.push(current);
+    yield frame(step++, 'inspect', 'running', snapshotData, `Сравниваем искомый ключ ${target} с узлом ${current}. Это сравнение №${pathValues.length}.`, 'index', 2, index, { searchTarget: target, searchPath: [...path], pointers: { search: index } });
 
     if (target === current) {
-      yield frame(step++, 'push', 'running', snapshotData, `Ключ ${target} найден. Путь поиска: ${path.join(' → ')}.`, 'index', 5, index, { searchTarget: target, searchPath: [...path], pointers: { search: index } });
-      yield frame(step, 'complete', 'completed', snapshotData, `Поиск завершён успешно: ключ ${target} найден по пути ${path.join(' → ')}.`, 'index', 6, index, { searchTarget: target, searchPath: [...path], pointers: { search: index } });
+      yield frame(step++, 'push', 'running', snapshotData, `${target} = ${current} — ключ найден.`, 'index', 5, index, { searchTarget: target, searchPath: [...path], pointers: { search: index } });
+      yield frame(step, 'complete', 'completed', snapshotData, `Поиск завершён успешно: ключ ${target} найден. Путь от корня: ${pathValues.join(' → ')}. Выполнено сравнений: ${pathValues.length} — это глубина узла плюс один, а не размер всего дерева.`, 'index', 6, index, { searchTarget: target, searchPath: [...path], pointers: { search: index } });
       return;
     }
 
     const goLeft = target < current;
     const nextIndex = goLeft ? 2 * index + 1 : 2 * index + 2;
-    yield frame(step++, 'inspect', 'running', snapshotData, `${target} ${goLeft ? '<' : '≥'} ${current}: переходим ${goLeft ? 'в левое' : 'в правое'} поддерево.`, 'index', 3, index, { searchTarget: target, searchPath: [...path], pointers: { search: index } });
+    yield frame(step++, 'inspect', 'running', snapshotData, `${target} ${goLeft ? '<' : '>'} ${current}: переходим в ${goLeft ? 'левое' : 'правое'} поддерево. ${goLeft ? 'Меньшие ключи по правилу BST находятся слева.' : 'Большие ключи по правилу BST находятся справа.'}`, 'index', 3, index, { searchTarget: target, searchPath: [...path], pointers: { search: index } });
     index = nextIndex;
   }
 
-  yield frame(step, 'complete', 'completed', snapshotData, `Поиск завершён: ключ ${target} не найден. Проверенный путь: ${path.join(' → ')}.`, 'index', 6, undefined, { searchTarget: target, searchPath: path });
+  yield frame(step, 'complete', 'completed', snapshotData, `Поиск завершён: ключ ${target} не найден. Пройденный путь: ${pathValues.join(' → ')}. Выполнено сравнений: ${pathValues.length}.`, 'index', 6, undefined, { searchTarget: target, searchPath: path });
 }
 
 

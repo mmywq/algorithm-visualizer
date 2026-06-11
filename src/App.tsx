@@ -98,6 +98,7 @@ const renderRoute = (
       <AlgorithmPage
         generatorFactory={configuredPage.generatorFactory}
         key={route}
+        keyActions={configuredPage.keyActions}
         mode={configuredPage.mode}
         route={route}
         title={configuredPage.title}
