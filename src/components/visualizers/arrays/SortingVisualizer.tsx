@@ -135,7 +135,16 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
       {algorithm.key === 'merge' && <MergeDivideMap values={values} />}
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
-        <ArrayVisualizer frame={frame} title="Сортировка массива" />
+        <div className="flex flex-col gap-4">
+          <ArrayVisualizer frame={frame} title="Сортировка массива" />
+          {isCompleted && (
+            <ResultPanel
+              inputSummary={`Исходный массив: [${values.join(', ')}]`}
+              steps={stepsHistory}
+              summary={frame?.description ?? frame?.message ?? null}
+            />
+          )}
+        </div>
         <StepExplainPanel frame={frame} pseudocode={algorithm.pseudocode} />
       </section>
 
@@ -154,7 +163,6 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
         totalFrames={frames.length}
       />
 
-      {isCompleted && <ResultPanel steps={stepsHistory} summary={frame?.description ?? frame?.message ?? null} />}
     </div>
   );
 }

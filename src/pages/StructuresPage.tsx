@@ -244,7 +244,16 @@ export function StructuresPage({ structureKey = 'stack-array' }: StructuresPageP
       />
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
-        <StructureVisualizer frame={frame} />
+        <div className="flex flex-col gap-4">
+          <StructureVisualizer frame={frame} />
+          {isCompleted && (
+            <ResultPanel
+              inputSummary={`Значения в порядке поступления: [${values.join(', ')}]`}
+              steps={stepsHistory}
+              summary={frame?.description ?? frame?.message ?? null}
+            />
+          )}
+        </div>
         <StepExplainPanel frame={frame} pseudocode={operation.pseudocode} />
       </section>
 
@@ -263,7 +272,6 @@ export function StructuresPage({ structureKey = 'stack-array' }: StructuresPageP
         totalFrames={frames.length}
       />
 
-      {isCompleted && <ResultPanel steps={stepsHistory} summary={frame?.description ?? frame?.message ?? null} />}
     </div>
   );
 }

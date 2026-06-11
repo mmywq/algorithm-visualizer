@@ -16,8 +16,14 @@ interface GraphCanvasProps {
 
 interface DragState {
   readonly nodeId: NodeId;
+  readonly startX: number;
+  readonly startY: number;
+  readonly offsetX: number;
+  readonly offsetY: number;
   moved: boolean;
 }
+
+const DRAG_THRESHOLD_PX = 4;
 
 export function GraphCanvas({
   graph,
@@ -34,9 +40,10 @@ export function GraphCanvas({
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [edgeWeightDraft, setEdgeWeightDraft] = useState('');
 
-  const displayedGraph = frame?.data ?? graph;
-  const nodeById = new Map(displayedGraph.nodes.map((node) => [node.id, node]));
-  const selectedEdge = displayedGraph.edges.find((edge) => edge.id === selectedEdgeId) ?? null;
+  // геометрия всегда берётся из живого графа (перетаскивание и раскладка
+  // видны мгновенно), а цвета состояния — из текущего кадра анимации
+  const nodeById = new Map(graph.nodes.map((node) => [node.id, node]));
+  const selectedEdge = graph.edges.find((edge) => edge.id === selectedEdgeId) ?? null;
 
   const toSvgPoint = (clientX: number, clientY: number): { x: number; y: number } => {
     const svg = svgRef.current;
@@ -56,20 +63,40 @@ export function GraphCanvas({
   const handleNodePointerDown = (event: ReactPointerEvent<SVGGElement>, nodeId: NodeId): void => {
     if (!editable) return;
     event.stopPropagation();
-    dragStateRef.current = { nodeId, moved: false };
-    (event.currentTarget.ownerSVGElement ?? event.currentTarget).setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+    const node = graph.nodes.find((item) => item.id === nodeId);
+    if (node === undefined) return;
+    const point = toSvgPoint(event.clientX, event.clientY);
+    dragStateRef.current = {
+      nodeId,
+      startX: event.clientX,
+      startY: event.clientY,
+      offsetX: node.position.x - point.x,
+      offsetY: node.position.y - point.y,
+      moved: false,
+    };
+    try {
+      (event.currentTarget.ownerSVGElement ?? event.currentTarget).setPointerCapture?.(event.pointerId);
+    } catch {
+      // указатель мог исчезнуть между событиями — перетаскивание продолжит работать без захвата
+    }
   };
 
   const handlePointerMove = (event: ReactPointerEvent<SVGSVGElement>): void => {
     const dragState = dragStateRef.current;
     if (!editable || dragState === null || onGraphChange === undefined) return;
 
+    if (!dragState.moved) {
+      const travelled = Math.hypot(event.clientX - dragState.startX, event.clientY - dragState.startY);
+      if (travelled < DRAG_THRESHOLD_PX) return;
+      dragState.moved = true;
+    }
+
     const point = toSvgPoint(event.clientX, event.clientY);
-    dragState.moved = true;
     onGraphChange({
       nodes: graph.nodes.map((node) =>
         node.id === dragState.nodeId
-          ? { ...node, position: { x: clampX(point.x), y: clampY(point.y) } }
+          ? { ...node, position: { x: clampX(point.x + dragState.offsetX), y: clampY(point.y + dragState.offsetY) } }
           : node,
       ),
       edges: graph.edges,
@@ -158,12 +185,13 @@ export function GraphCanvas({
   return (
     <div className="relative">
       <svg
-        className="block w-full rounded-2xl border border-app bg-slate-950/60"
+        className="block w-full select-none rounded-2xl border border-app bg-[#0a101f]"
         onDoubleClick={handleCanvasDoubleClick}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         ref={svgRef}
         role="img"
+        style={{ touchAction: 'none' }}
         viewBox={`0 0 ${GRAPH_CANVAS_WIDTH} ${GRAPH_CANVAS_HEIGHT}`}
       >
         <defs>
@@ -176,7 +204,7 @@ export function GraphCanvas({
         </defs>
         <rect fill="url(#graph-grid)" height={GRAPH_CANVAS_HEIGHT} width={GRAPH_CANVAS_WIDTH} x="0" y="0" />
 
-        {displayedGraph.edges.map((edge) => {
+        {graph.edges.map((edge) => {
           const source = nodeById.get(edge.source);
           const target = nodeById.get(edge.target);
           if (source === undefined || target === undefined) return null;
@@ -212,7 +240,7 @@ export function GraphCanvas({
               {edge.weight !== undefined && (
                 <g pointerEvents="none">
                   <rect
-                    fill="#0f172a"
+                    fill="#1d2945"
                     height={20}
                     rx={6}
                     stroke={tone.stroke}
@@ -230,7 +258,7 @@ export function GraphCanvas({
           );
         })}
 
-        {displayedGraph.nodes.map((node) => {
+        {graph.nodes.map((node) => {
           const tone = getNodeTone(node.id, frame);
           const isSelected = node.id === selectedNodeId;
           const isStart = node.id === startNodeId;
@@ -295,7 +323,7 @@ export function GraphCanvas({
           );
         })}
 
-        {displayedGraph.nodes.length === 0 && (
+        {graph.nodes.length === 0 && (
           <text dominantBaseline="central" fill="#64748b" fontSize={15} textAnchor="middle" x={GRAPH_CANVAS_WIDTH / 2} y={GRAPH_CANVAS_HEIGHT / 2}>
             Граф пуст. Дважды кликните по холсту, чтобы добавить вершину, или сгенерируйте случайный граф.
           </text>

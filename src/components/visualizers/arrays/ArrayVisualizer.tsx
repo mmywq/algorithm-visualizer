@@ -25,7 +25,7 @@ export function ArrayVisualizer({ frame, title = 'Массив' }: ArrayVisualiz
     <section className="app-panel">
       <h2 className="text-xl font-semibold text-app-primary">{title}</h2>
 
-      <div className="relative mt-4 rounded-2xl border border-app bg-slate-950/50 px-5 pb-9 pt-5">
+      <div className="relative mt-4 rounded-2xl border border-app bg-[#0a101f] px-5 pb-9 pt-5">
         {hasNegative && (
           <>
             <div
@@ -76,13 +76,13 @@ export function ArrayVisualizer({ frame, title = 'Массив' }: ArrayVisualiz
 
       {frame?.meta.auxiliaryArray !== undefined && (
         <div className="mt-4 rounded-2xl border border-app bg-surface p-4">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-300">Вспомогательный массив</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Вспомогательный массив</p>
           <p className="mt-1 text-sm text-app-muted">Счётчики, корзины или промежуточные значения, которые алгоритм использует параллельно с основным массивом.</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {frame.meta.auxiliaryArray.map((value, index) => (
-              <span className="inline-flex min-w-12 flex-col items-center rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-sm font-semibold text-violet-100" key={`${index}-${value}`}>
+              <span className="inline-flex min-w-12 flex-col items-center rounded-xl border border-accent/40 bg-accent/10 px-3 py-2 text-sm font-semibold text-app-primary" key={`${index}-${value}`}>
                 <span>{value}</span>
-                <span className="mt-1 text-[10px] font-normal text-violet-200/70">{index}</span>
+                <span className="mt-1 text-[10px] font-normal text-app-muted">{index}</span>
               </span>
             ))}
           </div>
@@ -131,7 +131,7 @@ function ArrayBar({ frame, index, item, baselineTopPx, scale }: ArrayBarProps) {
       >
         {item.value}
       </motion.div>
-      <span className="absolute -bottom-7 left-0 right-0 text-center text-xs text-slate-500">{index}</span>
+      <span className="absolute -bottom-7 left-0 right-0 text-center text-xs text-slate-400">{index}</span>
     </motion.div>
   );
 }
@@ -151,12 +151,12 @@ const getBarTone = (frame: ArrayAlgorithmFrame | null, index: number) => {
 
 function SortComparisonTable({ rows }: { readonly rows: readonly SortComparisonRow[] }) {
   return (
-    <div className="mt-4 overflow-x-auto rounded-2xl border border-app bg-slate-950/40">
+    <div className="mt-4 overflow-x-auto rounded-2xl border border-app bg-surface">
       <table className="min-w-full border-collapse text-left text-xs text-app-muted">
         <caption className="px-4 py-3 text-left text-sm font-semibold text-app-primary">
           Таблица сравнения: все алгоритмы запускаются на одном и том же исходном наборе, поэтому показатели сопоставимы напрямую.
         </caption>
-        <thead className="bg-slate-900/80 text-[11px] uppercase tracking-[0.16em] text-slate-400">
+        <thead className="text-[11px] uppercase tracking-[0.16em] text-app-muted/80">
           <tr>
             <th className="border-t border-app px-4 py-3">Алгоритм</th>
             <th className="border-t border-app px-4 py-3">Принцип работы</th>
@@ -167,7 +167,7 @@ function SortComparisonTable({ rows }: { readonly rows: readonly SortComparisonR
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr className={row.isBest === true ? 'bg-emerald-500/10 text-emerald-100' : 'odd:bg-slate-900/30'} key={row.name}>
+            <tr className={row.isBest === true ? 'bg-emerald-500/15' : 'odd:bg-accent/5'} key={row.name}>
               <th className="border-t border-app px-4 py-3 font-semibold text-app-primary">{row.name}{row.isBest === true ? ' — меньше всего операций' : ''}</th>
               <td className="border-t border-app px-4 py-3 leading-5">{row.idea}</td>
               <td className="border-t border-app px-4 py-3 font-mono">[{row.sortedValues.join(', ')}]</td>

@@ -143,9 +143,16 @@ export function AlgorithmPage({ route, title, mode, generatorFactory, keyActions
       </DataInputPanel>
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
-        <div>
+        <div className="flex flex-col gap-4">
           {mode === 'array' && <ArrayVisualizer frame={isArrayFrame(frame) ? frame : null} />}
           {mode === 'structure' && <StructureVisualizer frame={isStructureFrame(frame) ? frame : null} />}
+          {isCompleted && (
+            <ResultPanel
+              inputSummary={`[${values.join(', ')}]`}
+              steps={stepsHistory}
+              summary={frame?.description ?? frame?.message ?? null}
+            />
+          )}
         </div>
         <StepExplainPanel frame={frame} pseudocode={theory.pseudocode} />
       </section>
@@ -165,7 +172,6 @@ export function AlgorithmPage({ route, title, mode, generatorFactory, keyActions
         totalFrames={frames.length}
       />
 
-      {isCompleted && <ResultPanel steps={stepsHistory} summary={frame?.description ?? frame?.message ?? null} />}
     </div>
   );
 }

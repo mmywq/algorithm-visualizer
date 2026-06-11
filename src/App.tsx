@@ -43,7 +43,7 @@ function App() {
   };
 
   useEffect(() => {
-    document.documentElement.classList.toggle('light', theme === 'light');
+    document.documentElement.dataset.theme = theme;
   }, [theme]);
 
   useEffect(() => {

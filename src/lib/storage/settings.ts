@@ -3,7 +3,7 @@ import { STORAGE_KEYS } from './keys';
 
 export interface AppSettings {
   readonly mode: 'arrays' | 'graphs';
-  readonly theme: 'dark' | 'light';
+  readonly theme: 'dark' | 'dark-emerald' | 'dark-graphite' | 'light' | 'light-warm' | 'light-blue';
   readonly playbackSpeedMs: number;
   readonly lastArrayValues: readonly number[];
   readonly lastGraphStartNodeId: string;

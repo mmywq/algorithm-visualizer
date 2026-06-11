@@ -1,13 +1,24 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-type ThemeMode = 'dark' | 'light';
+export type ThemeName = 'dark' | 'dark-emerald' | 'dark-graphite' | 'light' | 'light-warm' | 'light-blue';
+
+export const themeOptions: readonly { readonly value: ThemeName; readonly label: string }[] = [
+  { value: 'dark', label: 'Тёмная синяя' },
+  { value: 'dark-emerald', label: 'Тёмная изумрудная' },
+  { value: 'dark-graphite', label: 'Тёмная графитовая' },
+  { value: 'light', label: 'Светлая' },
+  { value: 'light-warm', label: 'Светлая тёплая' },
+  { value: 'light-blue', label: 'Светлая голубая' },
+];
+
+const isThemeName = (value: unknown): value is ThemeName =>
+  themeOptions.some((option) => option.value === value);
 
 interface UiPreferencesState {
-  readonly theme: ThemeMode;
+  readonly theme: ThemeName;
   readonly playbackSpeedMs: number;
-  readonly setTheme: (theme: ThemeMode) => void;
-  readonly toggleTheme: () => void;
+  readonly setTheme: (theme: ThemeName) => void;
   readonly setPlaybackSpeedMs: (playbackSpeedMs: number) => void;
 }
 
@@ -16,9 +27,7 @@ export const useUiPreferencesStore = create<UiPreferencesState>()(
     (set) => ({
       theme: 'dark',
       playbackSpeedMs: 650,
-      setTheme: (theme) => set({ theme }),
-      toggleTheme: () =>
-        set((state) => ({ theme: state.theme === 'dark' ? 'light' : 'dark' })),
+      setTheme: (theme) => set({ theme: isThemeName(theme) ? theme : 'dark' }),
       setPlaybackSpeedMs: (playbackSpeedMs) => set({ playbackSpeedMs }),
     }),
     {

@@ -101,7 +101,7 @@ export function MergeDivideMap({ values }: MergeDivideMapProps) {
                       />
                       <text
                         dominantBaseline="central"
-                        fill="#e2e8f0"
+                        fill="var(--app-primary)"
                         fontSize={12}
                         fontWeight={700}
                         textAnchor="middle"

@@ -53,6 +53,7 @@ export function GraphWorkbench({ config }: GraphWorkbenchProps) {
   const [algorithmKey, setAlgorithmKey] = useState(config.algorithms[0]!.key);
   const [startNodeId, setStartNodeId] = useState<NodeId>(config.defaultGraph.nodes[0]?.id ?? 'A');
   const [adjacencyDraft, setAdjacencyDraft] = useState(() => serializeAdjacencyList(config.defaultGraph, config.weighted));
+  const [adjacencyError, setAdjacencyError] = useState<string | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
   const [presets, setPresets] = useState(loadGraphPresets());
   const [presetName, setPresetName] = useState('');
@@ -98,6 +99,7 @@ export function GraphWorkbench({ config }: GraphWorkbenchProps) {
 
   useEffect(() => {
     setAdjacencyDraft(serializeAdjacencyList(graph, config.weighted));
+    setAdjacencyError(null);
   }, [graph, config.weighted]);
 
   useEffect(() => {
@@ -114,9 +116,10 @@ export function GraphWorkbench({ config }: GraphWorkbenchProps) {
   const applyAdjacencyDraft = (): void => {
     const parsed = parseAdjacencyList(adjacencyDraft, config.weighted);
     if (!parsed.ok || parsed.graph === undefined) {
-      setEditError(parsed.error ?? 'Не удалось разобрать список смежности.');
+      setAdjacencyError(parsed.error ?? 'Не удалось разобрать список смежности.');
       return;
     }
+    setAdjacencyError(null);
     // сохраняем позиции существующих вершин, чтобы граф не «прыгал»
     const oldPositions = new Map(graph.nodes.map((node) => [node.id, node.position]));
     const keptCount = parsed.graph.nodes.filter((node) => oldPositions.has(node.id)).length;
@@ -337,29 +340,39 @@ export function GraphWorkbench({ config }: GraphWorkbenchProps) {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
-        <div className="app-panel">
-          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-            <h2 className="text-xl font-semibold text-app-primary">Визуализация</h2>
-            <p className="text-xs text-app-muted">
-              {editable
-                ? 'Вершины можно перетаскивать. Клик по двум вершинам добавит или удалит ребро между ними. Двойной клик по пустому месту — новая вершина.'
-                : 'Идёт демонстрация: редактирование графа возобновится после паузы или завершения.'}
-            </p>
+        <div className="flex flex-col gap-4">
+          <div className="app-panel">
+            <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+              <h2 className="text-xl font-semibold text-app-primary">Визуализация</h2>
+              <p className="text-xs text-app-muted">
+                {editable
+                  ? 'Вершины можно перетаскивать. Клик по двум вершинам добавит или удалит ребро между ними. Двойной клик по пустому месту — новая вершина.'
+                  : 'Идёт демонстрация: редактирование графа возобновится после паузы или завершения.'}
+              </p>
+            </div>
+            <div className="mt-3">
+              <GraphCanvas
+                defaultEdgeWeight={newEdgeWeight}
+                editable={editable}
+                frame={frame}
+                graph={graph}
+                onGraphChange={commitGraph}
+                startNodeId={config.needsStart ? startNodeId : undefined}
+                weighted={config.weighted}
+              />
+            </div>
+            <div className="mt-3">
+              <ColorLegend items={config.legend} />
+            </div>
           </div>
-          <div className="mt-3">
-            <GraphCanvas
-              defaultEdgeWeight={newEdgeWeight}
-              editable={editable}
-              frame={frame}
-              graph={graph}
-              onGraphChange={commitGraph}
-              startNodeId={config.needsStart ? startNodeId : undefined}
-              weighted={config.weighted}
+
+          {isCompleted && (
+            <ResultPanel
+              inputSummary={`Граф: ${graph.nodes.length} вершин (${graph.nodes.map((node) => node.label).join(', ')}), ${graph.edges.length} рёбер${config.needsStart ? `; стартовая вершина — ${startNodeId}` : ''}`}
+              steps={stepsHistory}
+              summary={frame?.description ?? frame?.message ?? null}
             />
-          </div>
-          <div className="mt-3">
-            <ColorLegend items={config.legend} />
-          </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-4">
@@ -380,7 +393,10 @@ export function GraphWorkbench({ config }: GraphWorkbenchProps) {
             spellCheck={false}
             value={adjacencyDraft}
           />
-          <button className="control-button mt-3" onClick={applyAdjacencyDraft} type="button">Применить список</button>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <button className="control-button" onClick={applyAdjacencyDraft} type="button">Применить список</button>
+            {adjacencyError !== null && <p className="text-sm text-rose-300">{adjacencyError}</p>}
+          </div>
         </div>
 
         <div className="app-panel">
@@ -397,21 +413,21 @@ export function GraphWorkbench({ config }: GraphWorkbenchProps) {
               <table className="border-collapse text-center text-xs">
                 <thead>
                   <tr>
-                    <th className="h-9 w-9 border border-app bg-slate-950/50" />
+                    <th className="h-9 w-9 border border-app bg-surface" />
                     {matrix.labels.map((label) => (
-                      <th className="h-9 w-9 border border-app bg-slate-950/50 font-bold text-app-primary" key={label}>{label}</th>
+                      <th className="h-9 w-9 border border-app bg-surface font-bold text-app-primary" key={label}>{label}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {matrix.cells.map((row, rowIndex) => (
                     <tr key={matrix.labels[rowIndex]}>
-                      <th className="h-9 w-9 border border-app bg-slate-950/50 font-bold text-app-primary">{matrix.labels[rowIndex]}</th>
+                      <th className="h-9 w-9 border border-app bg-surface font-bold text-app-primary">{matrix.labels[rowIndex]}</th>
                       {row.map((cell, columnIndex) => {
                         const rowLabel = matrix.labels[rowIndex]!;
                         const columnLabel = matrix.labels[columnIndex]!;
                         if (rowIndex === columnIndex) {
-                          return <td className="h-9 w-9 border border-app bg-slate-950/30 text-app-muted/50" key={columnLabel}>—</td>;
+                          return <td className="h-9 w-9 border border-app bg-surface text-app-muted/50" key={columnLabel}>—</td>;
                         }
                         if (config.weighted) {
                           return (
@@ -433,7 +449,7 @@ export function GraphWorkbench({ config }: GraphWorkbenchProps) {
                           <td className="border border-app p-0" key={columnLabel}>
                             <button
                               aria-label={`Ребро ${rowLabel}—${columnLabel}: ${cell === 1 ? 'есть' : 'нет'}`}
-                              className={`h-9 w-9 text-xs font-bold transition ${cell === 1 ? 'bg-accent/30 text-app-primary' : 'text-app-muted/60 hover:bg-slate-700/40'}`}
+                              className={`h-9 w-9 text-xs font-bold transition ${cell === 1 ? 'bg-accent/30 text-app-primary' : 'text-app-muted/60 hover:bg-accent/10'}`}
                               disabled={!editable}
                               onClick={() => commitGraph(setMatrixCell(graph, rowLabel, columnLabel, cell === 1 ? 0 : 1, false))}
                               type="button"
@@ -475,7 +491,6 @@ export function GraphWorkbench({ config }: GraphWorkbenchProps) {
         totalFrames={frames.length}
       />
 
-      {isCompleted && <ResultPanel steps={stepsHistory} summary={frame?.description ?? frame?.message ?? null} />}
     </div>
   );
 }
@@ -534,7 +549,7 @@ function GraphStatePanel({ config, algorithm, frame }: GraphStatePanelProps) {
         <div className="mt-3 overflow-x-auto rounded-xl border border-app">
           <table className="w-full border-collapse text-center text-xs">
             <thead>
-              <tr className="bg-slate-950/50 text-app-muted">
+              <tr className="bg-surface text-app-muted">
                 <th className="px-2 py-1.5 font-semibold">Вершина</th>
                 <th className="px-2 py-1.5 font-semibold">Расстояние</th>
                 <th className="px-2 py-1.5 font-semibold">Путь от старта</th>
