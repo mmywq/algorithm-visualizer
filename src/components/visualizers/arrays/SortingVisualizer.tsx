@@ -134,7 +134,7 @@ export function SortingVisualizer({ defaultValues = FALLBACK_VALUES }: SortingVi
 
       {algorithm.key === 'merge' && <MergeDivideMap values={values} />}
 
-      <section className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
         <div className="flex flex-col gap-4">
           <ArrayVisualizer frame={frame} title="Сортировка массива" />
           {isCompleted && (

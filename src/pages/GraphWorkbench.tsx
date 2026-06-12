@@ -339,7 +339,7 @@ export function GraphWorkbench({ config }: GraphWorkbenchProps) {
         </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
         <div className="flex flex-col gap-4">
           <div className="app-panel">
             <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
@@ -381,7 +381,7 @@ export function GraphWorkbench({ config }: GraphWorkbenchProps) {
         </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-2">
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="app-panel">
           <h2 className="text-xl font-semibold text-app-primary">Список смежности</h2>
           <p className="mt-2 text-sm leading-6 text-app-muted">

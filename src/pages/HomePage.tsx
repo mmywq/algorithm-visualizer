@@ -75,7 +75,7 @@ export function HomePage({ navigate }: HomePageProps) {
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {learningFeatures.map((feature) => (
           <article className="app-panel" key={feature.title}>
             <h2 className="text-lg font-semibold text-app-primary">{feature.title}</h2>
@@ -87,7 +87,7 @@ export function HomePage({ navigate }: HomePageProps) {
       <section className="app-panel">
         <h2 className="text-2xl font-bold text-app-primary">С чего начать</h2>
         <p className="mt-2 text-sm text-app-muted">Демонстрации, которые быстрее всего показывают, как устроен сайт.</p>
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
           {popularDemos.map((demo) => (
             <button
               className="rounded-2xl border border-app bg-surface p-4 text-left transition hover:border-accent/60"
@@ -104,7 +104,7 @@ export function HomePage({ navigate }: HomePageProps) {
 
       <section className="app-panel">
         <h2 className="text-2xl font-bold text-app-primary">Каталог разделов</h2>
-        <div className="mt-5 grid gap-4 md:grid-cols-2">
+        <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
           {algorithmCatalog.map((category) => (
             <article className="rounded-2xl border border-app bg-surface p-5" key={category.id}>
               <div className="flex items-baseline justify-between gap-3">

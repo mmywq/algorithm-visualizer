@@ -18,7 +18,7 @@ export function TheoryPanel({ theory }: TheoryPanelProps) {
       </div>
 
       {isExpanded && (
-        <div className="mt-4 grid gap-5">
+        <div className="mt-4 grid grid-cols-1 gap-5">
           {theory.intro.length > 0 && (
             <div>
               <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Что это и как работает</h3>
@@ -51,7 +51,7 @@ export function TheoryPanel({ theory }: TheoryPanelProps) {
           {theory.terms.length > 0 && (
             <div>
               <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-accent">Термины и обозначения</h3>
-              <dl className="mt-2 grid gap-2">
+              <dl className="mt-2 grid grid-cols-1 gap-2">
                 {theory.terms.map((term) => (
                   <div className="rounded-xl border border-app bg-surface px-3 py-2" key={term.term}>
                     <dt className="text-sm font-semibold text-app-primary">{term.term}</dt>

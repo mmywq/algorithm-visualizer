@@ -41,7 +41,8 @@ export function ArrayVisualizer({ frame, title = 'Массив' }: ArrayVisualiz
           </>
         )}
 
-        <div className="flex items-stretch justify-center gap-2.5 overflow-x-auto" style={{ height: PLOT_HEIGHT_PX }}>
+        <div className="overflow-x-auto" style={{ height: PLOT_HEIGHT_PX }}>
+          <div className="mx-auto flex h-full w-max min-w-full items-stretch justify-center gap-2.5">
           {items.map((item, index) => (
             <ArrayBar
               baselineTopPx={baselineTopPx}
@@ -52,9 +53,10 @@ export function ArrayVisualizer({ frame, title = 'Массив' }: ArrayVisualiz
               scale={scale}
             />
           ))}
-          {items.length === 0 && (
-            <p className="self-center text-sm text-app-muted">Задайте входные данные, чтобы увидеть массив.</p>
-          )}
+            {items.length === 0 && (
+              <p className="self-center text-sm text-app-muted">Задайте входные данные, чтобы увидеть массив.</p>
+            )}
+          </div>
         </div>
       </div>
 

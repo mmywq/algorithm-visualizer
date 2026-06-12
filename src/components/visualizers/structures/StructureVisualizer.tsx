@@ -101,19 +101,19 @@ function StackArrayView({ frame }: { readonly frame: StructureAlgorithmFrame | n
           const isEmpty = cell.value === null;
           return (
             <div className="flex w-full items-center justify-center gap-3" key={cell.id}>
-              <span className="w-16 text-right font-mono text-xs text-slate-500">a[{index}]</span>
+              <span className="w-12 shrink-0 text-right font-mono text-xs text-slate-500">a[{index}]</span>
               <div
                 className={
                   isActive
-                    ? 'flex h-11 w-28 items-center justify-center rounded-lg border-2 border-cyan-300 bg-cyan-500/30 text-base font-bold text-cyan-100'
+                    ? 'flex h-11 w-24 shrink-0 items-center justify-center rounded-lg border-2 border-cyan-300 bg-cyan-500/30 text-base font-bold text-cyan-100'
                     : isEmpty
-                      ? 'flex h-11 w-28 items-center justify-center rounded-lg border border-dashed border-slate-700 bg-[#10182e] text-base text-slate-600'
-                      : 'flex h-11 w-28 items-center justify-center rounded-lg border border-slate-600 bg-[#1d2945] text-base font-bold text-slate-100'
+                      ? 'flex h-11 w-24 shrink-0 items-center justify-center rounded-lg border border-dashed border-slate-700 bg-[#10182e] text-base text-slate-600'
+                      : 'flex h-11 w-24 shrink-0 items-center justify-center rounded-lg border border-slate-600 bg-[#1d2945] text-base font-bold text-slate-100'
                 }
               >
                 {cell.value ?? '∅'}
               </div>
-              <span className="flex w-32 flex-wrap items-center gap-1">
+              <span className="flex w-24 flex-wrap items-center gap-1">
                 {pointerLabels.map((name) => (
                   <span className="rounded bg-violet-500 px-1.5 py-0.5 text-[10px] font-semibold text-white" key={name}>
                     ← {getPointerLabel(name)}
@@ -138,7 +138,7 @@ function ArrayCellsView({ frame }: { readonly frame: StructureAlgorithmFrame | n
 
   return (
     <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-700 bg-[#0a101f] p-4">
-      <div className="flex items-start justify-center gap-2">
+      <div className="mx-auto flex w-max min-w-full items-start justify-center gap-2">
         {cells.map((cell, index) => {
           const isActive = frame?.meta.activeIndex === index;
           const pointerLabels = Object.entries(pointers).filter(([, pointerIndex]) => pointerIndex === index).map(([name]) => name);
@@ -381,7 +381,7 @@ function BinomialForestView({ frame, trees }: { readonly frame: StructureAlgorit
 
   return (
     <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-700 bg-[#0a101f] p-4">
-      <div className="flex min-w-[720px] items-start gap-6">
+      <div className="flex w-max min-w-full items-start gap-6">
         {trees.length === 0 ? (
           <div className="rounded-2xl border border-slate-700 bg-[#1d2945] px-5 py-4 text-sm text-slate-400">
             Корневой список пуст: биномиальных деревьев пока нет.
