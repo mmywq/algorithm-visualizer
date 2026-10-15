@@ -10,7 +10,7 @@ export function ThemeController() {
     const apply = (): void => {
       const resolved = resolveTheme(theme);
       document.documentElement.dataset.theme = resolved;
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolved === 'dark' ? '#11131a' : '#f5f6f8');
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolved === 'dark' ? '#0f0b1c' : '#fbf7ff');
     };
     apply();
     if (theme !== 'system') return undefined;

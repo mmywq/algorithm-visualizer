@@ -27,6 +27,7 @@ export function usePageMeta({ title, description, noindex = false }: PageMeta): 
     setMeta('meta[property="og:title"]', 'property', 'og:title', fullTitle);
     setMeta('meta[property="og:description"]', 'property', 'og:description', text);
     setMeta('meta[property="og:url"]', 'property', 'og:url', `${getSiteOrigin()}${window.location.pathname}`);
+    setMeta('meta[property="og:image"]', 'property', 'og:image', `${getSiteOrigin()}/pwa-512.png`);
     setMeta('meta[name="robots"]', 'name', 'robots', noindex ? 'noindex' : 'index, follow');
 
     let canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');

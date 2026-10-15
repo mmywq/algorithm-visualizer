@@ -1,14 +1,14 @@
 /// <reference types="vitest" />
 import { fileURLToPath, URL } from 'node:url';
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { sitemapPlugin } from './scripts/sitemap-plugin';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
-    sitemapPlugin(),
+    sitemapPlugin(loadEnv(mode, process.cwd(), 'VITE_').VITE_SITE_URL),
     VitePWA({
       registerType: 'prompt',
       injectRegister: false,
@@ -18,8 +18,8 @@ export default defineConfig({
         short_name: 'Алгоскоп',
         description: 'Интерактивный тренажёр по алгоритмам и структурам данных: пошаговые анимации, теория и тесты.',
         lang: 'ru',
-        theme_color: '#2f62ff',
-        background_color: '#f5f6f8',
+        theme_color: '#0f0b1c',
+        background_color: '#0f0b1c',
         display: 'standalone',
         start_url: '/',
         scope: '/',
@@ -57,4 +57,4 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.test.ts'],
   },
-});
+}));

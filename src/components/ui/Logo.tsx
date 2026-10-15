@@ -2,7 +2,8 @@ import { CatHead } from '@/components/mascot/PixelCat';
 import { brand } from '@/config/brand';
 
 /** Знак — голова Кэша, пиксельного кота-маскота. */
-export function LogoMark({ size = 22, className }: { readonly size?: number; readonly className?: string }) {
+/** size — наибольшая высота; рисунок масштабируется в целое число раз (голова 19 пикселей в высоту). */
+export function LogoMark({ size = 38, className }: { readonly size?: number; readonly className?: string }) {
   return <CatHead className={className} size={size} />;
 }
 

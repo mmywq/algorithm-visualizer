@@ -40,7 +40,8 @@ export function StatsChips() {
         <span className="font-display text-[16px] leading-none text-ink-2">
           {xp} <span className="text-ink-3">XP</span>
         </span>
-        <span className="block h-2 w-24 overflow-hidden rounded-[3px] border border-line-strong bg-surface-2">
+        {/* при 1024–1279 px в шапке рядом меню, поэтому полоска чуть короче */}
+        <span className="block h-2 w-24 overflow-hidden rounded-[3px] border border-line-strong bg-surface-2 lg:w-20 xl:w-24">
           <motion.span
             animate={{ width: `${Math.max(4, level.progress * 100)}%` }}
             className="block h-full bg-green"

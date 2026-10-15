@@ -185,16 +185,17 @@ export function PixelHeart({ size = 16, className = '' }: { readonly size?: numb
 
 export function CatHead({ size = 32, className = '' }: { readonly size?: number; readonly className?: string | undefined }) {
   const src = useMemo(() => bitmapUrl('head', catHead.rows), []);
-  const width = (size / catHead.h) * catHead.w;
+  // целый масштаб, не больше запрошенного размера: при дробном пиксели рисунка получаются разной ширины
+  const scale = Math.max(1, Math.floor(size / catHead.h));
   return (
     <img
       alt=""
       aria-hidden="true"
       className={`pixelated inline-block shrink-0 select-none ${className}`}
       draggable={false}
-      height={size}
+      height={catHead.h * scale}
       src={src}
-      width={width}
+      width={catHead.w * scale}
     />
   );
 }

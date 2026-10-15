@@ -2,16 +2,16 @@ import type { Plugin } from 'vite';
 import { catalog } from '../src/content/catalog';
 
 /**
- * Генерирует sitemap.xml и robots.txt при сборке. Адрес сайта задаётся
- * переменной VITE_SITE_URL; без неё карта сайта не создаётся (адреса в ней
- * должны быть абсолютными), а robots.txt остаётся без ссылки на неё.
+ * Генерирует sitemap.xml и robots.txt при сборке. Адрес сайта — переменная VITE_SITE_URL
+ * (из окружения или файла .env, её передаёт vite.config); без неё карта сайта не создаётся
+ * (адреса в ней должны быть абсолютными), а robots.txt остаётся без ссылки на неё.
  */
-export function sitemapPlugin(): Plugin {
+export function sitemapPlugin(siteUrl = ''): Plugin {
   return {
     name: 'algoscope-sitemap',
     apply: 'build',
     generateBundle() {
-      const site = (process.env.VITE_SITE_URL ?? '').replace(/\/$/, '');
+      const site = siteUrl.replace(/\/$/, '');
       const staticPaths = ['/', '/catalog', '/for-schools'];
       if (site.length > 0) {
         const today = new Date().toISOString().slice(0, 10);
