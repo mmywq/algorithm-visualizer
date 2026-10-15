@@ -45,3 +45,6 @@ export const updatePassword = (password: string) => run(async () => (await clien
 
 export const signInWithProvider = (provider: 'google' | 'github', next?: string) =>
   run(async () => (await client()).auth.signInWithOAuth({ provider, options: { redirectTo: callbackUrl(next) } }));
+
+/** Удаляет учётную запись вместе с облачными данными, членством в классах и своими классами (функция delete_account в базе). */
+export const deleteAccount = () => run(async () => (await client()).rpc('delete_account'));

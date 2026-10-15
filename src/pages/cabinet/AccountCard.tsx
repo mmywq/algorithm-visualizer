@@ -1,9 +1,12 @@
-import { Cloud, CloudOff, LogIn, LogOut, RefreshCw } from 'lucide-react';
+import { Cloud, CloudOff, LogIn, LogOut, RefreshCw, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { PixelCat } from '@/components/mascot/PixelCat';
+import { Dialog } from '@/components/ui/Dialog';
 import { toast } from '@/components/ui/Toaster';
+import { deleteAccount } from '@/features/auth/authActions';
 import { useAuthStore } from '@/features/auth/authStore';
-import { flushSync, useSyncStore } from '@/features/sync/SyncController';
+import { cancelSync, flushSync, useSyncStore } from '@/features/sync/SyncController';
 import { useUserStore } from '@/stores/userStore';
 import { DataControls } from './DataControls';
 
@@ -24,6 +27,24 @@ export function AccountCard() {
   const sync = useSyncStore();
   const resetData = useUserStore((state) => state.resetData);
   const [leaving, setLeaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const removeAccount = async (): Promise<void> => {
+    setDeleting(true);
+    cancelSync();
+    const error = await deleteAccount();
+    if (error !== null) {
+      setDeleting(false);
+      toast.error('Не удалось удалить аккаунт', error);
+      return;
+    }
+    await signOut();
+    resetData();
+    setDeleting(false);
+    setConfirmDelete(false);
+    toast.info('Аккаунт удалён', 'Учётная запись и все облачные данные стёрты.');
+  };
 
   const leave = async (): Promise<void> => {
     setLeaving(true);
@@ -77,6 +98,44 @@ export function AccountCard() {
         </div>
       )}
       <DataControls />
+      {status === 'signed-in' && (
+        <button
+          className="btn btn-ghost btn-sm self-start text-red hover:bg-red/10 hover:text-red"
+          disabled={deleting}
+          onClick={() => setConfirmDelete(true)}
+          type="button"
+        >
+          <Trash2 size={16} strokeWidth={2.5} />
+          Удалить аккаунт
+        </button>
+      )}
+
+      <Dialog
+        footer={
+          <>
+            <button className="btn btn-secondary" disabled={deleting} onClick={() => setConfirmDelete(false)} type="button">
+              Отмена
+            </button>
+            <button className="btn btn-danger" disabled={deleting} onClick={() => void removeAccount()} type="button">
+              {deleting ? 'Удаляем…' : 'Удалить навсегда'}
+            </button>
+          </>
+        }
+        onClose={() => {
+          if (!deleting) setConfirmDelete(false);
+        }}
+        open={confirmDelete}
+        size="sm"
+        title="Удалить аккаунт?"
+      >
+        <div className="flex items-center gap-4">
+          <PixelCat pose="cry" size={78} />
+          <p className="text-[15px] font-semibold leading-6 text-ink-2">
+            Учётная запись, облачная копия прогресса, членство в классах и созданные вами классы будут удалены без возможности восстановления. Прогресс на этом
+            устройстве тоже очистится — перед удалением можно скачать копию.
+          </p>
+        </div>
+      </Dialog>
     </div>
   );
 }

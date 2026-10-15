@@ -49,6 +49,16 @@ const schedulePush = (data: UserData): void => {
   }, PUSH_DELAY_MS);
 };
 
+/** Отменяет отложенную отправку — перед удалением аккаунта, чтобы данные не ушли повторно. */
+export const cancelSync = (): void => {
+  if (pushTimer !== null) {
+    window.clearTimeout(pushTimer);
+    pushTimer = null;
+  }
+  pendingData = null;
+  activeUserId = null;
+};
+
 /** Немедленно отправляет отложенные изменения — перед выходом из аккаунта. */
 export const flushSync = async (): Promise<void> => {
   if (pushTimer !== null) {
