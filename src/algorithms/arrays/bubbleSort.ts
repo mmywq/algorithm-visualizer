@@ -112,15 +112,9 @@ export function* bubbleSort(values: readonly number[]): Generator<ArrayAlgorithm
       }
     }
 
-    yield createFrame(
-      step++,
-      'inspect',
-      items,
-      [end],
-      bubbleSortPseudocode.sortedSuffix,
-      `Элемент на позиции ${end} занял окончательное место.`,
-      { sortedIndices: getSortedSuffixIndices(items, end - 1) },
-    );
+    yield createFrame(step++, 'inspect', items, [end], bubbleSortPseudocode.sortedSuffix, `Элемент на позиции ${end} занял окончательное место.`, {
+      sortedIndices: getSortedSuffixIndices(items, end - 1),
+    });
 
     if (!swapped || isSorted(items)) {
       yield createFrame(
@@ -152,10 +146,7 @@ const getSortedSuffixIndices = (items: ArraySnapshot, currentEnd: number): reado
     return [];
   }
 
-  return items
-    .map((_, index) => index)
-    .filter((index) => index > currentEnd);
+  return items.map((_, index) => index).filter((index) => index > currentEnd);
 };
-
 
 const isSorted = (items: readonly ArrayItem[]): boolean => items.every((item, index) => index === 0 || items[index - 1]!.value <= item.value);

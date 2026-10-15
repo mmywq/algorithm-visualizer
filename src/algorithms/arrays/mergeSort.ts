@@ -48,7 +48,6 @@ export function* mergeSort(values: readonly number[]): Generator<ArrayAlgorithmF
     { auxiliaryArray: values },
   );
 
-
   if (isSorted(items, 0, items.length - 1)) {
     yield createFrame(
       step,
@@ -266,7 +265,6 @@ const getRangeIndices = (left: number, right: number): readonly number[] => {
 
   return Array.from({ length: right - left + 1 }, (_, offset) => left + offset);
 };
-
 
 const isSorted = (items: readonly ArrayItem[], left: number, right: number): boolean => {
   for (let i = left + 1; i <= right; i += 1) {

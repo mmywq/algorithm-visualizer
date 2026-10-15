@@ -1,17 +1,6 @@
-export type AlgorithmDomain = 'array' | 'graph' | 'tree';
+export type AlgorithmDomain = 'array' | 'graph' | 'tree' | 'list';
 
-export type AlgorithmPhase =
-  | 'initial'
-  | 'inspect'
-  | 'compare'
-  | 'swap'
-  | 'visit'
-  | 'enqueue'
-  | 'dequeue'
-  | 'push'
-  | 'pop'
-  | 'merge'
-  | 'complete';
+export type AlgorithmPhase = 'initial' | 'inspect' | 'compare' | 'swap' | 'visit' | 'enqueue' | 'dequeue' | 'push' | 'pop' | 'merge' | 'discard' | 'complete';
 
 export type AlgorithmStatus = 'idle' | 'running' | 'paused' | 'completed';
 
@@ -33,13 +22,8 @@ export interface AlgorithmFrame<TData, TMeta extends Record<string, unknown> = R
   readonly meta: TMeta;
 }
 
-export type AlgorithmGenerator<
-  TData,
-  TMeta extends Record<string, unknown> = Record<string, never>,
-> = Generator<AlgorithmFrame<TData, TMeta>, void, unknown>;
+export type AlgorithmGenerator<TData, TMeta extends Record<string, unknown> = Record<string, never>> = Generator<AlgorithmFrame<TData, TMeta>, void, unknown>;
 
-export type AlgorithmFactory<
-  TInput,
-  TData,
-  TMeta extends Record<string, unknown> = Record<string, never>,
-> = (input: TInput) => AlgorithmGenerator<TData, TMeta>;
+export type AlgorithmFactory<TInput, TData, TMeta extends Record<string, unknown> = Record<string, never>> = (
+  input: TInput,
+) => AlgorithmGenerator<TData, TMeta>;

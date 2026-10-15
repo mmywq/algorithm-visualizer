@@ -1,0 +1,4 @@
+dist
+node_modules
+src/components/mascot/catSprites.ts
+package-lock.json

@@ -1,11 +1,4 @@
-import type {
-  EdgeId,
-  GraphAlgorithmFrame,
-  GraphAlgorithmMeta,
-  GraphEdge,
-  GraphSnapshot,
-  NodeId,
-} from '@/types';
+import type { EdgeId, GraphAlgorithmFrame, GraphAlgorithmMeta, GraphEdge, GraphSnapshot, NodeId } from '@/types';
 
 export interface GraphTraversalInput {
   readonly graph: GraphSnapshot;
@@ -75,11 +68,9 @@ export const createGraphMeta = (
   return currentNodeId === undefined ? baseMeta : { ...baseMeta, currentNodeId };
 };
 
-export const getNeighbors = (adjacencyList: AdjacencyList, nodeId: NodeId): readonly AdjacencyEntry[] =>
-  adjacencyList.get(nodeId) ?? [];
+export const getNeighbors = (adjacencyList: AdjacencyList, nodeId: NodeId): readonly AdjacencyEntry[] => adjacencyList.get(nodeId) ?? [];
 
-export const hasNode = (graph: GraphSnapshot, nodeId: NodeId): boolean =>
-  graph.nodes.some((node) => node.id === nodeId);
+export const hasNode = (graph: GraphSnapshot, nodeId: NodeId): boolean => graph.nodes.some((node) => node.id === nodeId);
 
 const cloneGraphSnapshot = (graph: GraphSnapshot): GraphSnapshot => ({
   nodes: graph.nodes.map((node) => ({

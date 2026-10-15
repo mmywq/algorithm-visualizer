@@ -45,7 +45,15 @@ export function* countingSortDemo(inputValues?: readonly number[]): Generator<Ar
     const currentValue = items[i]!.value;
     const bucketIndex = currentValue + offset;
     count[bucketIndex] = (count[bucketIndex] ?? 0) + 1;
-    yield createFrame(step++, 'inspect', items, [i], `Просматривается значение ${currentValue}: счётчик count[${bucketIndex}] увеличивается до ${count[bucketIndex]}.`, { auxiliaryArray: [...count] }, 2);
+    yield createFrame(
+      step++,
+      'inspect',
+      items,
+      [i],
+      `Просматривается значение ${currentValue}: счётчик count[${bucketIndex}] увеличивается до ${count[bucketIndex]}.`,
+      { auxiliaryArray: [...count] },
+      2,
+    );
   }
 
   let write = 0;
@@ -54,18 +62,34 @@ export function* countingSortDemo(inputValues?: readonly number[]): Generator<Ar
     while ((count[bucketIndex] ?? 0) > 0) {
       items[write] = { ...items[write]!, value };
       count[bucketIndex] = (count[bucketIndex] ?? 0) - 1;
-      yield createFrame(step++, 'merge', items, [write], `Из count[${bucketIndex}] извлекается одно значение ${value} и записывается в позицию ${write}.`, {
-        auxiliaryArray: [...count],
-        sortedIndices: Array.from({ length: write + 1 }, (_, idx) => idx),
-      }, 4);
+      yield createFrame(
+        step++,
+        'merge',
+        items,
+        [write],
+        `Из count[${bucketIndex}] извлекается одно значение ${value} и записывается в позицию ${write}.`,
+        {
+          auxiliaryArray: [...count],
+          sortedIndices: Array.from({ length: write + 1 }, (_, idx) => idx),
+        },
+        4,
+      );
       write += 1;
     }
   }
 
-  yield createFrame(step, 'complete', items, [], `Сортировка подсчётом завершена. Итоговый массив: [${items.map((item) => item.value).join(', ')}]. Сравнений выполнено 0: порядок восстановлен по счётчикам ${count.length} значений диапазона.`, {
-    sortedIndices: items.map((_, idx) => idx),
-    auxiliaryArray: [...count],
-  }, 5);
+  yield createFrame(
+    step,
+    'complete',
+    items,
+    [],
+    `Сортировка подсчётом завершена. Итоговый массив: [${items.map((item) => item.value).join(', ')}]. Сравнений выполнено 0: порядок восстановлен по счётчикам ${count.length} значений диапазона.`,
+    {
+      sortedIndices: items.map((_, idx) => idx),
+      auxiliaryArray: [...count],
+    },
+    5,
+  );
 }
 
 export function* radixSortDemo(inputValues?: readonly number[]): Generator<ArrayAlgorithmFrame, void, unknown> {
@@ -92,17 +116,33 @@ export function* radixSortDemo(inputValues?: readonly number[]): Generator<Array
   const positiveSteps = sortedPositives.steps;
 
   for (const animationStep of negativeSteps) {
-    yield createFrame(step++, animationStep.phase === 'complete' ? 'inspect' : animationStep.phase, createArrayItems(animationStep.values), animationStep.activeIndices, `Отрицательные числа (по модулю): ${animationStep.message}`, {
-      ...(animationStep.auxiliaryArray === undefined ? {} : { auxiliaryArray: animationStep.auxiliaryArray }),
-      ...(animationStep.sortedIndices === undefined ? {} : { sortedIndices: animationStep.sortedIndices }),
-    }, 4);
+    yield createFrame(
+      step++,
+      animationStep.phase === 'complete' ? 'inspect' : animationStep.phase,
+      createArrayItems(animationStep.values),
+      animationStep.activeIndices,
+      `Отрицательные числа (по модулю): ${animationStep.message}`,
+      {
+        ...(animationStep.auxiliaryArray === undefined ? {} : { auxiliaryArray: animationStep.auxiliaryArray }),
+        ...(animationStep.sortedIndices === undefined ? {} : { sortedIndices: animationStep.sortedIndices }),
+      },
+      4,
+    );
   }
 
   for (const animationStep of positiveSteps) {
-    yield createFrame(step++, animationStep.phase === 'complete' ? 'inspect' : animationStep.phase, createArrayItems(animationStep.values), animationStep.activeIndices, `Неотрицательные числа: ${animationStep.message}`, {
-      ...(animationStep.auxiliaryArray === undefined ? {} : { auxiliaryArray: animationStep.auxiliaryArray }),
-      ...(animationStep.sortedIndices === undefined ? {} : { sortedIndices: animationStep.sortedIndices }),
-    }, animationStep.phase === 'merge' ? 2 : 1);
+    yield createFrame(
+      step++,
+      animationStep.phase === 'complete' ? 'inspect' : animationStep.phase,
+      createArrayItems(animationStep.values),
+      animationStep.activeIndices,
+      `Неотрицательные числа: ${animationStep.message}`,
+      {
+        ...(animationStep.auxiliaryArray === undefined ? {} : { auxiliaryArray: animationStep.auxiliaryArray }),
+        ...(animationStep.sortedIndices === undefined ? {} : { sortedIndices: animationStep.sortedIndices }),
+      },
+      animationStep.phase === 'merge' ? 2 : 1,
+    );
   }
 
   const finalValues = [...sortedNegatives.sorted.map((value) => -value).reverse(), ...sortedPositives.sorted];
@@ -136,7 +176,10 @@ export function* blockSortDemo(inputValues?: readonly number[]): Generator<Array
 
   const blocks: Array<Array<number>> = [];
   for (let blockStart = 0; blockStart < items.length; blockStart += blockSize) {
-    const blockValues = items.slice(blockStart, blockStart + blockSize).map((item) => item.value).sort((a, b) => a - b);
+    const blockValues = items
+      .slice(blockStart, blockStart + blockSize)
+      .map((item) => item.value)
+      .sort((a, b) => a - b);
     blocks.push([...blockValues]);
     for (let i = 0; i < blockValues.length; i += 1) {
       items[blockStart + i] = { ...items[blockStart + i]!, value: blockValues[i]! };
@@ -177,11 +220,18 @@ export function* blockSortDemo(inputValues?: readonly number[]): Generator<Array
     );
   }
 
-  yield createFrame(step, 'complete', items, [], `Блочная сортировка завершена. Из ${blocks.length} локально отсортированных блоков слиянием получен итоговый массив: [${mergedValues.join(', ')}].`, {
-    sortedIndices: items.map((_, idx) => idx),
-  }, 5);
+  yield createFrame(
+    step,
+    'complete',
+    items,
+    [],
+    `Блочная сортировка завершена. Из ${blocks.length} локально отсортированных блоков слиянием получен итоговый массив: [${mergedValues.join(', ')}].`,
+    {
+      sortedIndices: items.map((_, idx) => idx),
+    },
+    5,
+  );
 }
-
 
 interface RadixSimulationResult {
   readonly sorted: readonly number[];
@@ -297,7 +347,7 @@ export function* compareSortsDemo(inputValues?: readonly number[]): Generator<Ar
     );
   }
 
-  const bestByOperations = runs.reduce((best, current) => current.comparisons + current.writes < best.comparisons + best.writes ? current : best, runs[0]!);
+  const bestByOperations = runs.reduce((best, current) => (current.comparisons + current.writes < best.comparisons + best.writes ? current : best), runs[0]!);
   const finalRows = runs.map((result) => ({ ...toComparisonRow(result), isBest: result.name === bestByOperations.name }));
   yield createFrame(
     step,
@@ -305,12 +355,16 @@ export function* compareSortsDemo(inputValues?: readonly number[]): Generator<Ar
     createArrayItems(bestByOperations.sorted),
     [],
     `Сравнение 6 сортировок завершено. Все алгоритмы стартовали с [${baseValues.join(', ')}] и получили одинаковый результат [${bestByOperations.sorted.join(', ')}]. Меньше всего операций на этом наборе выполнила «${bestByOperations.name}»: ${bestByOperations.comparisons} сравнений и ${bestByOperations.writes} записей/обменов. Подробные выводы — под таблицей сравнения.`,
-    { sortedIndices: bestByOperations.sorted.map((_, index) => index), comparisonRows: finalRows, comparisonInsights: buildComparisonInsights(baseValues, runs, bestByOperations) },
+    {
+      sortedIndices: bestByOperations.sorted.map((_, index) => index),
+      comparisonRows: finalRows,
+      comparisonInsights: buildComparisonInsights(baseValues, runs, bestByOperations),
+    },
     5,
   );
 }
 
-const buildComparisonInsights = (
+export const buildComparisonInsights = (
   baseValues: readonly number[],
   runs: readonly SortSimulationResult[],
   best: SortSimulationResult,
@@ -355,7 +409,7 @@ const buildComparisonInsights = (
   return insights;
 };
 
-const toComparisonRow = (result: SortSimulationResult): SortComparisonRow => ({
+export const toComparisonRow = (result: SortSimulationResult): SortComparisonRow => ({
   name: result.name,
   idea: result.explanation,
   sortedValues: result.sorted,
@@ -363,7 +417,7 @@ const toComparisonRow = (result: SortSimulationResult): SortComparisonRow => ({
   writes: result.writes,
 });
 
-interface SortSimulationResult {
+export interface SortSimulationResult {
   readonly name: string;
   readonly sorted: readonly number[];
   readonly comparisons: number;
@@ -372,7 +426,7 @@ interface SortSimulationResult {
   readonly animationSteps: readonly SortAnimationStep[];
 }
 
-interface SortAnimationStep {
+export interface SortAnimationStep {
   readonly values: readonly number[];
   readonly phase: ArrayAlgorithmFrame['phase'];
   readonly activeIndices: readonly number[];
@@ -383,7 +437,7 @@ interface SortAnimationStep {
   readonly auxiliaryArray?: readonly number[];
 }
 
-const createSortComparisonRuns = (values: readonly number[]): readonly SortSimulationResult[] => [
+export const createSortComparisonRuns = (values: readonly number[]): readonly SortSimulationResult[] => [
   simulateBubbleSort(values),
   simulateSelectionSort(values),
   simulateInsertionSort(values),
@@ -442,7 +496,14 @@ const simulateBubbleSort = (values: readonly number[]): SortSimulationResult => 
     message: `массив полностью отсортирован: [${arr.join(', ')}].`,
   });
 
-  return { name: 'Пузырьковая сортировка', sorted: arr, comparisons, writes, explanation: 'сравнивает соседние элементы и меняет их местами, если левый больше правого.', animationSteps };
+  return {
+    name: 'Пузырьковая сортировка',
+    sorted: arr,
+    comparisons,
+    writes,
+    explanation: 'сравнивает соседние элементы и меняет их местами, если левый больше правого.',
+    animationSteps,
+  };
 };
 
 const simulateSelectionSort = (values: readonly number[]): SortSimulationResult => {
@@ -453,7 +514,13 @@ const simulateSelectionSort = (values: readonly number[]): SortSimulationResult 
 
   for (let i = 0; i < arr.length - 1; i += 1) {
     let minIndex = i;
-    animationSteps.push({ values: [...arr], phase: 'inspect', activeIndices: [i], sortedIndices: range(0, i), message: `ищем минимум для позиции ${i}; сначала минимумом считаем ${arr[i]}.` });
+    animationSteps.push({
+      values: [...arr],
+      phase: 'inspect',
+      activeIndices: [i],
+      sortedIndices: range(0, i),
+      message: `ищем минимум для позиции ${i}; сначала минимумом считаем ${arr[i]}.`,
+    });
     for (let j = i + 1; j < arr.length; j += 1) {
       comparisons += 1;
       animationSteps.push({
@@ -466,7 +533,13 @@ const simulateSelectionSort = (values: readonly number[]): SortSimulationResult 
       });
       if (arr[j]! < arr[minIndex]!) {
         minIndex = j;
-        animationSteps.push({ values: [...arr], phase: 'inspect', activeIndices: [minIndex], sortedIndices: range(0, i), message: `новый минимум найден: ${arr[minIndex]} на позиции ${minIndex}.` });
+        animationSteps.push({
+          values: [...arr],
+          phase: 'inspect',
+          activeIndices: [minIndex],
+          sortedIndices: range(0, i),
+          message: `новый минимум найден: ${arr[minIndex]} на позиции ${minIndex}.`,
+        });
       }
     }
     if (minIndex !== i) {
@@ -474,14 +547,40 @@ const simulateSelectionSort = (values: readonly number[]): SortSimulationResult 
       const min = arr[minIndex]!;
       [arr[i], arr[minIndex]] = [min, target];
       writes += 2;
-      animationSteps.push({ values: [...arr], phase: 'swap', activeIndices: [i, minIndex], swappingIndices: [i, minIndex], sortedIndices: range(0, i + 1), message: `переносим минимум ${min} в позицию ${i}; элемент ${target} уходит на место найденного минимума.` });
+      animationSteps.push({
+        values: [...arr],
+        phase: 'swap',
+        activeIndices: [i, minIndex],
+        swappingIndices: [i, minIndex],
+        sortedIndices: range(0, i + 1),
+        message: `переносим минимум ${min} в позицию ${i}; элемент ${target} уходит на место найденного минимума.`,
+      });
     } else {
-      animationSteps.push({ values: [...arr], phase: 'inspect', activeIndices: [i], sortedIndices: range(0, i + 1), message: `позиция ${i} уже содержит минимальный элемент оставшейся части: ${arr[i]}.` });
+      animationSteps.push({
+        values: [...arr],
+        phase: 'inspect',
+        activeIndices: [i],
+        sortedIndices: range(0, i + 1),
+        message: `позиция ${i} уже содержит минимальный элемент оставшейся части: ${arr[i]}.`,
+      });
     }
   }
 
-  animationSteps.push({ values: [...arr], phase: 'complete', activeIndices: [], sortedIndices: arr.map((_, index) => index), message: `массив полностью отсортирован: [${arr.join(', ')}].` });
-  return { name: 'Сортировка выбором', sorted: arr, comparisons, writes, explanation: 'на каждом шаге ищет минимум неотсортированной части и ставит его в первую свободную позицию.', animationSteps };
+  animationSteps.push({
+    values: [...arr],
+    phase: 'complete',
+    activeIndices: [],
+    sortedIndices: arr.map((_, index) => index),
+    message: `массив полностью отсортирован: [${arr.join(', ')}].`,
+  });
+  return {
+    name: 'Сортировка выбором',
+    sorted: arr,
+    comparisons,
+    writes,
+    explanation: 'на каждом шаге ищет минимум неотсортированной части и ставит его в первую свободную позицию.',
+    animationSteps,
+  };
 };
 
 const simulateInsertionSort = (values: readonly number[]): SortSimulationResult => {
@@ -490,27 +589,71 @@ const simulateInsertionSort = (values: readonly number[]): SortSimulationResult 
   let comparisons = 0;
   let writes = 0;
 
-  animationSteps.push({ values: [...arr], phase: 'initial', activeIndices: [0], sortedIndices: [0], message: `первый элемент ${arr[0]} считаем отсортированной частью длины 1.` });
+  animationSteps.push({
+    values: [...arr],
+    phase: 'initial',
+    activeIndices: [0],
+    sortedIndices: [0],
+    message: `первый элемент ${arr[0]} считаем отсортированной частью длины 1.`,
+  });
   for (let i = 1; i < arr.length; i += 1) {
     const key = arr[i]!;
     let j = i - 1;
-    animationSteps.push({ values: [...arr], phase: 'inspect', activeIndices: [i], sortedIndices: range(0, i), message: `берём ключ ${key} из позиции ${i} и вставляем его в отсортированную левую часть.` });
+    animationSteps.push({
+      values: [...arr],
+      phase: 'inspect',
+      activeIndices: [i],
+      sortedIndices: range(0, i),
+      message: `берём ключ ${key} из позиции ${i} и вставляем его в отсортированную левую часть.`,
+    });
     while (j >= 0) {
       comparisons += 1;
-      animationSteps.push({ values: [...arr], phase: 'compare', activeIndices: [j, j + 1], comparingIndices: [j, j + 1], sortedIndices: range(0, i), message: `сравниваем ${arr[j]} с ключом ${key}: если левый элемент больше, сдвигаем его вправо.` });
+      animationSteps.push({
+        values: [...arr],
+        phase: 'compare',
+        activeIndices: [j, j + 1],
+        comparingIndices: [j, j + 1],
+        sortedIndices: range(0, i),
+        message: `сравниваем ${arr[j]} с ключом ${key}: если левый элемент больше, сдвигаем его вправо.`,
+      });
       if (arr[j]! <= key) break;
       arr[j + 1] = arr[j]!;
       writes += 1;
-      animationSteps.push({ values: [...arr], phase: 'merge', activeIndices: [j + 1], sortedIndices: range(0, i + 1), message: `сдвигаем ${arr[j + 1]} вправо на позицию ${j + 1}, освобождая место для ключа ${key}.` });
+      animationSteps.push({
+        values: [...arr],
+        phase: 'merge',
+        activeIndices: [j + 1],
+        sortedIndices: range(0, i + 1),
+        message: `сдвигаем ${arr[j + 1]} вправо на позицию ${j + 1}, освобождая место для ключа ${key}.`,
+      });
       j -= 1;
     }
     arr[j + 1] = key;
     writes += 1;
-    animationSteps.push({ values: [...arr], phase: 'merge', activeIndices: [j + 1], sortedIndices: range(0, i + 1), message: `вставляем ключ ${key} в позицию ${j + 1}; левая часть до позиции ${i} снова отсортирована.` });
+    animationSteps.push({
+      values: [...arr],
+      phase: 'merge',
+      activeIndices: [j + 1],
+      sortedIndices: range(0, i + 1),
+      message: `вставляем ключ ${key} в позицию ${j + 1}; левая часть до позиции ${i} снова отсортирована.`,
+    });
   }
 
-  animationSteps.push({ values: [...arr], phase: 'complete', activeIndices: [], sortedIndices: arr.map((_, index) => index), message: `массив полностью отсортирован: [${arr.join(', ')}].` });
-  return { name: 'Сортировка вставками', sorted: arr, comparisons, writes, explanation: 'поддерживает слева отсортированную часть и вставляет очередной элемент на своё место.', animationSteps };
+  animationSteps.push({
+    values: [...arr],
+    phase: 'complete',
+    activeIndices: [],
+    sortedIndices: arr.map((_, index) => index),
+    message: `массив полностью отсортирован: [${arr.join(', ')}].`,
+  });
+  return {
+    name: 'Сортировка вставками',
+    sorted: arr,
+    comparisons,
+    writes,
+    explanation: 'поддерживает слева отсортированную часть и вставляет очередной элемент на своё место.',
+    animationSteps,
+  };
 };
 
 const simulateMergeSort = (values: readonly number[]): SortSimulationResult => {
@@ -529,32 +672,74 @@ const simulateMergeSort = (values: readonly number[]): SortSimulationResult => {
       let j = 0;
       let writeIndex = left;
 
-      animationSteps.push({ values: [...arr], phase: 'inspect', activeIndices: range(left, right), message: `делим текущий участок на [${leftPart.join(', ')}] и [${rightPart.join(', ')}], затем сливаем их в отсортированном порядке.` });
+      animationSteps.push({
+        values: [...arr],
+        phase: 'inspect',
+        activeIndices: range(left, right),
+        message: `делим текущий участок на [${leftPart.join(', ')}] и [${rightPart.join(', ')}], затем сливаем их в отсортированном порядке.`,
+      });
       while (i < leftPart.length && j < rightPart.length) {
         comparisons += 1;
-        animationSteps.push({ values: [...arr], phase: 'compare', activeIndices: [left + i, mid + j], comparingIndices: [left + i, mid + j], message: `сравниваем первые неиспользованные элементы частей: ${leftPart[i]} и ${rightPart[j]}.` });
+        animationSteps.push({
+          values: [...arr],
+          phase: 'compare',
+          activeIndices: [left + i, mid + j],
+          comparingIndices: [left + i, mid + j],
+          message: `сравниваем первые неиспользованные элементы частей: ${leftPart[i]} и ${rightPart[j]}.`,
+        });
         arr[writeIndex] = leftPart[i]! <= rightPart[j]! ? leftPart[i++]! : rightPart[j++]!;
         writes += 1;
-        animationSteps.push({ values: [...arr], phase: 'merge', activeIndices: [writeIndex], sortedIndices: range(left, writeIndex + 1), message: `записываем ${arr[writeIndex]} в позицию ${writeIndex}; слияние участка продолжается.` });
+        animationSteps.push({
+          values: [...arr],
+          phase: 'merge',
+          activeIndices: [writeIndex],
+          sortedIndices: range(left, writeIndex + 1),
+          message: `записываем ${arr[writeIndex]} в позицию ${writeIndex}; слияние участка продолжается.`,
+        });
         writeIndex += 1;
       }
       while (i < leftPart.length) {
         arr[writeIndex] = leftPart[i++]!;
         writes += 1;
-        animationSteps.push({ values: [...arr], phase: 'merge', activeIndices: [writeIndex], sortedIndices: range(left, writeIndex + 1), message: `дописываем оставшийся элемент левой части ${arr[writeIndex]} в позицию ${writeIndex}.` });
+        animationSteps.push({
+          values: [...arr],
+          phase: 'merge',
+          activeIndices: [writeIndex],
+          sortedIndices: range(left, writeIndex + 1),
+          message: `дописываем оставшийся элемент левой части ${arr[writeIndex]} в позицию ${writeIndex}.`,
+        });
         writeIndex += 1;
       }
       while (j < rightPart.length) {
         arr[writeIndex] = rightPart[j++]!;
         writes += 1;
-        animationSteps.push({ values: [...arr], phase: 'merge', activeIndices: [writeIndex], sortedIndices: range(left, writeIndex + 1), message: `дописываем оставшийся элемент правой части ${arr[writeIndex]} в позицию ${writeIndex}.` });
+        animationSteps.push({
+          values: [...arr],
+          phase: 'merge',
+          activeIndices: [writeIndex],
+          sortedIndices: range(left, writeIndex + 1),
+          message: `дописываем оставшийся элемент правой части ${arr[writeIndex]} в позицию ${writeIndex}.`,
+        });
         writeIndex += 1;
       }
     }
   }
 
-  animationSteps.push({ values: [...arr], phase: 'complete', activeIndices: [], sortedIndices: arr.map((_, index) => index), message: `массив полностью отсортирован: [${arr.join(', ')}].` });
-  return { name: 'Сортировка слиянием', sorted: arr, comparisons, writes, explanation: 'делит массив на малые части и затем устойчиво сливает уже отсортированные участки.', animationSteps };
+  animationSteps.push({
+    values: [...arr],
+    phase: 'complete',
+    activeIndices: [],
+    sortedIndices: arr.map((_, index) => index),
+    message: `массив полностью отсортирован: [${arr.join(', ')}].`,
+  });
+  return {
+    name: 'Сортировка слиянием',
+    sorted: arr,
+    comparisons,
+    writes,
+    explanation: 'делит массив на малые части и затем устойчиво сливает уже отсортированные участки.',
+    animationSteps,
+  };
 };
 
 const simulateCountingSort = (values: readonly number[]): SortSimulationResult => {
@@ -568,7 +753,13 @@ const simulateCountingSort = (values: readonly number[]): SortSimulationResult =
   for (let i = 0; i < values.length; i += 1) {
     const value = values[i]!;
     count[value - min] = (count[value - min] ?? 0) + 1;
-    animationSteps.push({ values: [...arr], phase: 'inspect', activeIndices: [i], auxiliaryArray: [...count], message: `значение ${value} увеличивает счётчик count[${value - min}], потому что минимальное значение набора равно ${min}.` });
+    animationSteps.push({
+      values: [...arr],
+      phase: 'inspect',
+      activeIndices: [i],
+      auxiliaryArray: [...count],
+      message: `значение ${value} увеличивает счётчик count[${value - min}], потому что минимальное значение набора равно ${min}.`,
+    });
   }
 
   let writeIndex = 0;
@@ -578,12 +769,26 @@ const simulateCountingSort = (values: readonly number[]): SortSimulationResult =
       arr[writeIndex] = value;
       count[bucket] = (count[bucket] ?? 0) - 1;
       writes += 1;
-      animationSteps.push({ values: [...arr], phase: 'merge', activeIndices: [writeIndex], sortedIndices: range(0, writeIndex + 1), auxiliaryArray: [...count], message: `по счётчику восстанавливаем значение ${value} и записываем его в позицию ${writeIndex}.` });
+      animationSteps.push({
+        values: [...arr],
+        phase: 'merge',
+        activeIndices: [writeIndex],
+        sortedIndices: range(0, writeIndex + 1),
+        auxiliaryArray: [...count],
+        message: `по счётчику восстанавливаем значение ${value} и записываем его в позицию ${writeIndex}.`,
+      });
       writeIndex += 1;
     }
   }
 
-  return { name: 'Сортировка подсчётом', sorted: arr, comparisons: 0, writes, explanation: `не сравнивает элементы, а считает частоты значений в диапазоне от ${min} до ${max}; хорошо работает, когда диапазон ключей небольшой.`, animationSteps };
+  return {
+    name: 'Сортировка подсчётом',
+    sorted: arr,
+    comparisons: 0,
+    writes,
+    explanation: `не сравнивает элементы, а считает частоты значений в диапазоне от ${min} до ${max}; хорошо работает, когда диапазон ключей небольшой.`,
+    animationSteps,
+  };
 };
 
 const simulateQuickSort = (values: readonly number[]): SortSimulationResult => {
@@ -595,17 +800,34 @@ const simulateQuickSort = (values: readonly number[]): SortSimulationResult => {
   const partition = (left: number, right: number): number => {
     const pivot = arr[right]!;
     let storeIndex = left;
-    animationSteps.push({ values: [...arr], phase: 'inspect', activeIndices: [right], message: `выбираем опорный элемент pivot = ${pivot} на позиции ${right}; меньшие значения будем переносить левее него.` });
+    animationSteps.push({
+      values: [...arr],
+      phase: 'inspect',
+      activeIndices: [right],
+      message: `выбираем опорный элемент pivot = ${pivot} на позиции ${right}; меньшие значения будем переносить левее него.`,
+    });
     for (let i = left; i < right; i += 1) {
       comparisons += 1;
-      animationSteps.push({ values: [...arr], phase: 'compare', activeIndices: [i, right], comparingIndices: [i, right], message: `сравниваем ${arr[i]} с pivot ${pivot}. Если значение меньше или равно pivot, оно должно оказаться в левой части.` });
+      animationSteps.push({
+        values: [...arr],
+        phase: 'compare',
+        activeIndices: [i, right],
+        comparingIndices: [i, right],
+        message: `сравниваем ${arr[i]} с pivot ${pivot}. Если значение меньше или равно pivot, оно должно оказаться в левой части.`,
+      });
       if (arr[i]! <= pivot) {
         if (i !== storeIndex) {
           const current = arr[i]!;
           const boundary = arr[storeIndex]!;
           [arr[i], arr[storeIndex]] = [boundary, current];
           writes += 2;
-          animationSteps.push({ values: [...arr], phase: 'swap', activeIndices: [i, storeIndex], swappingIndices: [i, storeIndex], message: `${current} переносим в левую часть, меняя с ${boundary}. Граница меньших элементов сдвигается вправо.` });
+          animationSteps.push({
+            values: [...arr],
+            phase: 'swap',
+            activeIndices: [i, storeIndex],
+            swappingIndices: [i, storeIndex],
+            message: `${current} переносим в левую часть, меняя с ${boundary}. Граница меньших элементов сдвигается вправо.`,
+          });
         }
         storeIndex += 1;
       }
@@ -614,7 +836,13 @@ const simulateQuickSort = (values: readonly number[]): SortSimulationResult => {
       const boundary = arr[storeIndex]!;
       [arr[storeIndex], arr[right]] = [pivot, boundary];
       writes += 2;
-      animationSteps.push({ values: [...arr], phase: 'swap', activeIndices: [storeIndex, right], swappingIndices: [storeIndex, right], message: `ставим pivot ${pivot} на окончательную позицию ${storeIndex}; слева элементы не больше pivot, справа — больше.` });
+      animationSteps.push({
+        values: [...arr],
+        phase: 'swap',
+        activeIndices: [storeIndex, right],
+        swappingIndices: [storeIndex, right],
+        message: `ставим pivot ${pivot} на окончательную позицию ${storeIndex}; слева элементы не больше pivot, справа — больше.`,
+      });
     }
     return storeIndex;
   };
@@ -627,9 +855,21 @@ const simulateQuickSort = (values: readonly number[]): SortSimulationResult => {
   };
 
   sort(0, arr.length - 1);
-  animationSteps.push({ values: [...arr], phase: 'complete', activeIndices: [], sortedIndices: arr.map((_, index) => index), message: `массив полностью отсортирован: [${arr.join(', ')}].` });
-  return { name: 'Быстрая сортировка', sorted: arr, comparisons, writes, explanation: 'выбирает опорный элемент, разделяет участок на элементы не больше и больше опорного, затем рекурсивно сортирует части.', animationSteps };
+  animationSteps.push({
+    values: [...arr],
+    phase: 'complete',
+    activeIndices: [],
+    sortedIndices: arr.map((_, index) => index),
+    message: `массив полностью отсортирован: [${arr.join(', ')}].`,
+  });
+  return {
+    name: 'Быстрая сортировка',
+    sorted: arr,
+    comparisons,
+    writes,
+    explanation: 'выбирает опорный элемент, разделяет участок на элементы не больше и больше опорного, затем рекурсивно сортирует части.',
+    animationSteps,
+  };
 };
 
-const range = (start: number, end: number): readonly number[] =>
-  Array.from({ length: Math.max(0, end - start) }, (_, index) => start + index);
+const range = (start: number, end: number): readonly number[] => Array.from({ length: Math.max(0, end - start) }, (_, index) => start + index);

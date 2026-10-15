@@ -26,5 +26,4 @@ export interface StructureAlgorithmMeta extends Record<string, unknown> {
   readonly key?: number;
 }
 
-
 export type StructureAlgorithmFrame = AlgorithmFrame<StructureSnapshot, StructureAlgorithmMeta>;

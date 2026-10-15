@@ -16,10 +16,7 @@ interface MutablePoint {
  * затем итерации сил (отталкивание вершин, притяжение по рёбрам), в конце
  * результат масштабируется так, чтобы граф заполнял холст с отступами.
  */
-export const layoutGraph = (
-  nodes: GraphSnapshot['nodes'],
-  edges: readonly GraphEdge[] = [],
-): GraphNode[] => {
+export const layoutGraph = (nodes: GraphSnapshot['nodes'], edges: readonly GraphEdge[] = []): GraphNode[] => {
   if (nodes.length === 0) {
     return [];
   }
@@ -60,7 +57,7 @@ export const layoutGraph = (
           dy = (Math.random() - 0.5) * 2;
         }
         const distance = Math.max(24, Math.hypot(dx, dy));
-        const repulsion = (IDEAL_EDGE_LENGTH * IDEAL_EDGE_LENGTH) / distance / distance * 6 * temperature;
+        const repulsion = ((IDEAL_EDGE_LENGTH * IDEAL_EDGE_LENGTH) / distance / distance) * 6 * temperature;
         const fx = (dx / distance) * repulsion;
         const fy = (dy / distance) * repulsion;
         a.x -= fx;
@@ -100,10 +97,7 @@ export const layoutGraph = (
 
   const spanX = Math.max(1, maxX - minX);
   const spanY = Math.max(1, maxY - minY);
-  const scale = Math.min(
-    (GRAPH_CANVAS_WIDTH - CANVAS_PADDING * 2) / spanX,
-    (GRAPH_CANVAS_HEIGHT - CANVAS_PADDING * 2) / spanY,
-  );
+  const scale = Math.min((GRAPH_CANVAS_WIDTH - CANVAS_PADDING * 2) / spanX, (GRAPH_CANVAS_HEIGHT - CANVAS_PADDING * 2) / spanY);
   const offsetX = (GRAPH_CANVAS_WIDTH - spanX * scale) / 2;
   const offsetY = (GRAPH_CANVAS_HEIGHT - spanY * scale) / 2;
 

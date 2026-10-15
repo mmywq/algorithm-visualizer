@@ -7,7 +7,7 @@ interface MutNode {
   right: MutNode | null;
 }
 
-const MAX_CELLS = 31;
+const MAX_CELLS = 63;
 
 const heightOf = (node: MutNode | null): number => node?.height ?? 0;
 
@@ -191,7 +191,14 @@ export function* avlScenario(values: readonly number[]): Generator<StructureAlgo
           );
           const newRoot = rotateRight(current);
           attach(current, newRoot);
-          yield createFrame(step++, root, `Правый поворот выполнен: корнем поддерева стал узел ${newRoot.value}, узел ${current.value} опустился вправо. Баланс восстановлен.`, 4, newRoot.value, 'swap');
+          yield createFrame(
+            step++,
+            root,
+            `Правый поворот выполнен: корнем поддерева стал узел ${newRoot.value}, узел ${current.value} опустился вправо. Баланс восстановлен.`,
+            4,
+            newRoot.value,
+            'swap',
+          );
         } else {
           yield createFrame(
             step++,
@@ -201,10 +208,24 @@ export function* avlScenario(values: readonly number[]): Generator<StructureAlgo
             current.value,
           );
           current.left = rotateLeft(leftChild);
-          yield createFrame(step++, root, `Первый поворот выполнен: в левом поддереве поднялся узел ${current.left.value}. Перекос стал «прямым» — остаётся правый поворот вокруг ${current.value}.`, 4, current.left.value, 'swap');
+          yield createFrame(
+            step++,
+            root,
+            `Первый поворот выполнен: в левом поддереве поднялся узел ${current.left.value}. Перекос стал «прямым» — остаётся правый поворот вокруг ${current.value}.`,
+            4,
+            current.left.value,
+            'swap',
+          );
           const newRoot = rotateRight(current);
           attach(current, newRoot);
-          yield createFrame(step++, root, `Второй поворот выполнен: корнем поддерева стал узел ${newRoot.value}. Баланс восстановлен.`, 4, newRoot.value, 'swap');
+          yield createFrame(
+            step++,
+            root,
+            `Второй поворот выполнен: корнем поддерева стал узел ${newRoot.value}. Баланс восстановлен.`,
+            4,
+            newRoot.value,
+            'swap',
+          );
         }
       } else {
         const rightChild = current.right!;
@@ -218,7 +239,14 @@ export function* avlScenario(values: readonly number[]): Generator<StructureAlgo
           );
           const newRoot = rotateLeft(current);
           attach(current, newRoot);
-          yield createFrame(step++, root, `Левый поворот выполнен: корнем поддерева стал узел ${newRoot.value}, узел ${current.value} опустился влево. Баланс восстановлен.`, 4, newRoot.value, 'swap');
+          yield createFrame(
+            step++,
+            root,
+            `Левый поворот выполнен: корнем поддерева стал узел ${newRoot.value}, узел ${current.value} опустился влево. Баланс восстановлен.`,
+            4,
+            newRoot.value,
+            'swap',
+          );
         } else {
           yield createFrame(
             step++,
@@ -228,10 +256,24 @@ export function* avlScenario(values: readonly number[]): Generator<StructureAlgo
             current.value,
           );
           current.right = rotateRight(rightChild);
-          yield createFrame(step++, root, `Первый поворот выполнен: в правом поддереве поднялся узел ${current.right.value}. Перекос стал «прямым» — остаётся левый поворот вокруг ${current.value}.`, 4, current.right.value, 'swap');
+          yield createFrame(
+            step++,
+            root,
+            `Первый поворот выполнен: в правом поддереве поднялся узел ${current.right.value}. Перекос стал «прямым» — остаётся левый поворот вокруг ${current.value}.`,
+            4,
+            current.right.value,
+            'swap',
+          );
           const newRoot = rotateLeft(current);
           attach(current, newRoot);
-          yield createFrame(step++, root, `Второй поворот выполнен: корнем поддерева стал узел ${newRoot.value}. Баланс восстановлен.`, 4, newRoot.value, 'swap');
+          yield createFrame(
+            step++,
+            root,
+            `Второй поворот выполнен: корнем поддерева стал узел ${newRoot.value}. Баланс восстановлен.`,
+            4,
+            newRoot.value,
+            'swap',
+          );
         }
       }
 

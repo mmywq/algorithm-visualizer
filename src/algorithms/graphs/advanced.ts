@@ -56,7 +56,10 @@ export function* connectedComponents(graph: GraphSnapshot): Generator<GraphAlgor
   });
 
   if (graph.nodes.length === 0) {
-    yield createGraphFrame(step, 'complete', graph, [], 4, 'Граф пуст: добавьте вершины, чтобы искать компоненты связности.', { ...createGraphMeta('', visited, [], traversed), ...liveMeta() });
+    yield createGraphFrame(step, 'complete', graph, [], 4, 'Граф пуст: добавьте вершины, чтобы искать компоненты связности.', {
+      ...createGraphMeta('', visited, [], traversed),
+      ...liveMeta(),
+    });
     return;
   }
 
@@ -83,15 +86,10 @@ export function* connectedComponents(graph: GraphSnapshot): Generator<GraphAlgor
       if (current === undefined) continue;
 
       if (visited.has(current)) {
-        yield createGraphFrame(
-          step++,
-          'inspect',
-          graph,
-          [current],
-          2,
-          `Вершина ${current} уже включена в компоненту, второй раз её не обрабатываем.`,
-          { ...createGraphMeta(node.id, visited, stack, traversed, current), ...liveMeta() },
-        );
+        yield createGraphFrame(step++, 'inspect', graph, [current], 2, `Вершина ${current} уже включена в компоненту, второй раз её не обрабатываем.`, {
+          ...createGraphMeta(node.id, visited, stack, traversed, current),
+          ...liveMeta(),
+        });
         continue;
       }
 
@@ -161,15 +159,19 @@ export function* dijkstra(graph: GraphSnapshot, startNodeId: NodeId): Generator<
     return path.join(' → ');
   };
 
-  const distanceRows = () => graph.nodes.map((node) => ({
-    nodeId: node.id,
-    distance: formatDistance(dist.get(node.id) ?? Number.POSITIVE_INFINITY),
-    path: buildPath(node.id),
-    isFinal: visited.has(node.id),
-  }));
+  const distanceRows = () =>
+    graph.nodes.map((node) => ({
+      nodeId: node.id,
+      distance: formatDistance(dist.get(node.id) ?? Number.POSITIVE_INFINITY),
+      path: buildPath(node.id),
+      isFinal: visited.has(node.id),
+    }));
 
   if (!hasNode(graph, startNodeId)) {
-    yield createGraphFrame(step, 'complete', graph, [], 5, `Алгоритм не запущен: стартовая вершина ${startNodeId} отсутствует в графе.`, { ...createGraphMeta(startNodeId, visited, [], traversed), distanceRows: distanceRows() });
+    yield createGraphFrame(step, 'complete', graph, [], 5, `Алгоритм не запущен: стартовая вершина ${startNodeId} отсутствует в графе.`, {
+      ...createGraphMeta(startNodeId, visited, [], traversed),
+      distanceRows: distanceRows(),
+    });
     return;
   }
 
@@ -190,10 +192,7 @@ export function* dijkstra(graph: GraphSnapshot, startNodeId: NodeId): Generator<
     const candidates = graph.nodes.filter((node) => !visited.has(node.id));
     const seed = candidates[0];
     if (seed === undefined) break;
-    const currentNode = candidates.reduce(
-      (best, node) => (dist.get(node.id)! < dist.get(best.id)! ? node : best),
-      seed,
-    );
+    const currentNode = candidates.reduce((best, node) => (dist.get(node.id)! < dist.get(best.id)! ? node : best), seed);
 
     const currentDistance = dist.get(currentNode.id)!;
     if (currentDistance === Number.POSITIVE_INFINITY) {
@@ -217,7 +216,16 @@ export function* dijkstra(graph: GraphSnapshot, startNodeId: NodeId): Generator<
       [currentNode.id],
       2,
       `Среди необработанных вершин минимальная оценка у ${currentNode.id}: ${currentDistance}. Фиксируем её — это расстояние окончательное.`,
-      { ...createGraphMeta(startNodeId, visited, frontier.filter((id) => !visited.has(id)), traversed, currentNode.id), distanceRows: distanceRows() },
+      {
+        ...createGraphMeta(
+          startNodeId,
+          visited,
+          frontier.filter((id) => !visited.has(id)),
+          traversed,
+          currentNode.id,
+        ),
+        distanceRows: distanceRows(),
+      },
     );
 
     for (const neighbor of getNeighbors(adjacency, currentNode.id)) {
@@ -234,7 +242,16 @@ export function* dijkstra(graph: GraphSnapshot, startNodeId: NodeId): Generator<
         [currentNode.id, neighbor.nodeId, neighbor.edgeId],
         3,
         `Релаксация ребра ${currentNode.id}—${neighbor.nodeId}: путь через ${currentNode.id} стоит ${currentDistance} + ${weight} = ${alt}. Текущая оценка вершины ${neighbor.nodeId}: ${formatDistance(previous)}.`,
-        { ...createGraphMeta(startNodeId, visited, frontier.filter((id) => !visited.has(id)), traversed, currentNode.id), distanceRows: distanceRows() },
+        {
+          ...createGraphMeta(
+            startNodeId,
+            visited,
+            frontier.filter((id) => !visited.has(id)),
+            traversed,
+            currentNode.id,
+          ),
+          distanceRows: distanceRows(),
+        },
       );
 
       if (alt < previous) {
@@ -253,7 +270,16 @@ export function* dijkstra(graph: GraphSnapshot, startNodeId: NodeId): Generator<
           [neighbor.nodeId, neighbor.edgeId],
           4,
           `${alt} < ${formatDistance(previous)} — путь стал короче. Обновляем оценку вершины ${neighbor.nodeId} на ${alt}; лучший вход в неё теперь по ребру ${currentNode.id}—${neighbor.nodeId}.`,
-          { ...createGraphMeta(startNodeId, visited, frontier.filter((id) => !visited.has(id)), traversed, neighbor.nodeId), distanceRows: distanceRows() },
+          {
+            ...createGraphMeta(
+              startNodeId,
+              visited,
+              frontier.filter((id) => !visited.has(id)),
+              traversed,
+              neighbor.nodeId,
+            ),
+            distanceRows: distanceRows(),
+          },
         );
       }
     }
@@ -263,9 +289,7 @@ export function* dijkstra(graph: GraphSnapshot, startNodeId: NodeId): Generator<
     .filter((node) => node.id !== startNodeId)
     .map((node) => {
       const distance = formatDistance(dist.get(node.id)!);
-      return Number.isFinite(dist.get(node.id)!)
-        ? `до ${node.id}: расстояние ${distance}, путь ${buildPath(node.id)}`
-        : `до ${node.id}: пути не существует`;
+      return Number.isFinite(dist.get(node.id)!) ? `до ${node.id}: расстояние ${distance}, путь ${buildPath(node.id)}` : `до ${node.id}: пути не существует`;
     });
   yield createGraphFrame(
     step,
@@ -310,7 +334,10 @@ export function* mstKruskal(graph: GraphSnapshot): Generator<GraphAlgorithmFrame
   };
 
   if (graph.nodes.length === 0) {
-    yield createGraphFrame(step, 'complete', graph, [], 4, 'Граф пуст: добавьте вершины и рёбра, чтобы строить остовное дерево.', { ...createGraphMeta('', visited, [], traversed), ...liveMeta() });
+    yield createGraphFrame(step, 'complete', graph, [], 4, 'Граф пуст: добавьте вершины и рёбра, чтобы строить остовное дерево.', {
+      ...createGraphMeta('', visited, [], traversed),
+      ...liveMeta(),
+    });
     return;
   }
 
@@ -365,9 +392,7 @@ export function* mstKruskal(graph: GraphSnapshot): Generator<GraphAlgorithmFrame
   }
 
   const isComplete = traversed.size === graph.nodes.length - 1;
-  const chosenEdges = graph.edges
-    .filter((edge) => traversed.has(edge.id))
-    .map((edge) => `${edge.source}—${edge.target} (вес ${edge.weight ?? 1})`);
+  const chosenEdges = graph.edges.filter((edge) => traversed.has(edge.id)).map((edge) => `${edge.source}—${edge.target} (вес ${edge.weight ?? 1})`);
   yield createGraphFrame(
     step,
     'complete',

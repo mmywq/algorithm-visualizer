@@ -57,21 +57,15 @@ export function MergeDivideMap({ values }: MergeDivideMapProps) {
   });
 
   return (
-    <section className="app-panel">
-      <h2 className="text-xl font-semibold text-app-primary">Карта алгоритма: деление массива</h2>
-      <p className="mt-2 text-sm leading-6 text-app-muted">
-        Схема показывает, что произойдёт с данными до запуска анимации: массив делится пополам, пока в каждой части не останется один элемент.
-        Затем те же части сливаются в обратном порядке — снизу вверх; именно слияние и демонстрируют шаги анимации.
+    <section className="card p-5">
+      <h2 className="text-[17px] font-black text-ink">Карта алгоритма: деление массива</h2>
+      <p className="mt-1.5 text-[15px] font-semibold leading-6 text-ink-2">
+        Схема показывает, что произойдёт с данными до запуска анимации: массив делится пополам, пока в каждой части не останется один элемент. Затем те же части
+        сливаются в обратном порядке — снизу вверх; именно слияние и демонстрируют шаги анимации.
         {values.length > MAX_ELEMENTS ? ` На схеме показаны первые ${MAX_ELEMENTS} элементов массива.` : ''}
       </p>
       <div className="mt-4 overflow-x-auto">
-        <svg
-          className="mx-auto block"
-          height={svgHeight}
-          role="img"
-          viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-          width={Math.min(svgWidth, 760)}
-        >
+        <svg className="mx-auto block" height={svgHeight} role="img" viewBox={`0 0 ${svgWidth} ${svgHeight}`} width={Math.min(svgWidth, 760)}>
           {levels.map((level, levelIndex) =>
             level.map((group, groupIndex) => {
               const position = positions[levelIndex]![groupIndex]!;
@@ -80,7 +74,7 @@ export function MergeDivideMap({ values }: MergeDivideMapProps) {
                 <g key={`${levelIndex}-${groupIndex}`}>
                   {parentPosition !== undefined && (
                     <line
-                      stroke="#64748b"
+                      stroke="rgb(var(--viz-edge))"
                       strokeWidth={1.5}
                       x1={parentPosition.x + parentPosition.width / 2}
                       x2={position.x + position.width / 2}
@@ -91,19 +85,20 @@ export function MergeDivideMap({ values }: MergeDivideMapProps) {
                   {group.values.map((value, cellIndex) => (
                     <g key={cellIndex}>
                       <rect
-                        fill={group.values.length === 1 ? 'rgba(16, 185, 129, 0.18)' : 'rgba(139, 92, 246, 0.12)'}
+                        rx={6}
+                        fill={group.values.length === 1 ? 'rgb(var(--c-green) / 0.16)' : 'rgb(var(--c-orange) / 0.12)'}
                         height={CELL_HEIGHT}
-                        stroke={group.values.length === 1 ? '#34d399' : '#8b5cf6'}
-                        strokeWidth={1}
+                        stroke={group.values.length === 1 ? 'rgb(var(--c-green))' : 'rgb(var(--c-orange))'}
+                        strokeWidth={2}
                         width={CELL_WIDTH}
                         x={position.x + cellIndex * CELL_WIDTH}
                         y={position.y}
                       />
                       <text
                         dominantBaseline="central"
-                        fill="var(--app-primary)"
+                        fill="rgb(var(--viz-node-ink))"
                         fontSize={12}
-                        fontWeight={700}
+                        fontWeight={800}
                         textAnchor="middle"
                         x={position.x + cellIndex * CELL_WIDTH + CELL_WIDTH / 2}
                         y={position.y + CELL_HEIGHT / 2 + 1}

@@ -34,10 +34,7 @@ const createFrame = (
   },
 });
 
-export function* hashChainingScenario(
-  values: readonly number[],
-  bucketCount = DEFAULT_BUCKET_COUNT,
-): Generator<StructureAlgorithmFrame, void, unknown> {
+export function* hashChainingScenario(values: readonly number[], bucketCount = DEFAULT_BUCKET_COUNT): Generator<StructureAlgorithmFrame, void, unknown> {
   const buckets: number[][] = Array.from({ length: bucketCount }, () => []);
   let step = 0;
   let collisions = 0;
@@ -87,7 +84,10 @@ export function* hashChainingScenario(
     );
   }
 
-  const longestChain = buckets.reduce((best, bucket, index) => (bucket.length > best.length ? { length: bucket.length, index } : best), { length: 0, index: 0 });
+  const longestChain = buckets.reduce((best, bucket, index) => (bucket.length > best.length ? { length: bucket.length, index } : best), {
+    length: 0,
+    index: 0,
+  });
   const usedBuckets = buckets.filter((bucket) => bucket.length > 0).length;
   yield createFrame(
     step,
@@ -112,24 +112,64 @@ export function* hashChainingSearchScenario(
   yield createFrame(step++, 'initial', buckets, `Таблица построена по текущему набору значений. Ищем ключ ${target}.`, 1, undefined, target);
 
   const bucketIndex = positiveModulo(target, bucketCount);
-  yield createFrame(step++, 'inspect', buckets, `Вычисляем индекс корзины: ${target} mod ${bucketCount} = ${bucketIndex}. Остальные ${bucketCount - 1} корзин при поиске не просматриваются.`, 2, bucketIndex, target);
+  yield createFrame(
+    step++,
+    'inspect',
+    buckets,
+    `Вычисляем индекс корзины: ${target} mod ${bucketCount} = ${bucketIndex}. Остальные ${bucketCount - 1} корзин при поиске не просматриваются.`,
+    2,
+    bucketIndex,
+    target,
+  );
 
   const chain = buckets[bucketIndex]!;
   if (chain.length === 0) {
-    yield createFrame(step, 'complete', buckets, `Поиск завершён: корзина ${bucketIndex} пуста, значит ключа ${target} в таблице нет. Выполнено сравнений: 0 — пустая корзина даёт ответ сразу.`, 5, bucketIndex, target);
+    yield createFrame(
+      step,
+      'complete',
+      buckets,
+      `Поиск завершён: корзина ${bucketIndex} пуста, значит ключа ${target} в таблице нет. Выполнено сравнений: 0 — пустая корзина даёт ответ сразу.`,
+      5,
+      bucketIndex,
+      target,
+    );
     return;
   }
 
   for (let position = 0; position < chain.length; position += 1) {
     const candidate = chain[position]!;
-    yield createFrame(step++, 'compare', buckets, `Сравнение №${position + 1}: элемент цепочки ${candidate} ${candidate === target ? 'совпадает с искомым ключом' : `не равен ${target}, переходим к следующему элементу цепочки`}.`, 3, bucketIndex, target);
+    yield createFrame(
+      step++,
+      'compare',
+      buckets,
+      `Сравнение №${position + 1}: элемент цепочки ${candidate} ${candidate === target ? 'совпадает с искомым ключом' : `не равен ${target}, переходим к следующему элементу цепочки`}.`,
+      3,
+      bucketIndex,
+      target,
+    );
     if (candidate === target) {
-      yield createFrame(step, 'complete', buckets, `Поиск завершён: ключ ${target} найден в корзине ${bucketIndex} на позиции ${position + 1} цепочки. Выполнено сравнений: ${position + 1}. Чем длиннее цепочка, тем дороже поиск — поэтому важна равномерная хеш-функция.`, 5, bucketIndex, target);
+      yield createFrame(
+        step,
+        'complete',
+        buckets,
+        `Поиск завершён: ключ ${target} найден в корзине ${bucketIndex} на позиции ${position + 1} цепочки. Выполнено сравнений: ${position + 1}. Чем длиннее цепочка, тем дороже поиск — поэтому важна равномерная хеш-функция.`,
+        5,
+        bucketIndex,
+        target,
+      );
       return;
     }
   }
 
-  yield createFrame(step, 'complete', buckets, `Поиск завершён: цепочка корзины ${bucketIndex} просмотрена целиком (${chain.length} сравнений), ключ ${target} не найден. В других корзинах его быть не может: хеш-функция всегда отправляет ${target} в корзину ${bucketIndex}.`, 5, bucketIndex, target);
+  yield createFrame(
+    step,
+    'complete',
+    buckets,
+    `Поиск завершён: цепочка корзины ${bucketIndex} просмотрена целиком (${chain.length} сравнений), ключ ${target} не найден. В других корзинах его быть не может: хеш-функция всегда отправляет ${target} в корзину ${bucketIndex}.`,
+    5,
+    bucketIndex,
+    target,
+  );
 }
 
 export function* hashChainingDeleteScenario(
@@ -146,32 +186,69 @@ export function* hashChainingDeleteScenario(
   yield createFrame(step++, 'initial', buckets, `Таблица построена по текущему набору значений. Удаляем ключ ${target}.`, 1, undefined, target);
 
   const bucketIndex = positiveModulo(target, bucketCount);
-  yield createFrame(step++, 'inspect', buckets, `Вычисляем индекс корзины: ${target} mod ${bucketCount} = ${bucketIndex}. Удаление, как и поиск, работает только с этой корзиной.`, 2, bucketIndex, target);
+  yield createFrame(
+    step++,
+    'inspect',
+    buckets,
+    `Вычисляем индекс корзины: ${target} mod ${bucketCount} = ${bucketIndex}. Удаление, как и поиск, работает только с этой корзиной.`,
+    2,
+    bucketIndex,
+    target,
+  );
 
   const chain = buckets[bucketIndex]!;
   const position = chain.indexOf(target);
 
   for (let i = 0; i < (position === -1 ? chain.length : position + 1); i += 1) {
     const candidate = chain[i]!;
-    yield createFrame(step++, 'compare', buckets, `Сравнение №${i + 1}: элемент цепочки ${candidate} ${candidate === target ? 'совпадает с удаляемым ключом' : `не равен ${target}, идём дальше по цепочке`}.`, 3, bucketIndex, target);
+    yield createFrame(
+      step++,
+      'compare',
+      buckets,
+      `Сравнение №${i + 1}: элемент цепочки ${candidate} ${candidate === target ? 'совпадает с удаляемым ключом' : `не равен ${target}, идём дальше по цепочке`}.`,
+      3,
+      bucketIndex,
+      target,
+    );
   }
 
   if (position === -1) {
-    yield createFrame(step, 'complete', buckets, `Удаление завершено без изменений: ключ ${target} не найден в корзине ${bucketIndex} (${chain.length} сравнений). Таблица осталась прежней.`, 5, bucketIndex, target);
+    yield createFrame(
+      step,
+      'complete',
+      buckets,
+      `Удаление завершено без изменений: ключ ${target} не найден в корзине ${bucketIndex} (${chain.length} сравнений). Таблица осталась прежней.`,
+      5,
+      bucketIndex,
+      target,
+    );
     return;
   }
 
   chain.splice(position, 1);
-  yield createFrame(step++, 'pop', buckets, `Исключаем ${target} из цепочки корзины ${bucketIndex}. Остальные элементы цепочки не перемещаются — меняется только ссылка списка.`, 4, bucketIndex, target);
-  yield createFrame(step, 'complete', buckets, `Удаление завершено: ключ ${target} убран из корзины ${bucketIndex} за ${position + 1} сравн. Цепочка корзины теперь: [${chain.join(', ') || 'пусто'}]. В методе цепочек удаление не требует перестройки таблицы.`, 5, bucketIndex, target);
+  yield createFrame(
+    step++,
+    'pop',
+    buckets,
+    `Исключаем ${target} из цепочки корзины ${bucketIndex}. Остальные элементы цепочки не перемещаются — меняется только ссылка списка.`,
+    4,
+    bucketIndex,
+    target,
+  );
+  yield createFrame(
+    step,
+    'complete',
+    buckets,
+    `Удаление завершено: ключ ${target} убран из корзины ${bucketIndex} за ${position + 1} сравн. Цепочка корзины теперь: [${chain.join(', ') || 'пусто'}]. В методе цепочек удаление не требует перестройки таблицы.`,
+    5,
+    bucketIndex,
+    target,
+  );
 }
 
 const positiveModulo = (value: number, modulus: number): number => ((value % modulus) + modulus) % modulus;
 
-export function* hashOpenAddressingScenario(
-  values: readonly number[],
-  tableSize = DEFAULT_BUCKET_COUNT,
-): Generator<StructureAlgorithmFrame, void, unknown> {
+export function* hashOpenAddressingScenario(values: readonly number[], tableSize = DEFAULT_BUCKET_COUNT): Generator<StructureAlgorithmFrame, void, unknown> {
   const table: Array<number | null> = Array.from({ length: tableSize }, () => null);
   const label = 'Хеш-таблица: открытая адресация';
   let step = 0;
@@ -301,7 +378,16 @@ export function* hashOpenAddressingSearchScenario(
   const view = () => table.map((cell) => (cell === null ? [] : [cell]));
   let step = 0;
 
-  yield createFrame(step++, 'initial', view(), `Таблица построена по текущему набору значений. Ищем ключ ${target}: поиск повторяет тот же путь пробирования, что и вставка.`, 1, undefined, target, label);
+  yield createFrame(
+    step++,
+    'initial',
+    view(),
+    `Таблица построена по текущему набору значений. Ищем ключ ${target}: поиск повторяет тот же путь пробирования, что и вставка.`,
+    1,
+    undefined,
+    target,
+    label,
+  );
 
   const startIndex = positiveModulo(target, tableSize);
   yield createFrame(step++, 'inspect', view(), `Вычисляем начальную позицию: ${target} mod ${tableSize} = ${startIndex}.`, 2, startIndex, target, label);
@@ -311,28 +397,68 @@ export function* hashOpenAddressingSearchScenario(
     const cell = table[index];
 
     if (cell === null) {
-      yield createFrame(step++, 'compare', view(), `Проба №${probe + 1}: ячейка ${index} пуста. Если бы ключ ${target} был в таблице, он встретился бы раньше на этом пути — поиск останавливается.`, 3, index, target, label);
-      yield createFrame(step, 'complete', view(), `Поиск завершён: ключ ${target} отсутствует. Выполнено проб: ${probe + 1}, останов на пустой ячейке ${index}. Пустая ячейка — надёжный признак отсутствия ключа при линейном пробировании без удалений.`, 6, index, target, label);
+      yield createFrame(
+        step++,
+        'compare',
+        view(),
+        `Проба №${probe + 1}: ячейка ${index} пуста. Если бы ключ ${target} был в таблице, он встретился бы раньше на этом пути — поиск останавливается.`,
+        3,
+        index,
+        target,
+        label,
+      );
+      yield createFrame(
+        step,
+        'complete',
+        view(),
+        `Поиск завершён: ключ ${target} отсутствует. Выполнено проб: ${probe + 1}, останов на пустой ячейке ${index}. Пустая ячейка — надёжный признак отсутствия ключа при линейном пробировании без удалений.`,
+        6,
+        index,
+        target,
+        label,
+      );
       return;
     }
 
-    yield createFrame(step++, 'compare', view(), `Проба №${probe + 1}: в ячейке ${index} значение ${cell}${cell === target ? ' — совпадает с искомым ключом' : ` ≠ ${target}, переходим к следующей ячейке`}.`, 3, index, target, label);
+    yield createFrame(
+      step++,
+      'compare',
+      view(),
+      `Проба №${probe + 1}: в ячейке ${index} значение ${cell}${cell === target ? ' — совпадает с искомым ключом' : ` ≠ ${target}, переходим к следующей ячейке`}.`,
+      3,
+      index,
+      target,
+      label,
+    );
 
     if (cell === target) {
-      yield createFrame(step, 'complete', view(), `Поиск завершён: ключ ${target} найден в ячейке ${index} за ${probe + 1} ${probe === 0 ? 'пробу' : 'проб'}. ${probe === 0 ? 'Ключ лежит в своей «домашней» ячейке — коллизий при его вставке не было.' : `Ключ смещён от домашней позиции ${startIndex} на ${probe} ячеек — это след коллизий при вставке.`}`, 6, index, target, label);
+      yield createFrame(
+        step,
+        'complete',
+        view(),
+        `Поиск завершён: ключ ${target} найден в ячейке ${index} за ${probe + 1} ${probe === 0 ? 'пробу' : 'проб'}. ${probe === 0 ? 'Ключ лежит в своей «домашней» ячейке — коллизий при его вставке не было.' : `Ключ смещён от домашней позиции ${startIndex} на ${probe} ячеек — это след коллизий при вставке.`}`,
+        6,
+        index,
+        target,
+        label,
+      );
       return;
     }
   }
 
-  yield createFrame(step, 'complete', view(), `Поиск завершён: пройдены все ${tableSize} ячеек, ключ ${target} не найден. Таблица заполнена целиком — худший случай открытой адресации.`, 6, undefined, target, label);
+  yield createFrame(
+    step,
+    'complete',
+    view(),
+    `Поиск завершён: пройдены все ${tableSize} ячеек, ключ ${target} не найден. Таблица заполнена целиком — худший случай открытой адресации.`,
+    6,
+    undefined,
+    target,
+    label,
+  );
 }
 
-
-export function* hashBlockAddressingScenario(
-  values: readonly number[],
-  blockCount = 5,
-  blockSize = 2,
-): Generator<StructureAlgorithmFrame, void, unknown> {
+export function* hashBlockAddressingScenario(values: readonly number[], blockCount = 5, blockSize = 2): Generator<StructureAlgorithmFrame, void, unknown> {
   const label = 'Хеш-таблица: блочная адресация';
   const blocks: number[][] = Array.from({ length: blockCount }, () => []);
   let step = 0;
@@ -455,7 +581,16 @@ export function* hashBlockSearchScenario(
   }
   let step = 0;
 
-  yield createFrame(step++, 'initial', blocks, `Таблица построена по текущему набору значений. Ищем ключ ${target}: будет просмотрен основной блок и цепочка его переполнений.`, 1, undefined, target, label);
+  yield createFrame(
+    step++,
+    'initial',
+    blocks,
+    `Таблица построена по текущему набору значений. Ищем ключ ${target}: будет просмотрен основной блок и цепочка его переполнений.`,
+    1,
+    undefined,
+    target,
+    label,
+  );
 
   const primaryBlock = positiveModulo(target, blockCount);
   yield createFrame(step++, 'inspect', blocks, `Вычисляем основной блок: ${target} mod ${blockCount} = ${primaryBlock}.`, 2, primaryBlock, target, label);
@@ -465,16 +600,43 @@ export function* hashBlockSearchScenario(
 
   for (const blockIndex of chainBlocks) {
     const block = blocks[blockIndex]!;
-    yield createFrame(step++, 'compare', blocks, `${blockIndex === primaryBlock ? `Просматриваем основной блок ${blockIndex}` : `Переходим к overflow-блоку ${blockIndex}`}: содержимое [${block.join(', ') || 'пусто'}].`, blockIndex === primaryBlock ? 3 : 4, blockIndex, target, label);
+    yield createFrame(
+      step++,
+      'compare',
+      blocks,
+      `${blockIndex === primaryBlock ? `Просматриваем основной блок ${blockIndex}` : `Переходим к overflow-блоку ${blockIndex}`}: содержимое [${block.join(', ') || 'пусто'}].`,
+      blockIndex === primaryBlock ? 3 : 4,
+      blockIndex,
+      target,
+      label,
+    );
 
     for (const candidate of block) {
       comparisons += 1;
       if (candidate === target) {
-        yield createFrame(step, 'complete', blocks, `Поиск завершён: ключ ${target} найден в ${blockIndex === primaryBlock ? `основном блоке ${blockIndex}` : `overflow-блоке ${blockIndex}`} за ${comparisons} сравн. Просмотрено блоков: ${chainBlocks.indexOf(blockIndex) + 1} из ${chainBlocks.length} в цепочке.`, 6, blockIndex, target, label);
+        yield createFrame(
+          step,
+          'complete',
+          blocks,
+          `Поиск завершён: ключ ${target} найден в ${blockIndex === primaryBlock ? `основном блоке ${blockIndex}` : `overflow-блоке ${blockIndex}`} за ${comparisons} сравн. Просмотрено блоков: ${chainBlocks.indexOf(blockIndex) + 1} из ${chainBlocks.length} в цепочке.`,
+          6,
+          blockIndex,
+          target,
+          label,
+        );
         return;
       }
     }
   }
 
-  yield createFrame(step, 'complete', blocks, `Поиск завершён: ключ ${target} не найден. Просмотрена вся цепочка блока ${primaryBlock} — ${chainBlocks.length} блок(ов), ${comparisons} сравнений. Чужие блоки не проверялись: хеш-функция однозначно определяет цепочку поиска.`, 6, primaryBlock, target, label);
+  yield createFrame(
+    step,
+    'complete',
+    blocks,
+    `Поиск завершён: ключ ${target} не найден. Просмотрена вся цепочка блока ${primaryBlock} — ${chainBlocks.length} блок(ов), ${comparisons} сравнений. Чужие блоки не проверялись: хеш-функция однозначно определяет цепочку поиска.`,
+    6,
+    primaryBlock,
+    target,
+    label,
+  );
 }

@@ -1,576 +1,433 @@
-import { ColorLegend, type LegendItem } from '@/components/common/ColorLegend';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowRight } from 'lucide-react';
+import type { LegendItem } from '@/features/demo/Legend';
 import type { StructureAlgorithmFrame } from '@/types';
+import { nodesFromHeapCells, TreeDiagram, treeLegend, type TreeTone } from './TreeDiagram';
 
 interface StructureVisualizerProps {
   readonly frame: StructureAlgorithmFrame | null;
 }
 
-const treeLegend: readonly LegendItem[] = [
-  { color: '#06b6d4', label: 'текущий узел' },
-  { color: '#155e75', label: 'узел пути поиска' },
-  { color: '#475569', label: 'остальные узлы' },
-  { color: '#8b5cf6', label: 'указатели' },
-];
+type ViewKind = 'binomial' | 'chaining' | 'open-addressing' | 'block' | 'tree' | 'list' | 'stack' | 'cells';
 
-const cellsLegend: readonly LegendItem[] = [
-  { color: '#06b6d4', label: 'текущая ячейка' },
-  { color: '#475569', label: 'занятая ячейка' },
-  { color: '#1e293b', label: 'пустая ячейка' },
-  { color: '#8b5cf6', label: 'указатели' },
-];
-
-const hashLegend: readonly LegendItem[] = [
-  { color: '#06b6d4', label: 'активная корзина или ячейка' },
-  { color: '#475569', label: 'остальные корзины' },
-];
-
-interface BinomialTreeViewNode {
-  readonly id: string;
-  readonly value: number;
-  readonly degree: number;
-  readonly children: readonly BinomialTreeViewNode[];
-}
-
-const isBinomialTreeViewNode = (value: unknown): value is BinomialTreeViewNode => {
-  if (typeof value !== 'object' || value === null) return false;
-  const candidate = value as Partial<BinomialTreeViewNode>;
-  return typeof candidate.id === 'string' &&
-    typeof candidate.value === 'number' &&
-    typeof candidate.degree === 'number' &&
-    Array.isArray(candidate.children) &&
-    candidate.children.every(isBinomialTreeViewNode);
+export const detectView = (frame: StructureAlgorithmFrame | null): ViewKind => {
+  const label = (frame?.data.label ?? '').toLowerCase();
+  if (label.includes('биномиальная')) return 'binomial';
+  if (frame?.data.buckets !== undefined) {
+    if (label.includes('открытая адресация')) return 'open-addressing';
+    if (label.includes('блочная')) return 'block';
+    return 'chaining';
+  }
+  if (label.includes('открытая адресация')) return 'open-addressing';
+  if (label.includes('дерево') || label.includes('bst') || label.includes('avl') || label.includes('куча')) return 'tree';
+  if (label.includes('список')) return 'list';
+  if (label.includes('стек')) return 'stack';
+  return 'cells';
 };
 
-const getBinomialTrees = (frame: StructureAlgorithmFrame | null): readonly BinomialTreeViewNode[] => {
-  const trees = frame?.meta.binomialTrees;
-  return Array.isArray(trees) && trees.every(isBinomialTreeViewNode) ? trees : [];
+const pointerNames: Record<string, string> = {
+  head: 'head',
+  tail: 'tail',
+  top: 'top',
+  i: 'i',
+  search: 'поиск',
+  current: 'текущий',
+  root: 'корень',
+  min: 'минимум',
+};
+
+const cellTone = (active: boolean, empty: boolean): string =>
+  active
+    ? 'border-brand-press bg-brand text-on'
+    : empty
+      ? 'border-dashed border-line-strong bg-transparent text-ink-3'
+      : 'border-line-strong bg-surface text-ink';
+
+const cellShadow = (active: boolean, empty: boolean): string =>
+  active ? 'inset 0 -4px 0 rgb(var(--c-brand-press))' : empty ? 'none' : 'inset 0 -4px 0 rgb(var(--viz-node-line))';
+
+export const structureLegend = (frame: StructureAlgorithmFrame | null): readonly LegendItem[] => {
+  const view = detectView(frame);
+  if (view === 'tree' || view === 'binomial') return treeLegend;
+  if (view === 'chaining' || view === 'block' || view === 'open-addressing') {
+    return [
+      { color: 'rgb(var(--c-brand))', label: 'активная корзина или ячейка' },
+      { color: 'rgb(var(--c-pink))', label: 'ключи в таблице' },
+      { color: 'rgb(var(--viz-node-line))', label: 'пустые места' },
+    ];
+  }
+  return [
+    { color: 'rgb(var(--c-brand))', label: 'текущая ячейка' },
+    { color: 'rgb(var(--viz-node-line))', label: 'занятая ячейка' },
+    { color: 'rgb(var(--c-ink))', label: 'указатель' },
+  ];
 };
 
 export function StructureVisualizer({ frame }: StructureVisualizerProps) {
-  const snapshot = frame?.data;
-  const label = snapshot?.label ?? '';
-  const lowerLabel = label.toLowerCase();
-  const isTreeLike =
-    lowerLabel.includes('дерево') === true ||
-    lowerLabel.includes('bst') === true ||
-    lowerLabel.includes('avl') === true ||
-    lowerLabel.includes('куча') === true;
-  const isLinkedListLike = lowerLabel.includes('список') === true;
-  const isBinomialHeap = lowerLabel.includes('биномиальная') === true;
-  const isStackArray = lowerLabel.includes('стек') === true && !isLinkedListLike;
-  const binomialTrees = getBinomialTrees(frame);
+  const view = detectView(frame);
+  switch (view) {
+    case 'binomial':
+      return <BinomialForestView frame={frame} />;
+    case 'chaining':
+      return <ChainingView frame={frame} />;
+    case 'open-addressing':
+      return <OpenAddressingView frame={frame} />;
+    case 'block':
+      return <BlockAddressingView frame={frame} />;
+    case 'tree':
+      return <TreeView frame={frame} />;
+    case 'list':
+      return <LinkedListView frame={frame} />;
+    case 'stack':
+      return <StackView frame={frame} />;
+    default:
+      return <CellsView frame={frame} />;
+  }
+}
 
+function PointerTag({ name, direction = 'up' }: { readonly name: string; readonly direction?: 'up' | 'left' | 'down' }) {
   return (
-    <section className="app-panel">
-      <h2 className="text-xl font-semibold text-app-primary">{snapshot?.label ?? 'Визуализация структуры'}</h2>
-
-      {isBinomialHeap ? (
-        <BinomialForestView frame={frame} trees={binomialTrees} />
-      ) : snapshot?.buckets !== undefined ? (
-        <HashTableView frame={frame} />
-      ) : isTreeLike ? (
-        <TreeView frame={frame} />
-      ) : isLinkedListLike ? (
-        <LinkedListView frame={frame} />
-      ) : isStackArray ? (
-        <StackArrayView frame={frame} />
-      ) : (
-        <ArrayCellsView frame={frame} />
-      )}
-
-      <p className="mt-4 min-h-[72px] rounded-2xl border border-app bg-surface px-4 py-3 text-sm leading-6 text-app-muted">{frame?.message ?? 'Нажмите «Старт» или листайте шаги кнопками — здесь появится описание текущего действия.'}</p>
-
-      <div className="mt-3">
-        <ColorLegend items={snapshot?.buckets !== undefined ? hashLegend : isTreeLike || isBinomialHeap ? treeLegend : cellsLegend} />
-      </div>
-    </section>
+    <motion.span
+      animate={{ opacity: 1, scale: 1 }}
+      className="inline-flex items-center gap-1 whitespace-nowrap rounded-md bg-ink px-1.5 py-0.5 font-mono text-[11px] font-bold text-surface"
+      initial={{ opacity: 0, scale: 0.6 }}
+      layout
+    >
+      {direction === 'up' ? '▲' : direction === 'down' ? '▼' : '◀'} {pointerNames[name] ?? name}
+    </motion.span>
   );
 }
 
-function StackArrayView({ frame }: { readonly frame: StructureAlgorithmFrame | null }) {
-  const cells = frame?.data.cells ?? [];
-  const pointers = frame?.meta.pointers ?? {};
-  const reversed = [...cells].map((cell, index) => ({ cell, index })).reverse();
+const pointersAt = (frame: StructureAlgorithmFrame | null, index: number): string[] =>
+  Object.entries(frame?.meta.pointers ?? {})
+    .filter(([, position]) => position === index)
+    .map(([name]) => name);
 
+function StackView({ frame }: StructureVisualizerProps) {
+  const cells = frame?.data.cells ?? [];
+  const rows = cells.map((cell, index) => ({ cell, index })).reverse();
   return (
-    <div className="mt-4 rounded-2xl border border-slate-700 bg-[#0a101f] p-4">
-      <div className="flex flex-col items-center gap-1.5">
-        {reversed.map(({ cell, index }) => {
-          const isActive = frame?.meta.activeIndex === index;
-          const pointerLabels = Object.entries(pointers).filter(([, pointerIndex]) => pointerIndex === index).map(([name]) => name);
-          const isEmpty = cell.value === null;
+    <div className="viz-stage flex flex-col items-center px-4 py-5">
+      <div className="flex flex-col gap-1.5">
+        {rows.map(({ cell, index }) => {
+          const active = frame?.meta.activeIndex === index;
+          const empty = cell.value === null;
           return (
-            <div className="flex w-full items-center justify-center gap-3" key={cell.id}>
-              <span className="w-12 shrink-0 text-right font-mono text-xs text-slate-500">a[{index}]</span>
-              <div
-                className={
-                  isActive
-                    ? 'flex h-11 w-24 shrink-0 items-center justify-center rounded-lg border-2 border-cyan-300 bg-cyan-500/30 text-base font-bold text-cyan-100'
-                    : isEmpty
-                      ? 'flex h-11 w-24 shrink-0 items-center justify-center rounded-lg border border-dashed border-slate-700 bg-[#10182e] text-base text-slate-600'
-                      : 'flex h-11 w-24 shrink-0 items-center justify-center rounded-lg border border-slate-600 bg-[#1d2945] text-base font-bold text-slate-100'
-                }
+            <div className="flex items-center gap-3" key={cell.id}>
+              <span className="w-12 text-right font-mono text-xs font-bold text-ink-3">a[{index}]</span>
+              <motion.div
+                animate={{ scale: active ? 1.06 : 1 }}
+                className={`flex h-11 w-28 items-center justify-center rounded-xl border-2 font-mono text-[17px] font-black ${cellTone(active, empty)}`}
+                layout
+                style={{ boxShadow: cellShadow(active, empty) }}
               >
-                {cell.value ?? '∅'}
-              </div>
-              <span className="flex w-24 flex-wrap items-center gap-1">
-                {pointerLabels.map((name) => (
-                  <span className="rounded bg-violet-500 px-1.5 py-0.5 text-[10px] font-semibold text-white" key={name}>
-                    ← {getPointerLabel(name)}
-                  </span>
+                <AnimatePresence mode="popLayout">
+                  <motion.span animate={{ y: 0, opacity: 1 }} exit={{ y: -12, opacity: 0 }} initial={{ y: -12, opacity: 0 }} key={String(cell.value)}>
+                    {cell.value ?? '·'}
+                  </motion.span>
+                </AnimatePresence>
+              </motion.div>
+              <span className="flex w-24 gap-1">
+                {pointersAt(frame, index).map((name) => (
+                  <PointerTag direction="left" key={name} name={name} />
                 ))}
               </span>
             </div>
           );
         })}
-        <div className="mt-1 h-1 w-44 rounded bg-slate-600" />
       </div>
-      <p className="mt-3 text-center text-xs leading-5 text-slate-400">
-        Стек растёт снизу вверх: основание — внизу, вершина (top) — вверху. Добавление и удаление выполняются только через вершину.
+      <div className="mt-2 h-2 w-48 rounded-full bg-line-strong" />
+      <p className="mt-3 max-w-sm text-center text-[13px] font-bold text-ink-3">
+        Основание стека внизу, вершина top — сверху. Добавлять и снимать элементы можно только через вершину.
       </p>
     </div>
   );
 }
 
-function ArrayCellsView({ frame }: { readonly frame: StructureAlgorithmFrame | null }) {
+function CellsView({ frame }: StructureVisualizerProps) {
   const cells = frame?.data.cells ?? [];
-  const pointers = frame?.meta.pointers ?? {};
-
   return (
-    <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-700 bg-[#0a101f] p-4">
-      <div className="mx-auto flex w-max min-w-full items-start justify-center gap-2">
+    <div className="viz-stage overflow-x-auto px-4 py-6">
+      <div className="mx-auto flex w-max gap-2">
         {cells.map((cell, index) => {
-          const isActive = frame?.meta.activeIndex === index;
-          const pointerLabels = Object.entries(pointers).filter(([, pointerIndex]) => pointerIndex === index).map(([name]) => name);
-          const isEmpty = cell.value === null;
+          const active = frame?.meta.activeIndex === index;
+          const empty = cell.value === null;
           return (
-            <div className="flex w-16 shrink-0 flex-col items-center gap-1.5" key={cell.id}>
-              <span className="font-mono text-xs text-slate-500">{index}</span>
-              <div
-                className={
-                  isActive
-                    ? 'flex h-14 w-full items-center justify-center rounded-xl border-2 border-cyan-300 bg-cyan-500/30 text-base font-bold text-cyan-100'
-                    : isEmpty
-                      ? 'flex h-14 w-full items-center justify-center rounded-xl border border-dashed border-slate-700 bg-[#10182e] text-base text-slate-600'
-                      : 'flex h-14 w-full items-center justify-center rounded-xl border border-slate-600 bg-[#1d2945] text-base font-bold text-slate-100'
-                }
+            <div className="flex w-14 flex-col items-center gap-1.5" key={cell.id}>
+              <span className="font-mono text-xs font-bold text-ink-3">{index}</span>
+              <motion.div
+                animate={{ y: active ? -5 : 0 }}
+                className={`flex h-14 w-14 items-center justify-center rounded-xl border-2 font-mono text-[16px] font-black ${cellTone(active, empty)}`}
+                style={{ boxShadow: cellShadow(active, empty) }}
               >
-                {cell.value ?? '∅'}
-              </div>
-              <div className="flex min-h-10 flex-col items-center gap-1">
-                {pointerLabels.map((name) => (
-                  <span className="whitespace-nowrap rounded bg-violet-500 px-1.5 py-0.5 text-center text-[10px] font-semibold text-white" key={name}>
-                    ↑ {getPointerLabel(name)}
-                  </span>
+                {cell.value ?? '·'}
+              </motion.div>
+              <div className="flex min-h-12 flex-col items-center gap-1">
+                {pointersAt(frame, index).map((name) => (
+                  <PointerTag key={name} name={name} />
                 ))}
               </div>
             </div>
           );
         })}
-        {cells.length === 0 && <p className="self-center text-sm text-slate-400">Структура пуста.</p>}
+        {cells.length === 0 && <p className="text-sm font-bold text-ink-3">Структура пуста</p>}
       </div>
     </div>
   );
 }
 
-
-
-function HashTableView({ frame }: { readonly frame: StructureAlgorithmFrame | null }) {
-  const label = frame?.data.label?.toLowerCase() ?? '';
-
-  if (label.includes('открытая адресация')) {
-    return <OpenAddressingView frame={frame} />;
-  }
-
-  if (label.includes('блочная адресация')) {
-    return <BlockAddressingView frame={frame} />;
-  }
-
-  return <ChainingView frame={frame} />;
-}
-
-function ChainingView({ frame }: { readonly frame: StructureAlgorithmFrame | null }) {
-  const buckets = frame?.data.buckets ?? [];
-  const activeBucketIndex = frame?.meta.bucketIndex;
-  const activeKey = frame?.meta.key;
-
+function LinkedListView({ frame }: StructureVisualizerProps) {
+  const cells = frame?.data.cells ?? [];
   return (
-    <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-700 bg-[#0a101f]">
-      <table className="min-w-full border-collapse text-left text-sm text-slate-300">
-        <caption className="px-4 py-3 text-left text-sm leading-6 text-slate-300">
-          Метод цепочек показывает каждую корзину как список. Коллизия не теряет ключи: они сохраняются в цепочке внутри одной ячейки таблицы.
-        </caption>
-        <thead className="bg-[#131c33] text-xs uppercase tracking-[0.16em] text-slate-400">
-          <tr>
-            <th className="border-t border-slate-700 px-4 py-3">Индекс</th>
-            <th className="border-t border-slate-700 px-4 py-3">Корзина</th>
-            <th className="border-t border-slate-700 px-4 py-3">Цепочка</th>
-          </tr>
-        </thead>
-        <tbody>
-          {buckets.map((bucket) => {
-            const isActive = activeBucketIndex === bucket.index;
+    <div className="viz-stage overflow-x-auto px-4 pb-6 pt-10">
+      <div className="mx-auto flex w-max items-center">
+        {cells.length === 0 && <p className="rounded-xl bg-surface px-4 py-3 text-sm font-bold text-ink-3">Список пуст: head = null</p>}
+        <AnimatePresence initial={false}>
+          {cells.map((cell, index) => {
+            const active = frame?.meta.activeIndex === index;
             return (
-              <tr className={isActive ? 'bg-cyan-500/10 text-cyan-100' : 'odd:bg-white/[0.03]'} key={bucket.id}>
-                <th className="border-t border-slate-700 px-4 py-3 font-mono text-base text-slate-100">{bucket.index}</th>
-                <td className="border-t border-slate-700 px-4 py-3">{isActive && activeKey !== undefined ? `ключ ${activeKey}` : 'ожидает ключ'}</td>
-                <td className="border-t border-slate-700 px-4 py-3">
-                  {bucket.values.length === 0 ? (
-                    <span className="text-slate-500">пусто</span>
-                  ) : (
-                    <div className="flex flex-wrap items-center gap-2">
-                      {bucket.values.map((value, valueIndex) => (
-                        <span className="inline-flex items-center gap-2" key={`${bucket.id}-${valueIndex}`}>
-                          <span className="rounded-xl border border-cyan-700/60 bg-cyan-500/15 px-3 py-2 font-semibold text-cyan-100">{value}</span>
-                          {valueIndex < bucket.values.length - 1 && <span className="text-slate-500">→</span>}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </td>
-              </tr>
+              <motion.div
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center"
+                exit={{ opacity: 0, scale: 0.6 }}
+                initial={{ opacity: 0, scale: 0.6 }}
+                key={cell.id}
+                layout
+              >
+                <div className="relative flex flex-col items-center">
+                  <div className="absolute -top-8 flex gap-1">
+                    {pointersAt(frame, index).map((name) => (
+                      <PointerTag direction="down" key={name} name={name} />
+                    ))}
+                  </div>
+                  <div
+                    className={`flex h-14 overflow-hidden rounded-xl border-2 font-mono font-black ${active ? 'border-brand-press' : 'border-line-strong'}`}
+                    style={{ boxShadow: cellShadow(active, false) }}
+                  >
+                    <span className={`flex w-14 items-center justify-center text-[16px] ${active ? 'bg-brand text-on' : 'bg-surface text-ink'}`}>
+                      {cell.value ?? '·'}
+                    </span>
+                    <span
+                      className={`flex w-6 items-center justify-center border-l-2 ${active ? 'border-brand-press bg-brand/80' : 'border-line-strong bg-surface-2'}`}
+                    >
+                      <span className={`h-2 w-2 rounded-full ${active ? 'bg-white' : 'bg-ink-3'}`} />
+                    </span>
+                  </div>
+                  <span className="mt-1 font-mono text-[11px] font-bold text-ink-3">узел {index}</span>
+                </div>
+                {index < cells.length - 1 ? (
+                  <ArrowRight className="mx-1.5 shrink-0 text-ink-3" size={22} strokeWidth={2.75} />
+                ) : (
+                  <span className="ml-2 font-mono text-xs font-bold text-ink-3">null</span>
+                )}
+              </motion.div>
             );
           })}
-        </tbody>
-      </table>
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
 
-function OpenAddressingView({ frame }: { readonly frame: StructureAlgorithmFrame | null }) {
+function ChainingView({ frame }: StructureVisualizerProps) {
+  const buckets = frame?.data.buckets ?? [];
+  const activeBucket = frame?.meta.bucketIndex;
+  const activeKey = frame?.meta.key;
+  return (
+    <div className="viz-stage px-3 py-4 sm:px-4">
+      <div className="flex flex-col gap-2">
+        {buckets.map((bucket) => {
+          const active = activeBucket === bucket.index;
+          return (
+            <motion.div animate={{ x: active ? 4 : 0 }} className="flex items-center gap-2" key={bucket.id}>
+              <span
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 font-mono text-[15px] font-black ${active ? 'border-brand-press bg-brand text-on' : 'border-line-strong bg-surface text-ink-2'}`}
+                style={{ boxShadow: cellShadow(active, false) }}
+              >
+                {bucket.index}
+              </span>
+              <div className="flex min-h-11 flex-1 flex-wrap items-center gap-1.5 overflow-x-auto rounded-xl bg-surface/60 px-2 py-1.5">
+                {bucket.values.length === 0 && <span className="px-1 text-sm font-bold text-ink-3">пусто</span>}
+                <AnimatePresence initial={false}>
+                  {bucket.values.map((value, index) => (
+                    <motion.span
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="flex items-center gap-1.5"
+                      exit={{ opacity: 0, scale: 0.5 }}
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      key={`${bucket.id}-${value}-${index}`}
+                      layout
+                    >
+                      {index > 0 && <ArrowRight className="text-ink-3" size={16} strokeWidth={2.75} />}
+                      <span
+                        className={`rounded-lg border-2 px-2.5 py-1 font-mono text-[14px] font-black ${activeKey === value && active ? 'border-yellow-press bg-yellow text-on' : 'border-pink/50 bg-pink/12 text-ink'}`}
+                      >
+                        {value}
+                      </span>
+                    </motion.span>
+                  ))}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+      <p className="mt-3 text-[13px] font-bold text-ink-3">
+        Каждая корзина — связный список. Коллизия не теряет ключ: он просто дописывается в цепочку своей корзины.
+      </p>
+    </div>
+  );
+}
+
+function OpenAddressingView({ frame }: StructureVisualizerProps) {
   const cells = frame?.data.cells ?? [];
   const activeIndex = frame?.meta.bucketIndex;
-  const activeKey = frame?.meta.key;
-
   return (
-    <div className="mt-4 rounded-2xl border border-slate-700 bg-[#0a101f] p-4">
-      <p className="mb-4 text-sm leading-6 text-slate-300">
-        Открытая адресация хранит каждый ключ в отдельной ячейке массива. При коллизии алгоритм не создаёт список, а пробует следующую позицию по цепочке пробирования.
-      </p>
-      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(84px, 1fr))' }}>
+    <div className="viz-stage px-3 py-5 sm:px-4">
+      <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(60px, 1fr))' }}>
         {cells.map((cell, index) => {
-          const isActive = activeIndex === index;
+          const active = activeIndex === index;
+          const empty = cell.value === null;
           return (
-            <div className={isActive ? 'rounded-2xl border border-cyan-300 bg-cyan-500/10 p-3 text-cyan-100' : 'rounded-2xl border border-slate-700 bg-[#1d2945] p-3 text-slate-200'} key={cell.id}>
-              <div className="mb-2 text-xs uppercase tracking-[0.18em] text-slate-400">{index}</div>
-              <div className="flex h-14 items-center justify-center rounded-xl border border-slate-700 bg-[#10182e] text-lg font-bold">
-                {cell.value ?? '∅'}
-              </div>
-              <div className="mt-2 text-center text-[11px] text-slate-400">
-                {isActive && activeKey !== undefined ? `проба ${activeKey}` : 'ячейка'}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <p className="mt-4 text-xs leading-5 text-slate-400">
-        Визуализация показывает именно массив ячеек, поэтому видно, как линейное пробирование переходит от одного индекса к другому, пока не встретит свободное место.
-      </p>
-    </div>
-  );
-}
-
-function BlockAddressingView({ frame }: { readonly frame: StructureAlgorithmFrame | null }) {
-  const buckets = frame?.data.buckets ?? [];
-  const activeBucketIndex = frame?.meta.bucketIndex;
-  const activeKey = frame?.meta.key;
-
-  return (
-    <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-700 bg-[#0a101f] p-4">
-      <p className="mb-4 text-sm leading-6 text-slate-300">
-        Блочная адресация делит таблицу на основные блоки. Когда основной блок заполнен, появляются overflow-блоки, которые хранят переполнение и сохраняют возможность поиска по цепочке блоков.
-      </p>
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {buckets.map((bucket) => {
-          const isActive = activeBucketIndex === bucket.index;
-          return (
-            <div className={isActive ? 'rounded-2xl border border-cyan-300 bg-cyan-500/10 p-4 text-cyan-100' : 'rounded-2xl border border-slate-700 bg-[#1d2945] p-4 text-slate-200'} key={bucket.id}>
-              <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.18em] text-slate-400">
-                <span>Блок {bucket.index}</span>
-                <span>{isActive && activeKey !== undefined ? `ключ ${activeKey}` : 'готов к записи'}</span>
-              </div>
-              <div className="flex min-h-16 flex-wrap gap-2 rounded-xl border border-slate-700 bg-[#10182e] p-3">
-                {bucket.values.length === 0 ? (
-                  <span className="text-sm text-slate-500">пусто</span>
-                ) : (
-                  bucket.values.map((value, valueIndex) => (
-                    <span className="rounded-xl border border-cyan-700/60 bg-cyan-500/15 px-3 py-2 font-semibold text-cyan-100" key={`${bucket.id}-${valueIndex}-${value}`}>
-                      {value}
-                    </span>
-                  ))
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <p className="mt-4 text-xs leading-5 text-slate-400">
-        Здесь видно, что при переполнении создаётся новый блок вместо линейного пробирования, а основной блок остаётся точкой входа для поиска.
-      </p>
-    </div>
-  );
-}
-
-function LinkedListView({ frame }: { readonly frame: StructureAlgorithmFrame | null }) {
-  const cells = frame?.data.cells ?? [];
-  const pointers = frame?.meta.pointers ?? {};
-
-  return (
-    <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-700 bg-[#0a101f] p-4">
-      <div className="flex min-h-28 items-center gap-3">
-        {cells.length === 0 ? (
-          <div className="rounded-2xl border border-slate-700 bg-[#1d2945] px-5 py-4 text-sm text-slate-400">
-            Список пуст: head не указывает на узел.
-          </div>
-        ) : cells.map((cell, index) => {
-          const isActive = frame?.meta.activeIndex === index;
-          const pointerLabels = Object.entries(pointers).filter(([, pointerIndex]) => pointerIndex === index).map(([label]) => label);
-          return (
-            <div className="flex items-center gap-3" key={cell.id}>
-              <div className="relative flex flex-col items-center gap-2">
-                {pointerLabels.length > 0 && (
-                  <div className="absolute -top-8 flex flex-wrap justify-center gap-1">
-                    {pointerLabels.map((label) => <PointerBadge label={label} key={label} />)}
-                  </div>
-                )}
-                <div className={isActive ? 'flex h-16 min-w-16 items-center justify-center rounded-2xl border border-cyan-300 bg-cyan-500/30 px-4 text-lg font-bold text-cyan-100' : 'flex h-16 min-w-16 items-center justify-center rounded-2xl border border-slate-700 bg-[#1d2945] px-4 text-lg font-bold text-slate-100'}>
-                  {cell.value ?? '·'}
-                </div>
-                <span className="text-xs text-slate-500">узел {index}</span>
-              </div>
-              {index < cells.length - 1 && <span className="text-2xl text-slate-500">→</span>}
-            </div>
-          );
-        })}
-      </div>
-      <p className="mt-3 text-xs leading-5 text-slate-400">
-        Стрелка показывает ссылку на следующий узел. В стеке добавление и удаление идут через head; в очереди добавление идёт через tail, а удаление — через head.
-      </p>
-    </div>
-  );
-}
-
-function PointerBadge({ label }: { readonly label: string }) {
-  return (
-    <div className="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-violet-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-      {getPointerLabel(label)}
-    </div>
-  );
-}
-
-const getPointerLabel = (label: string): string => {
-  const labels: Record<string, string> = {
-    head: 'голова head',
-    tail: 'хвост tail',
-    top: 'вершина top',
-    i: 'индекс i',
-    search: 'поиск search',
-    current: 'текущий узел',
-    root: 'корень root',
-    left: 'левый ребёнок',
-    right: 'правый ребёнок',
-    min: 'минимум',
-  };
-  return labels[label] ?? label;
-};
-
-function BinomialForestView({ frame, trees }: { readonly frame: StructureAlgorithmFrame | null; readonly trees: readonly BinomialTreeViewNode[] }) {
-  const activeNodeIds = Array.isArray(frame?.meta.activeNodeIds)
-    ? new Set(frame.meta.activeNodeIds.filter((id): id is string => typeof id === 'string'))
-    : new Set<string>();
-
-  return (
-    <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-700 bg-[#0a101f] p-4">
-      <div className="flex w-max min-w-full items-start gap-6">
-        {trees.length === 0 ? (
-          <div className="rounded-2xl border border-slate-700 bg-[#1d2945] px-5 py-4 text-sm text-slate-400">
-            Корневой список пуст: биномиальных деревьев пока нет.
-          </div>
-        ) : trees.map((tree) => (
-          <div className="rounded-2xl border border-slate-700 bg-[#131c33] p-4" key={tree.id}>
-            <div className="mb-3 text-center text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-              B{tree.degree}: степень {tree.degree}
-            </div>
-            <BinomialTreeNodeView activeNodeIds={activeNodeIds} node={tree} />
-          </div>
-        ))}
-      </div>
-      <p className="mt-4 text-xs leading-5 text-slate-400">
-        Биномиальная куча изображается как корневой список деревьев. В корректной куче для каждой степени B0, B1, B2 и так далее хранится не более одного дерева, а минимальный ключ находится среди корней.
-      </p>
-    </div>
-  );
-}
-
-function BinomialTreeNodeView({ activeNodeIds, node }: { readonly activeNodeIds: ReadonlySet<string>; readonly node: BinomialTreeViewNode }) {
-  const isActive = activeNodeIds.has(node.id);
-
-  return (
-    <div className="flex flex-col items-center">
-      <div className={isActive ? 'flex h-12 min-w-12 items-center justify-center rounded-full border border-cyan-300 bg-cyan-500 px-3 text-sm font-bold text-slate-950 shadow-[0_0_22px_rgba(34,211,238,0.45)]' : 'flex h-12 min-w-12 items-center justify-center rounded-full border border-slate-600 bg-[#10182e] px-3 text-sm font-bold text-slate-100'}>
-        {node.value}
-      </div>
-      {node.children.length > 0 && (
-        <>
-          <div className="h-5 w-px bg-slate-600" />
-          <div className="flex items-start gap-3 border-t border-slate-600 pt-5">
-            {node.children.map((child) => (
-              <BinomialTreeNodeView activeNodeIds={activeNodeIds} key={child.id} node={child} />
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-function TreeView({ frame }: { readonly frame: StructureAlgorithmFrame | null }) {
-  const searchPath = Array.isArray(frame?.meta.searchPath)
-    ? (frame?.meta.searchPath as readonly number[])
-    : [];
-  const isHeap = (frame?.data.label ?? '').toLowerCase().includes('куча');
-  const nodes = buildTreeLayout(frame?.data.cells ?? [], frame?.meta.activeIndex, searchPath);
-  const visibleNodes = nodes.filter((node) => node.value !== null || node.isActive || node.isInSearchPath);
-  const visibleNodeIndexes = new Set(visibleNodes.map((node) => node.index));
-  const edges = visibleNodes
-    .map((node) => {
-      if (node.index === 0) return null;
-      const parentIndex = Math.floor((node.index - 1) / 2);
-      const parent = nodes.find((candidate) => candidate.index === parentIndex);
-      if (parent === undefined || !visibleNodeIndexes.has(parentIndex)) return null;
-      return { id: `${parentIndex}-${node.index}`, parent, child: node };
-    })
-    .filter((edge): edge is { id: string; parent: TreeLayoutNode; child: TreeLayoutNode } => edge !== null);
-  const height = Math.max(220, Math.min(520, Math.max(1, getTreeLevelCount(frame?.data.cells.length ?? 0)) * 96));
-
-  return (
-    <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-700 bg-[#0a101f] p-4">
-      <div className="relative min-w-[720px]" style={{ height }}>
-        <svg className="absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-          {edges.map((edge) => {
-            // при поиске подсвечивается только путь от корня к текущему узлу;
-            // при построении — только ребро, ведущее в активный узел
-            const isHighlighted = searchPath.length > 0
-              ? searchPath.includes(edge.parent.index) && (searchPath.includes(edge.child.index) || edge.child.isActive)
-              : edge.child.isActive;
-            return (
-              <line
-                key={edge.id}
-                stroke={isHighlighted ? '#67e8f9' : '#475569'}
-                strokeLinecap="round"
-                strokeWidth={isHighlighted ? 0.65 : 0.42}
-                x1={edge.parent.x}
-                x2={edge.child.x}
-                y1={edge.parent.y + 3.5}
-                y2={edge.child.y - 3.5}
-              />
-            );
-          })}
-        </svg>
-
-        {visibleNodes.map((node) => {
-          const pointerLabels = Object.entries(frame?.meta.pointers ?? {}).filter(([, pointerIndex]) => pointerIndex === node.index).map(([label]) => label);
-          return (
-            <div key={node.id}>
-              {pointerLabels.length > 0 && (
-                <div className="absolute z-10 -translate-x-1/2 -translate-y-full" style={{ left: `${node.x}%`, top: `${node.y}%` }}>
-                  <div className="mb-1 flex flex-wrap justify-center gap-1">
-                    {pointerLabels.map((label) => <PointerBadge label={label} key={label} />)}
-                  </div>
-                </div>
-              )}
-              <div
-                className={
-                  node.isActive
-                    ? 'absolute flex h-14 min-w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-cyan-300 bg-cyan-500 px-3 text-center text-sm font-bold text-slate-950 shadow-[0_0_24px_rgba(34,211,238,0.45)]'
-                    : node.isInSearchPath
-                      ? 'absolute flex h-14 min-w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-cyan-400 bg-cyan-950/80 px-3 text-center text-sm font-bold text-cyan-100'
-                      : 'absolute flex h-14 min-w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-slate-600 bg-[#1d2945] px-3 text-center text-sm font-bold text-slate-100'
-                }
-                style={{ left: `${node.x}%`, top: `${node.y}%` }}
-                title={`Индекс массива: ${node.index}`}
+            <div className="flex flex-col items-center gap-1" key={cell.id}>
+              <span className="font-mono text-[11px] font-bold text-ink-3">{index}</span>
+              <motion.div
+                animate={{ y: active ? -5 : 0 }}
+                className={`flex h-14 w-full items-center justify-center rounded-xl border-2 font-mono text-[16px] font-black ${active ? 'border-brand-press bg-brand text-on' : empty ? 'border-dashed border-line-strong text-ink-3' : 'border-pink/50 bg-pink/12 text-ink'}`}
+                style={{ boxShadow: active ? 'inset 0 -4px 0 rgb(var(--c-brand-press))' : 'none' }}
               >
-                {node.value ?? '·'}
+                {cell.value ?? '·'}
+              </motion.div>
+            </div>
+          );
+        })}
+      </div>
+      <p className="mt-3 text-[13px] font-bold text-ink-3">
+        Все ключи лежат прямо в массиве. При коллизии алгоритм пробует следующую ячейку, пока не найдёт свободную.
+      </p>
+    </div>
+  );
+}
+
+function BlockAddressingView({ frame }: StructureVisualizerProps) {
+  const buckets = frame?.data.buckets ?? [];
+  const activeBucket = frame?.meta.bucketIndex;
+  return (
+    <div className="viz-stage px-3 py-4 sm:px-4">
+      <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+        {buckets.map((bucket) => {
+          const active = activeBucket === bucket.index;
+          return (
+            <div className={`rounded-2xl border-2 p-3 ${active ? 'border-brand bg-brand/8' : 'border-line bg-surface'}`} key={bucket.id}>
+              <p className={`mb-2 text-[13px] font-black ${active ? 'text-brand' : 'text-ink-2'}`}>Блок {bucket.index}</p>
+              <div className="flex min-h-10 flex-wrap gap-1.5">
+                {bucket.values.length === 0 && <span className="text-sm font-bold text-ink-3">пусто</span>}
+                {bucket.values.map((value, index) => (
+                  <motion.span
+                    animate={{ scale: 1 }}
+                    className="rounded-lg border-2 border-pink/50 bg-pink/12 px-2.5 py-1 font-mono text-[14px] font-black text-ink"
+                    initial={{ scale: 0.6 }}
+                    key={`${bucket.id}-${index}-${value}`}
+                  >
+                    {value}
+                  </motion.span>
+                ))}
               </div>
             </div>
           );
         })}
       </div>
+      <p className="mt-3 text-[13px] font-bold text-ink-3">
+        Когда основной блок заполнен, ключ уходит в блок переполнения — поиск идёт по цепочке блоков одного адреса.
+      </p>
+    </div>
+  );
+}
 
+function TreeView({ frame }: StructureVisualizerProps) {
+  const cells = frame?.data.cells ?? [];
+  const searchPath = Array.isArray(frame?.meta.searchPath) ? (frame.meta.searchPath as readonly number[]) : [];
+  const activeIndex = frame?.meta.activeIndex;
+  const found = frame?.meta.found === true;
+  const isHeap = (frame?.data.label ?? '').toLowerCase().includes('куча');
+  const toneOf = (index: number): TreeTone => {
+    if (index === activeIndex) return found ? 'found' : 'active';
+    if (searchPath.includes(index)) return 'path';
+    return 'idle';
+  };
+  const nodes = nodesFromHeapCells(cells, toneOf);
+
+  return (
+    <div>
+      <TreeDiagram emptyText="Дерево пока пусто — первый ключ станет корнем" nodes={nodes} />
       {isHeap && <HeapArrayStrip frame={frame} />}
     </div>
   );
 }
 
-function HeapArrayStrip({ frame }: { readonly frame: StructureAlgorithmFrame | null }) {
+function HeapArrayStrip({ frame }: StructureVisualizerProps) {
   const cells = (frame?.data.cells ?? []).filter((cell) => cell.value !== null);
-  if (cells.length === 0) {
-    return null;
-  }
-
+  if (cells.length === 0) return null;
   return (
-    <div className="mt-4 border-t border-slate-700 pt-4">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Та же куча в виде массива</p>
+    <div className="mt-3 rounded-2xl bg-surface-2 p-3">
+      <p className="mb-2 px-1 text-[13px] font-black text-ink-2">Та же куча в массиве: дети элемента i — в ячейках 2i+1 и 2i+2</p>
       <div className="flex flex-wrap gap-1.5">
-        {cells.map((cell, index) => (
-          <div className="flex flex-col items-center gap-1" key={cell.id}>
-            <div
-              className={
-                frame?.meta.activeIndex === index
-                  ? 'flex h-11 min-w-11 items-center justify-center rounded-lg border-2 border-cyan-300 bg-cyan-500/30 px-2 text-sm font-bold text-cyan-100'
-                  : 'flex h-11 min-w-11 items-center justify-center rounded-lg border border-slate-600 bg-[#1d2945] px-2 text-sm font-bold text-slate-100'
-              }
-            >
-              {cell.value}
+        {cells.map((cell, index) => {
+          const active = frame?.meta.activeIndex === index;
+          return (
+            <div className="flex flex-col items-center" key={cell.id}>
+              <span
+                className={`flex h-10 min-w-10 items-center justify-center rounded-lg border-2 px-2 font-mono text-[14px] font-black ${active ? 'border-brand-press bg-brand text-on' : 'border-line-strong bg-surface text-ink'}`}
+              >
+                {cell.value}
+              </span>
+              <span className="font-mono text-[10px] font-bold text-ink-3">{index}</span>
             </div>
-            <span className="font-mono text-[10px] text-slate-500">{index}</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
-      <p className="mt-2 text-xs leading-5 text-slate-400">
-        Дерево и массив — два представления одной кучи: у элемента с индексом i дети находятся в ячейках 2i+1 и 2i+2, родитель — в ячейке (i−1)/2 с округлением вниз.
-      </p>
     </div>
   );
 }
 
-interface TreeLayoutNode {
+interface BinomialNode {
   readonly id: string;
-  readonly index: number;
-  readonly value: number | null;
-  readonly x: number;
-  readonly y: number;
-  readonly isActive: boolean;
-  readonly isInSearchPath: boolean;
+  readonly value: number;
+  readonly degree: number;
+  readonly children: readonly BinomialNode[];
 }
 
-const buildTreeLayout = (
-  cells: readonly { id: string; value: number | null }[],
-  activeIndex: number | undefined,
-  searchPath: readonly number[] = [],
-): readonly TreeLayoutNode[] => {
-  const levelCount = Math.max(1, getTreeLevelCount(cells.length));
-  const yStep = levelCount <= 1 ? 0 : 84 / (levelCount - 1);
-
-  return cells.map((cell, index) => {
-    const level = Math.floor(Math.log2(index + 1));
-    const levelStart = 2 ** level - 1;
-    const positionInLevel = index - levelStart;
-    const nodesInLevel = 2 ** level;
-
-    return {
-      id: cell.id,
-      index,
-      value: cell.value,
-      x: ((positionInLevel + 1) / (nodesInLevel + 1)) * 100,
-      y: levelCount <= 1 ? 50 : 8 + level * yStep,
-      isActive: activeIndex === index,
-      isInSearchPath: searchPath.includes(index),
-    };
-  });
+const isBinomialNode = (value: unknown): value is BinomialNode => {
+  if (typeof value !== 'object' || value === null) return false;
+  const candidate = value as Partial<BinomialNode>;
+  return (
+    typeof candidate.id === 'string' && typeof candidate.value === 'number' && Array.isArray(candidate.children) && candidate.children.every(isBinomialNode)
+  );
 };
 
-const getTreeLevelCount = (cellCount: number): number => {
-  if (cellCount <= 0) return 1;
-  return Math.floor(Math.log2(cellCount)) + 1;
-};
+function BinomialForestView({ frame }: StructureVisualizerProps) {
+  const trees =
+    Array.isArray(frame?.meta.binomialTrees) && frame.meta.binomialTrees.every(isBinomialNode) ? (frame.meta.binomialTrees as readonly BinomialNode[]) : [];
+  const active = new Set(Array.isArray(frame?.meta.activeNodeIds) ? (frame.meta.activeNodeIds as string[]) : []);
+  const nodes: { key: string; label: string; parentKey: string | null; tone: TreeTone; badge?: string }[] = [];
+  const walk = (node: BinomialNode, parent: string | null, isRoot: boolean): void => {
+    nodes.push({
+      key: node.id,
+      label: String(node.value),
+      parentKey: parent,
+      tone: active.has(node.id) ? 'active' : 'idle',
+      ...(isRoot ? { badge: `B${node.degree}` } : {}),
+    });
+    node.children.forEach((child) => walk(child, node.id, false));
+  };
+  trees.forEach((tree) => walk(tree, null, true));
+
+  return (
+    <div>
+      <TreeDiagram binary={false} emptyText="Корневой список пуст" nodes={nodes} />
+      <p className="mt-3 text-[13px] font-bold text-ink-3">
+        Куча — это лес биномиальных деревьев: у каждой степени B0, B1, B2… не больше одного дерева, минимум — среди корней.
+      </p>
+    </div>
+  );
+}

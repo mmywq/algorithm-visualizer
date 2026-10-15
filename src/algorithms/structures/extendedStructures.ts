@@ -39,17 +39,42 @@ export function* bstScenario(inputValues?: readonly number[]): Generator<Structu
   const cells: Array<number | null> = Array.from({ length: 15 }, () => null);
   let step = 0;
 
-  yield frame(step++, 'initial', 'running', snapshot('Дерево BST', cells), `BST — это двоичное дерево поиска: для каждого узла все ключи слева меньше, справа больше. Начинаем с пустого дерева. Порядок вставки: ${insertionOrder.join(', ')}.`, 'index', 1);
+  yield frame(
+    step++,
+    'initial',
+    'running',
+    snapshot('Дерево BST', cells),
+    `BST — это двоичное дерево поиска: для каждого узла все ключи слева меньше, справа больше. Начинаем с пустого дерева. Порядок вставки: ${insertionOrder.join(', ')}.`,
+    'index',
+    1,
+  );
 
   for (const value of insertionOrder) {
     let index = 0;
     while (cells[index] !== null) {
       const current = cells[index]!;
       const goLeft = value < current;
-      yield frame(step++, 'inspect', 'running', snapshot('Дерево BST', cells), `Сравниваем ${value} с узлом ${current}: ${goLeft ? `${value} < ${current}, идём влево` : `${value} ≥ ${current}, идём вправо`}.`, 'index', 2, index);
+      yield frame(
+        step++,
+        'inspect',
+        'running',
+        snapshot('Дерево BST', cells),
+        `Сравниваем ${value} с узлом ${current}: ${goLeft ? `${value} < ${current}, идём влево` : `${value} ≥ ${current}, идём вправо`}.`,
+        'index',
+        2,
+        index,
+      );
       index = goLeft ? 2 * index + 1 : 2 * index + 2;
       if (index >= cells.length) {
-        yield frame(step++, 'inspect', 'running', snapshot('Дерево BST', cells), `Глубина дерева превысила текущую сетку визуализации. Вставка ${value} пропущена, чтобы сохранить наглядность.`, 'index', 5);
+        yield frame(
+          step++,
+          'inspect',
+          'running',
+          snapshot('Дерево BST', cells),
+          `Глубина дерева превысила текущую сетку визуализации. Вставка ${value} пропущена, чтобы сохранить наглядность.`,
+          'index',
+          5,
+        );
         index = -1;
         break;
       }
@@ -57,11 +82,28 @@ export function* bstScenario(inputValues?: readonly number[]): Generator<Structu
 
     if (index >= 0) {
       cells[index] = value;
-      yield frame(step++, 'push', 'running', snapshot('Дерево BST', cells), `Вставляем ${value} в позицию узла. Свойство BST сохранено: левое поддерево меньше, правое больше.`, 'index', 4, index);
+      yield frame(
+        step++,
+        'push',
+        'running',
+        snapshot('Дерево BST', cells),
+        `Вставляем ${value} в позицию узла. Свойство BST сохранено: левое поддерево меньше, правое больше.`,
+        'index',
+        4,
+        index,
+      );
     }
   }
 
-  yield frame(step, 'complete', 'completed', snapshot('Дерево BST', cells), 'Построение BST завершено. Теперь можно проследить путь поиска любого ключа через последовательность сравнений от корня.', 'index', 6);
+  yield frame(
+    step,
+    'complete',
+    'completed',
+    snapshot('Дерево BST', cells),
+    'Построение BST завершено. Теперь можно проследить путь поиска любого ключа через последовательность сравнений от корня.',
+    'index',
+    6,
+  );
 }
 
 const buildBstCells = (values: readonly number[]): Array<number | null> => {
@@ -90,36 +132,109 @@ export function* bstSearchScenario(inputValues: readonly number[], target: numbe
   const pathValues: number[] = [];
   let index = 0;
 
-  yield frame(step++, 'initial', 'running', snapshotData, `Поиск начинается с корня. Искомый ключ: ${target}. На каждом узле ключ сравнивается со значением узла, и поиск переходит в левое или правое поддерево.`, 'index', 1, 0, { searchTarget: target, pointers: { search: 0 } });
+  yield frame(
+    step++,
+    'initial',
+    'running',
+    snapshotData,
+    `Поиск начинается с корня. Искомый ключ: ${target}. На каждом узле ключ сравнивается со значением узла, и поиск переходит в левое или правое поддерево.`,
+    'index',
+    1,
+    0,
+    { searchTarget: target, pointers: { search: 0 } },
+  );
 
   while (index < cells.length) {
     const current = cells[index];
     if (current === null || current === undefined) {
-      yield frame(step++, 'inspect', 'running', snapshotData, `Переход в поддерево, но узла там нет — достигнута пустая позиция. Ключ ${target} в дереве отсутствует.`, 'index', 6, undefined, { searchTarget: target, searchPath: path, pointers: { search: index } });
-      yield frame(step, 'complete', 'completed', snapshotData, `Поиск завершён: ключ ${target} отсутствует. Пройденный путь: ${pathValues.join(' → ')} → пустое поддерево. Выполнено сравнений: ${pathValues.length}.`, 'index', 6, undefined, { searchTarget: target, searchPath: path });
+      yield frame(
+        step++,
+        'inspect',
+        'running',
+        snapshotData,
+        `Переход в поддерево, но узла там нет — достигнута пустая позиция. Ключ ${target} в дереве отсутствует.`,
+        'index',
+        6,
+        undefined,
+        { searchTarget: target, searchPath: path, pointers: { search: index } },
+      );
+      yield frame(
+        step,
+        'complete',
+        'completed',
+        snapshotData,
+        `Поиск завершён: ключ ${target} отсутствует. Пройденный путь: ${pathValues.join(' → ')} → пустое поддерево. Выполнено сравнений: ${pathValues.length}.`,
+        'index',
+        6,
+        undefined,
+        { searchTarget: target, searchPath: path },
+      );
       return;
     }
 
     path.push(index);
     pathValues.push(current);
-    yield frame(step++, 'inspect', 'running', snapshotData, `Сравниваем искомый ключ ${target} с узлом ${current}. Это сравнение №${pathValues.length}.`, 'index', 2, index, { searchTarget: target, searchPath: [...path], pointers: { search: index } });
+    yield frame(
+      step++,
+      'inspect',
+      'running',
+      snapshotData,
+      `Сравниваем искомый ключ ${target} с узлом ${current}. Это сравнение №${pathValues.length}.`,
+      'index',
+      2,
+      index,
+      { searchTarget: target, searchPath: [...path], pointers: { search: index } },
+    );
 
     if (target === current) {
-      yield frame(step++, 'push', 'running', snapshotData, `${target} = ${current} — ключ найден.`, 'index', 5, index, { searchTarget: target, searchPath: [...path], pointers: { search: index } });
-      yield frame(step, 'complete', 'completed', snapshotData, `Поиск завершён успешно: ключ ${target} найден. Путь от корня: ${pathValues.join(' → ')}. Выполнено сравнений: ${pathValues.length} — это глубина узла плюс один, а не размер всего дерева.`, 'index', 6, index, { searchTarget: target, searchPath: [...path], pointers: { search: index } });
+      yield frame(step++, 'push', 'running', snapshotData, `${target} = ${current} — ключ найден.`, 'index', 5, index, {
+        searchTarget: target,
+        searchPath: [...path],
+        pointers: { search: index },
+        found: true,
+      });
+      yield frame(
+        step,
+        'complete',
+        'completed',
+        snapshotData,
+        `Поиск завершён успешно: ключ ${target} найден. Путь от корня: ${pathValues.join(' → ')}. Выполнено сравнений: ${pathValues.length} — это глубина узла плюс один, а не размер всего дерева.`,
+        'index',
+        6,
+        index,
+        { searchTarget: target, searchPath: [...path], pointers: { search: index }, found: true },
+      );
       return;
     }
 
     const goLeft = target < current;
     const nextIndex = goLeft ? 2 * index + 1 : 2 * index + 2;
-    yield frame(step++, 'inspect', 'running', snapshotData, `${target} ${goLeft ? '<' : '>'} ${current}: переходим в ${goLeft ? 'левое' : 'правое'} поддерево. ${goLeft ? 'Меньшие ключи по правилу BST находятся слева.' : 'Большие ключи по правилу BST находятся справа.'}`, 'index', 3, index, { searchTarget: target, searchPath: [...path], pointers: { search: index } });
+    yield frame(
+      step++,
+      'inspect',
+      'running',
+      snapshotData,
+      `${target} ${goLeft ? '<' : '>'} ${current}: переходим в ${goLeft ? 'левое' : 'правое'} поддерево. ${goLeft ? 'Меньшие ключи по правилу BST находятся слева.' : 'Большие ключи по правилу BST находятся справа.'}`,
+      'index',
+      3,
+      index,
+      { searchTarget: target, searchPath: [...path], pointers: { search: index } },
+    );
     index = nextIndex;
   }
 
-  yield frame(step, 'complete', 'completed', snapshotData, `Поиск завершён: ключ ${target} не найден. Пройденный путь: ${pathValues.join(' → ')}. Выполнено сравнений: ${pathValues.length}.`, 'index', 6, undefined, { searchTarget: target, searchPath: path });
+  yield frame(
+    step,
+    'complete',
+    'completed',
+    snapshotData,
+    `Поиск завершён: ключ ${target} не найден. Пройденный путь: ${pathValues.join(' → ')}. Выполнено сравнений: ${pathValues.length}.`,
+    'index',
+    6,
+    undefined,
+    { searchTarget: target, searchPath: path },
+  );
 }
-
-
 
 export const balancedBstScenario = (inputValues?: readonly number[]) =>
   avlScenario(inputValues !== undefined && inputValues.length > 0 ? inputValues : [50, 30, 70, 20, 40, 60, 80]);
@@ -265,15 +380,7 @@ export function* heapExtractMinScenario(inputValues?: readonly number[]): Genera
   const last = heap.pop()!;
 
   if (heap.length === 0) {
-    yield frame(
-      step,
-      'complete',
-      'completed',
-      heapSnapshot(),
-      `Извлекаем единственный элемент ${removed}. Куча стала пустой.`,
-      'pop',
-      6,
-    );
+    yield frame(step, 'complete', 'completed', heapSnapshot(), `Извлекаем единственный элемент ${removed}. Куча стала пустой.`, 'pop', 6);
     return;
   }
 
@@ -367,7 +474,6 @@ export function* heapExtractMinScenario(inputValues?: readonly number[]): Genera
   );
 }
 
-
 interface BinomialHeapNode {
   readonly id: string;
   readonly value: number;
@@ -416,10 +522,7 @@ const binomialSnapshot = (roots: readonly BinomialHeapNode[]): StructureSnapshot
   cells: roots.map((root, index) => ({ id: `binomial-root-${index}`, value: root.value })),
 });
 
-const binomialMeta = (
-  roots: readonly BinomialHeapNode[],
-  extra: Partial<StructureAlgorithmFrame['meta']> = {},
-): Partial<StructureAlgorithmFrame['meta']> => ({
+const binomialMeta = (roots: readonly BinomialHeapNode[], extra: Partial<StructureAlgorithmFrame['meta']> = {}): Partial<StructureAlgorithmFrame['meta']> => ({
   binomialTrees: roots.map(toBinomialTreeView),
   ...extra,
 });
@@ -523,7 +626,6 @@ export function* binomialHeapScenario(inputValues?: readonly number[]): Generato
     binomialMeta(roots, minRoot === null ? {} : { activeNodeIds: [minRoot.id] }),
   );
 }
-
 
 const createRandomUniqueValues = (size: number, min: number, max: number): number[] => {
   const values = new Set<number>();

@@ -1,12 +1,5 @@
 import type { EdgeId, GraphAlgorithmFrame, NodeId } from '@/types';
-import {
-  buildAdjacencyList,
-  createGraphFrame,
-  createGraphMeta,
-  getNeighbors,
-  hasNode,
-  type GraphTraversalInput,
-} from './utils';
+import { buildAdjacencyList, createGraphFrame, createGraphMeta, getNeighbors, hasNode, type GraphTraversalInput } from './utils';
 
 const bfsPseudocode = {
   initial: 1,

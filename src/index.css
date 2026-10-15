@@ -2,114 +2,379 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Цвета задаются тройками «R G B», чтобы Tailwind мог добавлять прозрачность.
+ * Основная тема — тёмная «ночная аркада»; светлая включается data-theme="light".
+ */
 :root {
   color-scheme: dark;
-  --app-bg: #0b1020;
-  --app-surface: rgba(19, 27, 46, 0.88);
-  --app-border: rgba(99, 116, 158, 0.36);
-  --app-primary: #eef2ff;
-  --app-muted: #b4c0dd;
-  --app-accent: #8b5cf6;
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-}
+  --c-bg: 15 11 28;
+  --c-surface: 26 20 48;
+  --c-surface-2: 36 29 64;
+  --c-line: 52 43 85;
+  --c-line-strong: 77 64 120;
+  --c-ink: 247 242 255;
+  --c-ink-2: 203 193 232;
+  --c-ink-3: 144 134 179;
+  --c-on: 26 16 48;
+  --c-shadow: 0 0 0;
+  --c-hard: 196 37 128;
+  --c-dot: 46 37 78;
 
-:root[data-theme='dark-emerald'] {
-  color-scheme: dark;
-  --app-bg: #06120e;
-  --app-surface: rgba(13, 35, 28, 0.9);
-  --app-border: rgba(74, 140, 120, 0.38);
-  --app-primary: #e9f7f1;
-  --app-muted: #a4c8ba;
-  --app-accent: #10b981;
-}
+  --c-brand: 255 79 176;
+  --c-brand-press: 196 37 128;
+  --c-green: 60 240 162;
+  --c-green-press: 24 181 122;
+  --c-yellow: 255 212 59;
+  --c-yellow-press: 209 163 0;
+  --c-red: 255 92 115;
+  --c-red-press: 200 52 75;
+  --c-orange: 255 148 71;
+  --c-orange-press: 208 102 29;
+  --c-pink: 255 133 225;
+  --c-pink-press: 204 82 174;
+  --c-teal: 51 224 204;
+  --c-teal-press: 21 166 147;
+  --c-cyan: 90 200 255;
+  --c-cyan-press: 42 146 209;
+  --c-purple: 159 140 255;
+  --c-purple-press: 107 86 230;
+  --c-lime: 200 245 59;
+  --c-lime-press: 147 188 18;
 
-:root[data-theme='dark-graphite'] {
-  color-scheme: dark;
-  --app-bg: #101114;
-  --app-surface: rgba(27, 29, 34, 0.92);
-  --app-border: rgba(122, 130, 144, 0.34);
-  --app-primary: #f1f2f4;
-  --app-muted: #aeb5c0;
-  --app-accent: #06b6d4;
+  /* сцена визуализации */
+  --viz-bg: 18 14 34;
+  --viz-dot: 44 36 72;
+  --viz-node: 36 29 64;
+  --viz-node-line: 77 64 120;
+  --viz-node-ink: 247 242 255;
+  --viz-bar: 70 58 112;
+  --viz-bar-press: 45 37 76;
+  --viz-edge: 88 76 135;
+  --viz-empty: 28 22 48;
+
+  /* фон: звёзды и облака */
+  --fx-star: 255 228 120;
+  --fx-star-2: 255 133 225;
+  --fx-cloud: 58 47 98;
+  --fx-cloud-shade: 40 32 70;
+
+  /* цвет раздела по умолчанию; страницы переопределяют --cat */
+  --cat: var(--c-brand);
+  --cat-press: var(--c-brand-press);
+
+  font-family: 'Nunito Variable', Nunito, ui-rounded, system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
 }
 
 :root[data-theme='light'] {
   color-scheme: light;
-  --app-bg: #eceff7;
-  --app-surface: #ffffff;
-  --app-border: rgba(88, 104, 150, 0.4);
-  --app-primary: #141d36;
-  --app-muted: #3e4d70;
-  --app-accent: #6d28d9;
+  --c-bg: 251 247 255;
+  --c-surface: 255 255 255;
+  --c-surface-2: 243 236 253;
+  --c-line: 230 219 247;
+  --c-line-strong: 205 187 235;
+  --c-ink: 26 16 48;
+  --c-ink-2: 76 63 112;
+  --c-ink-3: 125 113 152;
+  --c-on: 26 16 48;
+  --c-shadow: 60 30 110;
+  --c-hard: 26 16 48;
+  --c-dot: 226 214 246;
+
+  --c-brand: 242 61 159;
+  --c-brand-press: 184 29 115;
+  --c-green: 25 213 140;
+  --c-green-press: 14 156 102;
+  --c-yellow: 255 198 26;
+  --c-yellow-press: 209 155 0;
+  --c-red: 245 72 98;
+  --c-red-press: 188 39 64;
+  --c-orange: 255 132 51;
+  --c-orange-press: 207 92 18;
+  --c-pink: 240 107 211;
+  --c-pink-press: 188 62 162;
+  --c-teal: 20 201 178;
+  --c-teal-press: 11 149 131;
+  --c-cyan: 47 176 245;
+  --c-cyan-press: 22 128 189;
+  --c-purple: 124 98 255;
+  --c-purple-press: 84 64 224;
+  --c-lime: 168 224 26;
+  --c-lime-press: 125 170 6;
+
+  --viz-bg: 252 249 255;
+  --viz-dot: 228 218 245;
+  --viz-node: 255 255 255;
+  --viz-node-line: 205 187 235;
+  --viz-node-ink: 26 16 48;
+  --viz-bar: 215 203 240;
+  --viz-bar-press: 176 158 216;
+  --viz-edge: 184 168 222;
+  --viz-empty: 243 238 252;
+
+  --fx-star: 255 186 40;
+  --fx-star-2: 242 61 159;
+  --fx-cloud: 255 255 255;
+  --fx-cloud-shade: 226 214 246;
 }
 
-:root[data-theme='light-warm'] {
-  color-scheme: light;
-  --app-bg: #f5efe3;
-  --app-surface: #fffdf8;
-  --app-border: rgba(151, 124, 84, 0.42);
-  --app-primary: #2e2414;
-  --app-muted: #66573c;
-  --app-accent: #b45309;
-}
-
-:root[data-theme='light-blue'] {
-  color-scheme: light;
-  --app-bg: #e6eff7;
-  --app-surface: #ffffff;
-  --app-border: rgba(74, 122, 162, 0.42);
-  --app-primary: #0e2435;
-  --app-muted: #34536c;
-  --app-accent: #0369a1;
+html {
+  background: rgb(var(--c-bg));
+  scroll-behavior: smooth;
+  text-size-adjust: 100%;
 }
 
 body {
+  /* clip, а не hidden: не создаёт контейнер прокрутки и не ломает position: sticky */
+  overflow-x: clip;
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: var(--app-bg);
+  /* фон — у html, а точечная сетка — в фиксированном слое BackgroundFX: у body своего фона нет,
+     иначе он перекрыл бы декоративные слои с отрицательным z-index */
+  color: rgb(var(--c-ink));
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-@keyframes graph-pulse {
-  0%, 100% {
-    opacity: 0.85;
-    transform: scale(1);
+::selection {
+  background: rgb(var(--c-brand) / 0.35);
+}
+
+:focus-visible {
+  outline: 3px solid rgb(var(--c-brand) / 0.7);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+/* уменьшенная анимация: системная настройка или выбор пользователя */
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion='full']) *,
+  :root:not([data-motion='full']) *::before,
+  :root:not([data-motion='full']) *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
-  50% {
-    opacity: 0.25;
-    transform: scale(1.18);
-  }
+}
+:root[data-motion='reduce'] *,
+:root[data-motion='reduce'] *::before,
+:root[data-motion='reduce'] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
 }
 
 @layer components {
-  .control-button {
-    @apply inline-flex h-10 items-center rounded-xl border px-4 text-sm font-semibold transition disabled:cursor-not-allowed;
-    border-color: var(--app-border);
-    background: var(--app-surface);
-    color: var(--app-primary);
+  /* ---------- типографика ---------- */
+  .font-display {
+    font-family: Tiny5, 'Nunito Variable', system-ui, sans-serif;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    -webkit-font-smoothing: none;
+  }
+  /* пиксельный шрифт чёток только на размерах, кратных его сетке */
+  .h-display-xl {
+    @apply font-display text-[40px] leading-[1.05] sm:text-[64px];
+  }
+  .h-display {
+    @apply font-display text-[32px] leading-[1.1] sm:text-[48px];
+  }
+  .h-section {
+    @apply font-display text-[32px] leading-[1.15] text-ink;
+  }
+  .h-card {
+    @apply font-display text-[24px] leading-[1.15] text-ink;
   }
 
-  .control-button-primary {
-    @apply text-white;
-    border-color: var(--app-accent);
-    background: var(--app-accent);
+  /* ---------- кнопки ---------- */
+  .btn {
+    @apply relative inline-flex h-11 shrink-0 select-none items-center justify-center gap-2 whitespace-nowrap rounded-xl border-2 border-transparent px-5 text-[15px] font-black leading-none transition-[transform,box-shadow,background-color,border-color,color,filter] duration-100 ease-out disabled:pointer-events-none disabled:opacity-45;
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(3px);
   }
 
-  .control-input {
-    @apply h-10 rounded-xl border px-3 text-sm outline-none transition;
-    border-color: var(--app-border);
-    background: var(--app-surface);
-    color: var(--app-primary);
+  .btn-primary,
+  .btn-green,
+  .btn-cat,
+  .btn-danger,
+  .btn-yellow {
+    color: rgb(var(--c-on));
+  }
+  .btn-primary {
+    @apply border-brand-press bg-brand;
+    box-shadow: 0 4px 0 rgb(var(--c-brand-press));
+  }
+  .btn-green {
+    @apply border-green-press bg-green;
+    box-shadow: 0 4px 0 rgb(var(--c-green-press));
+  }
+  .btn-yellow {
+    @apply border-yellow-press bg-yellow;
+    box-shadow: 0 4px 0 rgb(var(--c-yellow-press));
+  }
+  .btn-danger {
+    @apply border-red-press bg-red;
+    box-shadow: 0 4px 0 rgb(var(--c-red-press));
+  }
+  .btn-cat {
+    border-color: rgb(var(--cat-press));
+    background: rgb(var(--cat));
+    box-shadow: 0 4px 0 rgb(var(--cat-press));
+  }
+  .btn-primary:hover,
+  .btn-green:hover,
+  .btn-yellow:hover,
+  .btn-danger:hover,
+  .btn-cat:hover {
+    filter: brightness(1.07) saturate(1.05);
+  }
+  .btn-primary:active:not(:disabled),
+  .btn-green:active:not(:disabled),
+  .btn-yellow:active:not(:disabled),
+  .btn-danger:active:not(:disabled),
+  .btn-cat:active:not(:disabled) {
+    box-shadow: 0 1px 0 rgb(var(--c-shadow) / 0.4);
   }
 
-  .app-panel {
-    @apply rounded-3xl border p-6;
-    border-color: var(--app-border);
-    background: var(--app-surface);
+  .btn-secondary {
+    @apply border-line-strong bg-surface text-ink;
+    box-shadow: 0 3px 0 rgb(var(--c-line-strong));
+  }
+  .btn-secondary:hover {
+    @apply border-ink-3 bg-surface-2;
+    box-shadow: 0 3px 0 rgb(var(--c-ink-3));
+  }
+  .btn-secondary:active:not(:disabled) {
+    box-shadow: none;
   }
 
+  .btn-ghost {
+    @apply bg-transparent text-ink-2 hover:bg-surface-2 hover:text-ink;
+  }
+  .btn-ghost:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  .btn-sm {
+    @apply h-10 rounded-[11px] px-3.5 text-sm;
+  }
+  .btn-lg {
+    @apply h-14 rounded-2xl px-7 text-[17px];
+  }
+  .btn-icon {
+    @apply w-11 px-0;
+  }
+  .btn-sm.btn-icon {
+    @apply w-10 px-0;
+  }
+  .btn-lg.btn-icon {
+    @apply w-14 px-0;
+  }
+
+  /* ---------- поверхности ---------- */
+  .card {
+    @apply rounded-2xl border-2 border-line bg-surface;
+  }
+  .card-pad {
+    @apply p-5 sm:p-6;
+  }
+  .card-hover {
+    @apply transition-[transform,border-color,box-shadow] duration-150 ease-out;
+    box-shadow: 0 4px 0 rgb(var(--c-line));
+  }
+  .card-hover:hover {
+    transform: translateY(-3px);
+    border-color: rgb(var(--cat) / 0.7);
+    box-shadow: 0 7px 0 rgb(var(--cat) / 0.55);
+  }
+  .card-hover:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 0 rgb(var(--c-line));
+  }
+
+  /* «окно» ретро-интерфейса: заголовок-полоса и три квадратика */
+  .window {
+    @apply overflow-hidden rounded-2xl border-2 border-line-strong bg-surface;
+  }
+  .window-bar {
+    @apply flex h-10 items-center gap-2.5 border-b-2 border-line-strong px-3.5;
+    background: linear-gradient(90deg, rgb(var(--cat) / 0.22), rgb(var(--cat) / 0.06));
+  }
+  .window-title {
+    @apply font-display min-w-0 flex-1 truncate text-[16px] leading-none text-ink;
+  }
+  .window-dots {
+    @apply flex shrink-0 gap-1.5;
+  }
+  .window-dots > span {
+    @apply block h-2.5 w-2.5 rounded-[2px];
+  }
+
+  /* ---------- поля ввода ---------- */
+  .input {
+    @apply h-11 w-full min-w-0 rounded-xl border-2 border-line-strong bg-surface-2 px-3.5 text-[15px] font-semibold text-ink outline-none transition placeholder:font-medium placeholder:text-ink-3 focus:border-brand focus:ring-4 focus:ring-brand/20 disabled:opacity-50;
+  }
+  .input-sm {
+    @apply h-10 rounded-[11px] px-3 text-sm;
+  }
+  .input-error {
+    @apply border-red focus:border-red focus:ring-red/20;
+  }
+  textarea.input {
+    @apply h-auto py-2.5 leading-6;
+  }
+  select.input {
+    @apply cursor-pointer;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-extrabold text-ink-2;
+  }
+
+  /* ---------- мелочи ---------- */
+  .chip {
+    @apply inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-lg bg-surface-2 px-2.5 text-[13px] font-extrabold text-ink-2;
+  }
+  .chip-cat {
+    @apply bg-cat/14 text-cat;
+  }
+  /* игровая плашка: пиксельный шрифт, жёсткая рамка */
+  .tag {
+    @apply font-display inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-md border-2 px-2 text-[16px] leading-none;
+  }
+  .kbd {
+    @apply inline-flex h-6 min-w-6 items-center justify-center rounded-md border border-b-2 border-line-strong bg-surface-2 px-1.5 font-mono text-[11px] font-semibold text-ink-2;
+  }
+  .link {
+    @apply font-bold text-brand underline-offset-4 hover:underline;
+  }
+  .skeleton {
+    @apply rounded-xl;
+    background: linear-gradient(90deg, rgb(var(--c-surface-2)) 25%, rgb(var(--c-line)) 37%, rgb(var(--c-surface-2)) 63%);
+    background-size: 400% 100%;
+    animation: shimmer 1.4s ease infinite;
+  }
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* сцена визуализации: своя точечная сетка */
+  .viz-stage {
+    @apply relative overflow-hidden rounded-xl border-2 border-line;
+    background-color: rgb(var(--viz-bg));
+    background-image: radial-gradient(rgb(var(--viz-dot)) 1px, transparent 1.2px);
+    background-size: 22px 22px;
+  }
 
   .graph-node-pulse {
     animation: graph-pulse 1.4s ease-in-out infinite;
@@ -117,10 +382,362 @@ body {
     transform-origin: center;
   }
 
-  .bg-app { background: var(--app-bg); }
-  .bg-surface { background: var(--app-surface); }
-  .border-app { border-color: var(--app-border); }
-  .text-app-primary { color: var(--app-primary); }
-  .text-app-muted { color: var(--app-muted); }
-  .text-accent { color: var(--app-accent); }
+  .pixelated {
+    image-rendering: pixelated;
+    shape-rendering: crispEdges;
+  }
+}
+
+/* на сенсорных экранах зона нажатия не меньше 44px */
+@media (pointer: coarse) {
+  .btn-sm,
+  .input-sm {
+    height: 44px;
+  }
+  .btn-sm.btn-icon {
+    width: 44px;
+  }
+}
+
+@layer utilities {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* ---------- анимации ---------- */
+@keyframes graph-pulse {
+  0%,
+  100% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.25;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+/* мерцание пиксельных звёзд: ступенчато, как в старых играх */
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.7);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  60% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+}
+.fx-star {
+  animation: twinkle var(--dur, 3.2s) steps(4) var(--delay, 0s) infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+@keyframes drift {
+  from {
+    transform: translateX(-30vw);
+  }
+  to {
+    transform: translateX(130vw);
+  }
+}
+.fx-cloud {
+  animation: drift var(--dur, 90s) linear var(--delay, 0s) infinite;
+}
+
+@keyframes shoot {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(-24deg);
+  }
+  4% {
+    opacity: 1;
+  }
+  12% {
+    opacity: 0;
+    transform: translate(-46vw, 20vw) rotate(-24deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-46vw, 20vw) rotate(-24deg);
+  }
+}
+.fx-shoot {
+  animation: shoot 14s ease-in 4s infinite;
+}
+
+/* бегущая строка */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.marquee-track {
+  animation: marquee var(--dur, 40s) linear infinite;
+}
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+/* кот: дыхание и прыжок */
+/* растровый спрайт кота: анимации только transform — их считает видеокарта */
+.cat-sprite {
+  transform-origin: 50% 100%;
+  will-change: transform;
+}
+
+/* движения кота: сдвиги ровно на пиксель спрайта (--px), без масштабирования */
+@keyframes cat-idle {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(calc(-1 * var(--px, 2px)));
+  }
+}
+.cat-idle {
+  animation: cat-idle 2.6s steps(1, end) infinite;
+}
+.cat-idle-slow {
+  animation: cat-idle 3.8s steps(1, end) infinite;
+}
+@keyframes cat-joy {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  25%,
+  75% {
+    transform: translateY(calc(-2 * var(--px, 2px)));
+  }
+  50% {
+    transform: translateY(calc(-3 * var(--px, 2px)));
+  }
+}
+.cat-joy {
+  animation: cat-joy 0.9s steps(1, end) infinite;
+}
+@keyframes cat-start {
+  0% {
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(calc(-3 * var(--px, 2px)));
+  }
+  60% {
+    transform: translateY(calc(-1 * var(--px, 2px)));
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+.cat-surprise {
+  animation:
+    cat-start 0.5s steps(1, end) 1,
+    cat-idle 2.6s steps(1, end) 0.5s infinite;
+}
+
+@keyframes zzz {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.6);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(14px, -26px) scale(1.1);
+  }
+}
+.fx-zzz {
+  animation: zzz 2.6s ease-out infinite;
+}
+
+@keyframes float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+.fx-float {
+  animation: float-y var(--dur, 4s) ease-in-out var(--delay, 0s) infinite;
+}
+
+/* точечная сетка фона: фиксированный слой, при прокрутке не перерисовывается */
+.dot-grid {
+  background-image: radial-gradient(rgb(var(--c-dot)) 1.2px, transparent 1.4px);
+  background-size: 24px 24px;
+}
+
+/* печать: только содержимое, без навигации и эффектов */
+@media print {
+  header,
+  nav,
+  footer,
+  .no-print,
+  .fx-layer,
+  .side-scenery {
+    display: none !important;
+  }
+  body,
+  html {
+    background: #fff !important;
+    color: #111 !important;
+  }
+  .card,
+  .window {
+    border-color: #ddd !important;
+    break-inside: avoid;
+  }
+}
+
+/* шкала перемотки плеера */
+.scrubber {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 22px;
+  background: transparent;
+  cursor: pointer;
+  --fill: 0%;
+}
+.scrubber::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, rgb(var(--cat)) var(--fill), rgb(var(--c-line)) var(--fill));
+}
+.scrubber::-moz-range-track {
+  height: 10px;
+  border-radius: 3px;
+  background: rgb(var(--c-line));
+}
+.scrubber::-moz-range-progress {
+  height: 10px;
+  border-radius: 3px;
+  background: rgb(var(--cat));
+}
+.scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  margin-top: -6px;
+  height: 22px;
+  width: 22px;
+  border-radius: 6px;
+  background: rgb(var(--c-ink));
+  border: 4px solid rgb(var(--cat));
+  box-shadow: 0 3px 0 rgb(var(--cat-press));
+  transition: transform 0.12s ease;
+}
+.scrubber::-moz-range-thumb {
+  height: 14px;
+  width: 14px;
+  border-radius: 5px;
+  background: rgb(var(--c-ink));
+  border: 4px solid rgb(var(--cat));
+  box-shadow: 0 3px 0 rgb(var(--cat-press));
+}
+.scrubber:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+.scrubber:focus-visible {
+  outline: none;
+}
+.scrubber:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 5px rgb(var(--cat) / 0.3);
+}
+
+/* режим лекции: крупнее текст и элементы сцены */
+[data-lecture='true'] {
+  font-size: 112%;
+}
+[data-lecture='true'] .lecture-hide {
+  display: none !important;
+}
+
+/* кот: дрожит, когда плачет; подпрыгивает от радости; дышит медленно во сне */
+/* декорации в полях широкого экрана: только там, где по бокам есть место */
+.side-scenery {
+  display: none;
+}
+@media (min-width: 1680px) {
+  .side-scenery {
+    display: block;
+  }
+}
+.side-gutter {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: calc((100vw - 1320px) / 2);
+}
+.side-float {
+  animation: side-float 9s ease-in-out infinite;
+  will-change: transform;
+}
+@keyframes side-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+.side-star {
+  width: 12px;
+  height: 12px;
+  background: rgb(var(--fx-star));
+  clip-path: polygon(33% 0, 67% 0, 67% 33%, 100% 33%, 100% 67%, 67% 67%, 67% 100%, 33% 100%, 33% 67%, 0 67%, 0 33%, 33% 33%);
+  animation: side-twinkle 4s steps(3) infinite;
+}
+@keyframes side-twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.side-cell {
+  animation: side-bob 2.6s ease-in-out infinite;
+  will-change: transform;
+}
+@keyframes side-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
 }
