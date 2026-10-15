@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { demoRegistry } from '@/features/algorithm/registry';
 import { catalog as algorithms } from './catalog';
-import { loadTheory } from './loaders';
+import { loadQuiz, loadTheory } from './loaders';
 
 describe('каталог', () => {
   it('у каждого алгоритма есть теория', async () => {
@@ -11,6 +11,24 @@ describe('каталог', () => {
       if (theory === null || theory.intro.length === 0 || theory.complexity.length === 0) missing.push(entry.id);
     }
     expect(missing).toEqual([]);
+  });
+
+  it('у каждого алгоритма есть тест из корректных вопросов', async () => {
+    const problems: string[] = [];
+    for (const entry of algorithms) {
+      const quiz = await loadQuiz(entry.category, entry.id);
+      if (quiz.length < 5) problems.push(`${entry.id}: вопросов ${quiz.length}`);
+      if (new Set(quiz.map((question) => question.q)).size !== quiz.length) problems.push(`${entry.id}: повторяются вопросы`);
+      quiz.forEach((question, index) => {
+        const where = `${entry.id} #${index + 1}`;
+        if (question.options.length < 3) problems.push(`${where}: мало вариантов`);
+        if (new Set(question.options).size !== question.options.length) problems.push(`${where}: повторяются варианты`);
+        if (!Number.isInteger(question.answer) || question.answer < 0 || question.answer >= question.options.length)
+          problems.push(`${where}: неверный индекс ответа`);
+        if (question.explain.trim() === '' || question.q.trim() === '') problems.push(`${where}: пустой текст`);
+      });
+    }
+    expect(problems).toEqual([]);
   });
 
   it('у каждого алгоритма есть демонстрация', () => {
