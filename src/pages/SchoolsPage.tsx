@@ -199,7 +199,13 @@ function Hero() {
               </tbody>
             </table>
           </div>
-          <p className="mt-3 text-[13px] font-bold text-ink-3">Пример сводки: так преподаватель видит прогресс группы по заданию.</p>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-[13px] font-bold text-ink-3">Пример сводки: так преподаватель видит прогресс группы по заданию.</p>
+            <Link className="btn btn-secondary btn-sm" to="/cabinet/classes/demo">
+              Открыть демо-класс
+              <ArrowRight size={16} strokeWidth={2.5} />
+            </Link>
+          </div>
         </Window>
       </motion.div>
     </section>

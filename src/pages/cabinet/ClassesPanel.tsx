@@ -5,9 +5,11 @@ import { PixelCat } from '@/components/mascot/PixelCat';
 import { toast } from '@/components/ui/Toaster';
 import { entryById } from '@/content/catalog';
 import { useAuthStore } from '@/features/auth/authStore';
+import { assignmentStatus, dueLabel } from '@/lib/assignments';
 import { createClass, describeCloudError, joinClass, listAssignments, listMyClasses, type Assignment, type ClassInfo } from '@/lib/classes';
 import { isMastered } from '@/lib/progress';
 import { useUserStore } from '@/stores/userStore';
+import { StatusBadge } from './ClassDashboard';
 
 function Notice({
   pose,
@@ -64,13 +66,19 @@ export function ClassesPanel() {
     return (
       <Notice
         action={
-          <Link className="btn btn-secondary btn-sm" to="/for-schools">
-            Подробнее о лицензии
-            <ArrowRight size={16} strokeWidth={2.5} />
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link className="btn btn-primary btn-sm" to="/cabinet/classes/demo">
+              <Users size={16} strokeWidth={2.5} />
+              Открыть демо-класс
+            </Link>
+            <Link className="btn btn-secondary btn-sm" to="/for-schools">
+              Подробнее о лицензии
+              <ArrowRight size={16} strokeWidth={2.5} />
+            </Link>
+          </div>
         }
         pose="think"
-        text="Классы, задания и сводка прогресса группы работают в облачной версии для учебных заведений. Сейчас прогресс хранится только на этом устройстве."
+        text="Классы, задания и сводка прогресса группы работают в облачной версии для учебных заведений. Как это выглядит у преподавателя, можно посмотреть в демо-классе с вымышленными студентами."
         title="Классы появятся после подключения облака"
       />
     );
@@ -213,25 +221,34 @@ export function ClassesPanel() {
           <ul className="mt-3 flex flex-col gap-3">
             {assignments.map((assignment) => {
               const className = joined.find((item) => item.id === assignment.classId)?.name ?? '';
-              const doneCount = assignment.algorithmIds.filter((id) => isMastered(progress[id])).length;
+              const own = assignmentStatus(assignment.algorithmIds, progress, assignment.dueAt);
               const due = formatDue(assignment.dueAt);
+              const submitted = own.state === 'done' || own.state === 'late';
+              const reminder = assignment.dueAt !== null && !submitted ? dueLabel(assignment.dueAt) : null;
               return (
                 <li className="card p-4 sm:p-5" key={assignment.id}>
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
                       <p className="text-lg font-black text-ink">{assignment.title}</p>
-                      <p className="text-sm font-bold text-ink-3">{className}</p>
+                      <p className="text-sm font-bold text-ink-3">
+                        {className}
+                        {due !== null && ` · срок ${due}`}
+                      </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {due !== null && (
-                        <span className="chip">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {reminder !== null && (
+                        <span className={`chip ${reminder.tone === 'late' ? 'text-red' : reminder.tone === 'soon' ? 'text-orange' : ''}`}>
                           <CalendarClock size={14} strokeWidth={2.75} />
-                          до {due}
+                          {reminder.text}
                         </span>
                       )}
-                      <span className={`tag ${doneCount === assignment.algorithmIds.length ? 'border-green text-green' : 'border-line-strong text-ink-2'}`}>
-                        {doneCount}/{assignment.algorithmIds.length}
-                      </span>
+                      {submitted ? (
+                        <StatusBadge state={own.state} />
+                      ) : (
+                        <span className="tag border-line-strong text-ink-2" title="Алгоритмов пройдено полностью">
+                          {own.done}/{own.total}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <ul className="mt-3 flex flex-wrap gap-2">
@@ -261,6 +278,16 @@ export function ClassesPanel() {
 
       {classes !== null && classes.length === 0 && (
         <Notice
+          {...(role === 'teacher'
+            ? {
+                action: (
+                  <Link className="btn btn-secondary btn-sm" to="/cabinet/classes/demo">
+                    Посмотреть демо-класс
+                    <ArrowRight size={16} strokeWidth={2.5} />
+                  </Link>
+                ),
+              }
+            : {})}
           pose="sit"
           text={
             role === 'teacher'

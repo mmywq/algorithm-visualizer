@@ -12,6 +12,7 @@ const CatalogPage = lazy(() => import('@/pages/CatalogPage'));
 const AlgorithmRoute = lazy(() => import('@/features/algorithm/AlgorithmRoute'));
 const CabinetPage = lazy(() => import('@/pages/cabinet/CabinetPage'));
 const ClassPage = lazy(() => import('@/pages/cabinet/ClassPage'));
+const DemoClassPage = lazy(() => import('@/pages/cabinet/DemoClassPage'));
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
 const AuthCallbackPage = lazy(() => import('@/pages/auth/AuthCallbackPage'));
@@ -39,6 +40,7 @@ const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path: 'catalog', element: <CatalogPage /> },
       { path: 'cabinet', element: <CabinetPage /> },
+      { path: 'cabinet/classes/demo', element: <DemoClassPage /> },
       { path: 'cabinet/classes/:classId', element: <ClassPage /> },
       { path: 'join/:code', element: <JoinClassPage /> },
       { path: 'settings', element: <SettingsPage /> },

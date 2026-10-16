@@ -4,6 +4,7 @@ import { PixelCat } from '@/components/mascot/PixelCat';
 import { Dialog } from '@/components/ui/Dialog';
 import { toast } from '@/components/ui/Toaster';
 import { brand } from '@/config/brand';
+import { downloadText } from '@/lib/download';
 import { isUserData, mergeUserData, normalizeUserData } from '@/lib/userData';
 import { useUserStore } from '@/stores/userStore';
 
@@ -16,13 +17,7 @@ export function DataControls() {
   const [confirmReset, setConfirmReset] = useState(false);
 
   const exportData = (): void => {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${brand.name.toLowerCase()}-progress-${new Date().toISOString().slice(0, 10)}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadText(`${brand.name.toLowerCase()}-progress-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(data, null, 2), 'application/json');
     toast.success('Файл с прогрессом сохранён', 'Его можно перенести на другой компьютер и загрузить здесь же.');
   };
 
