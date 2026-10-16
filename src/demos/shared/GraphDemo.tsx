@@ -27,6 +27,7 @@ import { GRAPH_CANVAS_HEIGHT, GRAPH_CANVAS_WIDTH, layoutGraph } from '@/lib/grap
 import { pluralize } from '@/lib/progress';
 import { useUserStore } from '@/stores/userStore';
 import type { GraphAlgorithmFrame, GraphSnapshot, NodeId, PseudocodeLine } from '@/types';
+import { countOf } from '@/lib/plural';
 
 export interface GraphAlgorithmOption {
   readonly key: string;
@@ -176,7 +177,7 @@ export function GraphDemo({ config }: { readonly config: GraphDemoConfig }) {
       legend={config.legend}
       player={player}
       pseudocode={algorithm.pseudocode}
-      resultInput={`граф из ${graph.nodes.length} вершин и ${graph.edges.length} рёбер${config.needsStart ? `, старт ${startNodeId}` : ''}${config.needsTarget === true ? `, цель ${targetNodeId}` : ''}`}
+      resultInput={`граф из ${countOf(graph.nodes.length, 'вершины', 'вершин', 'вершин')} и ${countOf(graph.edges.length, 'ребра', 'рёбер', 'рёбер')}${config.needsStart ? `, старт ${startNodeId}` : ''}${config.needsTarget === true ? `, цель ${targetNodeId}` : ''}`}
       stage={
         <div>
           <GraphCanvas
@@ -223,7 +224,7 @@ function GraphEditorPanel({
     const id = label.trim() || createNextNodeId(graph);
     if (!isValidNodeLabel(id)) return setError(`Метка «${id}» не подходит: до 6 латинских букв, цифр, _ или -.`);
     if (graph.nodes.some((node) => node.id === id)) return setError(`Вершина «${id}» уже есть.`);
-    if (graph.nodes.length >= MAX_GRAPH_NODES) return setError(`Достигнут предел — ${MAX_GRAPH_NODES} вершин.`);
+    if (graph.nodes.length >= MAX_GRAPH_NODES) return setError(`Достигнут предел — ${countOf(MAX_GRAPH_NODES, 'вершина', 'вершины', 'вершин')}.`);
     const angle = Math.random() * Math.PI * 2;
     setError(null);
     setLabel('');

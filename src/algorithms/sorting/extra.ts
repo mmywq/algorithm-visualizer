@@ -1,5 +1,6 @@
 import type { ArrayAlgorithmFrame, ArrayAlgorithmMeta, ArrayItem, SortComparisonRow } from '@/types';
 import { cloneArraySnapshot, createArrayItems, getArrayItemIds } from '@/algorithms/arrays/utils';
+import { countOf } from '@/lib/plural';
 
 const createFrame = (
   step: number,
@@ -83,7 +84,7 @@ export function* countingSortDemo(inputValues?: readonly number[]): Generator<Ar
     'complete',
     items,
     [],
-    `Сортировка подсчётом завершена. Итоговый массив: [${items.map((item) => item.value).join(', ')}]. Сравнений выполнено 0: порядок восстановлен по счётчикам ${count.length} значений диапазона.`,
+    `Сортировка подсчётом завершена. Итоговый массив: [${items.map((item) => item.value).join(', ')}]. Сравнений выполнено 0: порядок восстановлен по счётчикам ${countOf(count.length, 'значения', 'значений', 'значений')} диапазона.`,
     {
       sortedIndices: items.map((_, idx) => idx),
       auxiliaryArray: [...count],
@@ -354,7 +355,7 @@ export function* compareSortsDemo(inputValues?: readonly number[]): Generator<Ar
     'complete',
     createArrayItems(bestByOperations.sorted),
     [],
-    `Сравнение 6 сортировок завершено. Все алгоритмы стартовали с [${baseValues.join(', ')}] и получили одинаковый результат [${bestByOperations.sorted.join(', ')}]. Меньше всего операций на этом наборе выполнила «${bestByOperations.name}»: ${bestByOperations.comparisons} сравнений и ${bestByOperations.writes} записей/обменов. Подробные выводы — под таблицей сравнения.`,
+    `Сравнение 6 сортировок завершено. Все алгоритмы стартовали с [${baseValues.join(', ')}] и получили одинаковый результат [${bestByOperations.sorted.join(', ')}]. Меньше всего операций на этом наборе выполнила «${bestByOperations.name}»: ${countOf(bestByOperations.comparisons, 'сравнение', 'сравнения', 'сравнений')} и ${countOf(bestByOperations.writes, 'запись/обмен', 'записи/обмена', 'записей/обменов')}. Подробные выводы — под таблицей сравнения.`,
     {
       sortedIndices: bestByOperations.sorted.map((_, index) => index),
       comparisonRows: finalRows,
@@ -389,16 +390,16 @@ export const buildComparisonInsights = (
   if (bubble !== undefined && selection !== undefined && insertion !== undefined && merge !== undefined && quick !== undefined) {
     const quadraticAvg = Math.round((bubble.comparisons + selection.comparisons + insertion.comparisons) / 3);
     insights.push(
-      `Квадратичные алгоритмы (пузырьковая, выбором, вставками) выполнили в среднем ${quadraticAvg} сравнений, тогда как сортировка слиянием — ${merge.comparisons}, а быстрая — ${quick.comparisons}. При n = ${n} разница умеренная, но с ростом n она увеличивается: n² растёт значительно быстрее, чем n·log n.`,
+      `Квадратичные алгоритмы (пузырьковая, выбором, вставками) выполнили в среднем ${countOf(quadraticAvg, 'сравнение', 'сравнения', 'сравнений')}, тогда как сортировка слиянием — ${merge.comparisons}, а быстрая — ${quick.comparisons}. При n = ${n} разница умеренная, но с ростом n она увеличивается: n² растёт значительно быстрее, чем n·log n.`,
     );
     insights.push(
-      `Сортировка выбором сделала ${selection.comparisons} сравнений — столько же, сколько и в любом другом случае при данном n: она всегда просматривает весь остаток массива. Зато обменов у неё мало (${selection.writes}) — это её сильная сторона, когда перемещение данных дорого.`,
+      `Сортировка выбором сделала ${countOf(selection.comparisons, 'сравнение', 'сравнения', 'сравнений')} — столько же, сколько и в любом другом случае при данном n: она всегда просматривает весь остаток массива. Зато обменов у неё мало (${selection.writes}) — это её сильная сторона, когда перемещение данных дорого.`,
     );
   }
 
   if (counting !== undefined) {
     insights.push(
-      `Сортировка подсчётом не выполнила ни одного сравнения: она подсчитывает частоты значений. Платой служит вспомогательный массив на весь диапазон от ${min} до ${max} (${max - min + 1} ячеек), поэтому метод выгоден только при небольшом диапазоне значений.`,
+      `Сортировка подсчётом не выполнила ни одного сравнения: она подсчитывает частоты значений. Платой служит вспомогательный массив на весь диапазон от ${min} до ${max} (${countOf(max - min + 1, 'ячейка', 'ячейки', 'ячеек')}), поэтому метод выгоден только при небольшом диапазоне значений.`,
     );
   }
 

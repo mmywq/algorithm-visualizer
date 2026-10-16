@@ -1,6 +1,7 @@
 import type { ColorName } from '@/content/catalog';
 import type { AlgorithmPhase, EdgeId, GraphAlgorithmFrame, GraphAlgorithmMeta, GraphEdge, GraphSnapshot, NodeId } from '@/types';
 import { buildAdjacencyList, createGraphFrame, getNeighbors, hasNode } from './utils';
+import { countOf } from '@/lib/plural';
 
 type GraphGenerator = Generator<GraphAlgorithmFrame, void, unknown>;
 type EdgeTone = 'idle' | 'active' | 'tree' | 'rejected' | 'path' | 'muted';
@@ -198,7 +199,7 @@ export function* prim(graph: GraphSnapshot, startNodeId: NodeId): GraphGenerator
       'visit',
       [added, best.id],
       4,
-      `Добавляем ребро и вершину ${added}. В дереве ${inTree.size} из ${graph.nodes.length} вершин, вес ${total}.`,
+      `Добавляем ребро и вершину ${added}. В дереве ${inTree.size} из ${countOf(graph.nodes.length, 'вершины', 'вершин', 'вершин')}, вес ${total}.`,
       state({}, added),
     );
   }
@@ -208,7 +209,7 @@ export function* prim(graph: GraphSnapshot, startNodeId: NodeId): GraphGenerator
     'complete',
     [],
     5,
-    `Минимальное остовное дерево построено: ${chosen.length} рёбер, суммарный вес ${total}. Рёбра выбраны жадно — каждый раз самое лёгкое через границу дерева.`,
+    `Минимальное остовное дерево построено: ${countOf(chosen.length, 'ребро', 'ребра', 'рёбер')}, суммарный вес ${total}. Рёбра выбраны жадно — каждый раз самое лёгкое через границу дерева.`,
     {
       ...state(),
       frontier: [],
@@ -376,7 +377,7 @@ export function* bellmanFord(graph: GraphSnapshot, startNodeId: NodeId): GraphGe
     'initial',
     [startNodeId],
     1,
-    `dist[${startNodeId}] = 0, до остальных — ∞. Беллман — Форд не выбирает «ближайшую» вершину, а просто ${graph.nodes.length - 1} раз проходит по всем рёбрам.`,
+    `dist[${startNodeId}] = 0, до остальных — ∞. Беллман — Форд не выбирает «ближайшую» вершину, а просто ${countOf(graph.nodes.length - 1, 'раз', 'раза', 'раз')} проходит по всем рёбрам.`,
     state(0, startNodeId),
   );
 

@@ -1,4 +1,5 @@
 import type { StructureAlgorithmFrame, StructureSnapshot } from '@/types';
+import { countOf } from '@/lib/plural';
 
 const DEFAULT_BUCKET_COUNT = 7;
 
@@ -17,6 +18,7 @@ const createFrame = (
   bucketIndex?: number,
   key?: number,
   label?: string,
+  outcome?: 'hit' | 'miss',
 ): StructureAlgorithmFrame => ({
   step,
   domain: 'array',
@@ -31,6 +33,7 @@ const createFrame = (
     operation: 'index',
     ...(bucketIndex === undefined ? {} : { activeIndex: bucketIndex, bucketIndex }),
     ...(key === undefined ? {} : { key }),
+    ...(outcome === undefined ? {} : { outcome }),
   },
 });
 
@@ -43,7 +46,7 @@ export function* hashChainingScenario(values: readonly number[], bucketCount = D
     step++,
     'initial',
     buckets,
-    `Создаём хеш-таблицу из ${bucketCount} корзин. Индекс корзины вычисляется как остаток от деления: h(key) = key mod ${bucketCount}.`,
+    `Создаём хеш-таблицу из ${countOf(bucketCount, 'корзины', 'корзин', 'корзин')}. Индекс корзины вычисляется как остаток от деления: h(key) = key mod ${bucketCount}.`,
     1,
   );
 
@@ -93,7 +96,7 @@ export function* hashChainingScenario(values: readonly number[], bucketCount = D
     step,
     'complete',
     buckets,
-    `Построение завершено: вставлено ${values.length} ключей в ${bucketCount} корзин, занято корзин: ${usedBuckets}, коллизий: ${collisions}. Самая длинная цепочка — ${longestChain.length} элем. в корзине ${longestChain.index}: столько сравнений потребует худший поиск. Среднее время операций близко к O(1), пока цепочки короткие.`,
+    `Построение завершено: вставлено ключей: ${values.length}, корзин в таблице: ${bucketCount}, занято: ${usedBuckets}, коллизий: ${collisions}. Самая длинная цепочка — ${longestChain.length} элем. в корзине ${longestChain.index}: столько сравнений потребует худший поиск. Среднее время операций близко к O(1), пока цепочки короткие.`,
     5,
   );
 }
@@ -116,7 +119,7 @@ export function* hashChainingSearchScenario(
     step++,
     'inspect',
     buckets,
-    `Вычисляем индекс корзины: ${target} mod ${bucketCount} = ${bucketIndex}. Остальные ${bucketCount - 1} корзин при поиске не просматриваются.`,
+    `Вычисляем индекс корзины: ${target} mod ${bucketCount} = ${bucketIndex}. Другие корзины (их ${bucketCount - 1}) при поиске не просматриваются.`,
     2,
     bucketIndex,
     target,
@@ -132,6 +135,8 @@ export function* hashChainingSearchScenario(
       5,
       bucketIndex,
       target,
+      undefined,
+      'miss',
     );
     return;
   }
@@ -156,6 +161,8 @@ export function* hashChainingSearchScenario(
         5,
         bucketIndex,
         target,
+        undefined,
+        'hit',
       );
       return;
     }
@@ -165,10 +172,12 @@ export function* hashChainingSearchScenario(
     step,
     'complete',
     buckets,
-    `Поиск завершён: цепочка корзины ${bucketIndex} просмотрена целиком (${chain.length} сравнений), ключ ${target} не найден. В других корзинах его быть не может: хеш-функция всегда отправляет ${target} в корзину ${bucketIndex}.`,
+    `Поиск завершён: цепочка корзины ${bucketIndex} просмотрена целиком (${countOf(chain.length, 'сравнение', 'сравнения', 'сравнений')}), ключ ${target} не найден. В других корзинах его быть не может: хеш-функция всегда отправляет ${target} в корзину ${bucketIndex}.`,
     5,
     bucketIndex,
     target,
+    undefined,
+    'miss',
   );
 }
 
@@ -217,10 +226,12 @@ export function* hashChainingDeleteScenario(
       step,
       'complete',
       buckets,
-      `Удаление завершено без изменений: ключ ${target} не найден в корзине ${bucketIndex} (${chain.length} сравнений). Таблица осталась прежней.`,
+      `Удаление завершено без изменений: ключ ${target} не найден в корзине ${bucketIndex} (${countOf(chain.length, 'сравнение', 'сравнения', 'сравнений')}). Таблица осталась прежней.`,
       5,
       bucketIndex,
       target,
+      undefined,
+      'miss',
     );
     return;
   }
@@ -257,7 +268,7 @@ export function* hashOpenAddressingScenario(values: readonly number[], tableSize
     step++,
     'initial',
     table.map((value) => (value === null ? [] : [value])),
-    `Создаём хеш-таблицу открытой адресации из ${tableSize} ячеек. В этой схеме все ключи хранятся прямо в массиве, а коллизии решаются поиском следующей свободной ячейки.`,
+    `Создаём хеш-таблицу открытой адресации из ${countOf(tableSize, 'ячейки', 'ячеек', 'ячеек')}. В этой схеме все ключи хранятся прямо в массиве, а коллизии решаются поиском следующей свободной ячейки.`,
     1,
     undefined,
     undefined,
@@ -340,6 +351,7 @@ export function* hashOpenAddressingScenario(values: readonly number[], tableSize
         undefined,
         undefined,
         label,
+        'miss',
       );
       return;
     }
@@ -350,7 +362,7 @@ export function* hashOpenAddressingScenario(values: readonly number[], tableSize
     step,
     'complete',
     table.map((cell) => (cell === null ? [] : [cell])),
-    `Построение завершено: вставлено ${occupied} ключей в таблицу из ${tableSize} ячеек (заполненность ${Math.round((occupied / tableSize) * 100)}%). Дополнительных проб из-за коллизий: ${totalExtraProbes}${worstProbes.count > 0 ? `, длиннее всего пробировался ключ ${worstProbes.key} — ${worstProbes.count} лишних шагов` : ''}. Поиск любого ключа повторяет его путь пробирования, поэтому чем выше заполненность, тем дороже операции.`,
+    `Построение завершено: в таблице из ${countOf(tableSize, 'ячейки', 'ячеек', 'ячеек')} занято ${occupied} (заполненность ${Math.round((occupied / tableSize) * 100)}%). Дополнительных проб из-за коллизий: ${totalExtraProbes}${worstProbes.count > 0 ? `, длиннее всего пробировался ключ ${worstProbes.key} — ${countOf(worstProbes.count, 'лишний шаг', 'лишних шага', 'лишних шагов')}` : ''}. Поиск любого ключа повторяет его путь пробирования, поэтому чем выше заполненность, тем дороже операции.`,
     6,
     undefined,
     undefined,
@@ -416,6 +428,7 @@ export function* hashOpenAddressingSearchScenario(
         index,
         target,
         label,
+        'miss',
       );
       return;
     }
@@ -436,11 +449,12 @@ export function* hashOpenAddressingSearchScenario(
         step,
         'complete',
         view(),
-        `Поиск завершён: ключ ${target} найден в ячейке ${index} за ${probe + 1} ${probe === 0 ? 'пробу' : 'проб'}. ${probe === 0 ? 'Ключ лежит в своей «домашней» ячейке — коллизий при его вставке не было.' : `Ключ смещён от домашней позиции ${startIndex} на ${probe} ячеек — это след коллизий при вставке.`}`,
+        `Поиск завершён: ключ ${target} найден в ячейке ${index} за ${countOf(probe + 1, 'пробу', 'пробы', 'проб')}. ${probe === 0 ? 'Ключ лежит в своей «домашней» ячейке — коллизий при его вставке не было.' : `Ключ смещён от домашней позиции ${startIndex} на ${countOf(probe, 'ячейку', 'ячейки', 'ячеек')} — это след коллизий при вставке.`}`,
         6,
         index,
         target,
         label,
+        'hit',
       );
       return;
     }
@@ -450,11 +464,12 @@ export function* hashOpenAddressingSearchScenario(
     step,
     'complete',
     view(),
-    `Поиск завершён: пройдены все ${tableSize} ячеек, ключ ${target} не найден. Таблица заполнена целиком — худший случай открытой адресации.`,
+    `Поиск завершён: пройдены все ${countOf(tableSize, 'ячейка', 'ячейки', 'ячеек')}, ключ ${target} не найден. Таблица заполнена целиком — худший случай открытой адресации.`,
     6,
     undefined,
     target,
     label,
+    'miss',
   );
 }
 
@@ -539,7 +554,7 @@ export function* hashBlockAddressingScenario(values: readonly number[], blockCou
     step,
     'complete',
     blocks,
-    `Построение завершено: ${values.length} ключей размещены в ${blockCount} основных блоках по ${blockSize} ячейки; переполнений: ${overflowCount}, создано overflow-блоков: ${overflowCount}. Поиск проверяет основной блок и цепочку его переполнений, не затрагивая чужие блоки.`,
+    `Построение завершено: ключи (${values.length}) размещены в ${countOf(blockCount, 'основном блоке', 'основных блоках', 'основных блоках')} по ${countOf(blockSize, 'ячейке', 'ячейки', 'ячеек')}; переполнений: ${overflowCount}, создано overflow-блоков: ${overflowCount}. Поиск проверяет основной блок и цепочку его переполнений, не затрагивая чужие блоки.`,
     6,
     undefined,
     undefined,
@@ -623,6 +638,7 @@ export function* hashBlockSearchScenario(
           blockIndex,
           target,
           label,
+          'hit',
         );
         return;
       }
@@ -633,10 +649,11 @@ export function* hashBlockSearchScenario(
     step,
     'complete',
     blocks,
-    `Поиск завершён: ключ ${target} не найден. Просмотрена вся цепочка блока ${primaryBlock} — ${chainBlocks.length} блок(ов), ${comparisons} сравнений. Чужие блоки не проверялись: хеш-функция однозначно определяет цепочку поиска.`,
+    `Поиск завершён: ключ ${target} не найден. Просмотрена вся цепочка блока ${primaryBlock} — ${countOf(chainBlocks.length, 'блок', 'блока', 'блоков')}, ${countOf(comparisons, 'сравнение', 'сравнения', 'сравнений')}. Чужие блоки не проверялись: хеш-функция однозначно определяет цепочку поиска.`,
     6,
     primaryBlock,
     target,
     label,
+    'miss',
   );
 }

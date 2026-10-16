@@ -1,6 +1,7 @@
 import type { AlgorithmPhase } from '@/types';
 import type { TreeDiagramNode } from '@/types/tree';
 import { createNode, inorderValues, snapshotTree, treeFrame, treeHeight, type MutableNode, type TreeFrame } from './treeFrames';
+import { countOf } from '@/lib/plural';
 
 type Generator_ = Generator<TreeFrame, void, unknown>;
 
@@ -233,7 +234,7 @@ export function* redBlackInsertScenario(values: readonly number[]): Generator_ {
     LABEL,
     snapshotTree(r),
     6,
-    `Готово: ${values.length} ключей, высота ${treeHeight(r)}, чёрная высота ${Math.max(0, blackHeight(r) - 1)}. Симметричный обход: ${inorderValues(r).join(', ')}. Высота красно-чёрного дерева не превышает 2·log₂(n + 1).`,
+    `Готово: ${countOf(values.length, 'ключ', 'ключа', 'ключей')}, высота ${treeHeight(r)}, чёрная высота ${Math.max(0, blackHeight(r) - 1)}. Симметричный обход: ${inorderValues(r).join(', ')}. Высота красно-чёрного дерева не превышает 2·log₂(n + 1).`,
     { output: inserted.map(String), outputLabel: 'Вставлены' },
   );
 }

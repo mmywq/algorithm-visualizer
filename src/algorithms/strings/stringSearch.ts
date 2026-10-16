@@ -1,4 +1,5 @@
 import type { AlgorithmFrame, AlgorithmPhase } from '@/types';
+import { plural } from '@/lib/plural';
 
 export interface StringSnapshot {
   readonly text: string;
@@ -29,12 +30,7 @@ export interface StringMeta extends Record<string, unknown> {
 
 export type StringFrame = AlgorithmFrame<StringSnapshot, StringMeta>;
 
-const word = (count: number, one: string, few: string, many: string): string => {
-  const mod100 = count % 100;
-  if (mod100 >= 11 && mod100 <= 14) return many;
-  const mod10 = count % 10;
-  return mod10 === 1 ? one : mod10 >= 2 && mod10 <= 4 ? few : many;
-};
+const word = plural;
 const comparisonsText = (count: number): string => `${count} ${word(count, 'сравнение', 'сравнения', 'сравнений')}`;
 
 const makeFrame =
@@ -70,7 +66,7 @@ export function* naiveSearch(text: string, pattern: string): Generator<StringFra
     step++,
     'initial',
     1,
-    `Ищем «${pattern}» в «${text}». Прикладываем образец к каждой из ${Math.max(0, n - m + 1)} позиций и сравниваем символы слева направо.`,
+    `Ищем «${pattern}» в «${text}». Прикладываем образец к каждой из ${Math.max(0, n - m + 1)} ${word(Math.max(0, n - m + 1), 'позиции', 'позиций', 'позиций')} и сравниваем символы слева направо.`,
     {
       shift: 0,
       found,
@@ -104,7 +100,13 @@ export function* naiveSearch(text: string, pattern: string): Generator<StringFra
     }
     if (j === m) {
       found.push(s);
-      yield frame(step++, 'visit', 4, `Все ${m} символов совпали — вхождение с позиции ${s}.`, { shift: s, matched: m, found: [...found], comparisons });
+      yield frame(
+        step++,
+        'visit',
+        4,
+        m === 1 ? `Символ совпал — вхождение с позиции ${s}.` : `Все ${m} ${word(m, 'символ', 'символа', 'символов')} совпали — вхождение с позиции ${s}.`,
+        { shift: s, matched: m, found: [...found], comparisons },
+      );
     }
   }
 

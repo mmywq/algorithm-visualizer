@@ -1,6 +1,7 @@
 import type { AlgorithmPhase } from '@/types';
 import type { TreeDiagramNode, TreeTone } from '@/types/tree';
 import { treeFrame, type TreeFrame } from './treeFrames';
+import { countOf } from '@/lib/plural';
 
 type TrieGenerator = Generator<TreeFrame, void, unknown>;
 
@@ -138,7 +139,7 @@ export function* trieBuildScenario(words: readonly string[]): TrieGenerator {
   yield frame(
     'complete',
     5,
-    `Готово: ${words.length} слов из ${letters} букв хранятся в ${size} узлах — общие префиксы записаны один раз. Поиск любого слова или префикса длины L займёт L шагов, сколько бы слов ни было в боре.`,
+    `Готово: ${countOf(words.length, 'слово', 'слова', 'слов')} из ${countOf(letters, 'буквы', 'букв', 'букв')} ${words.length === 1 ? 'хранится' : 'хранятся'} в ${countOf(size, 'узле', 'узлах', 'узлах')} — общие префиксы записаны один раз. Поиск любого слова или префикса длины L займёт L шагов, сколько бы слов ни было в боре.`,
     () => undefined,
   );
 }
@@ -168,7 +169,7 @@ export function* triePrefixScenario(words: readonly string[], prefix: string): T
       yield frame(
         'complete',
         3,
-        `После «${prefix.slice(0, index)}» нет ребра «${char}» — ни одно слово не начинается с «${prefix}». Понадобилось ${index + 1} шагов.`,
+        `После «${prefix.slice(0, index)}» нет ребра «${char}» — ни одно слово не начинается с «${prefix}». Шагов спуска: ${index + 1}.`,
         tonesFor(node, path),
         {
           outcome: 'miss',
@@ -210,7 +211,7 @@ export function* triePrefixScenario(words: readonly string[], prefix: string): T
     5,
     found.length === 0
       ? `Префикс «${prefix}» есть в боре, но целых слов с ним нет.`
-      : `Найдено ${found.length}: ${found.join(', ')}. Спуск по префиксу занял ${prefix.length} шагов — длина префикса, а не число слов.`,
+      : `Найдено ${found.length}: ${found.join(', ')}. Спуск по префиксу занял ${countOf(prefix.length, 'шаг', 'шага', 'шагов')} — длина префикса, а не число слов.`,
     (item) => (subtree.has(item) ? 'done' : path.has(item) ? 'path' : 'muted'),
     found.length === 0 ? { outcome: 'miss' } : {},
   );

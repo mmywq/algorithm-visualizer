@@ -329,7 +329,7 @@ export function* heapScenario(inputValues?: readonly number[]): Generator<Struct
     'complete',
     'completed',
     heapSnapshot(),
-    `Построение min-heap завершено: вставлено ${insertionOrder.length} ключей, массив кучи [${heap.join(', ')}]. Корень ${heap[0] ?? '—'} — минимальный элемент; для каждого индекса i дети находятся в ячейках 2i+1 и 2i+2.`,
+    `Построение min-heap завершено: вставлено ключей: ${insertionOrder.length}, массив кучи [${heap.join(', ')}]. Корень ${heap[0] ?? '—'} — минимальный элемент; для каждого индекса i дети находятся в ячейках 2i+1 и 2i+2.`,
     'push',
     2,
   );

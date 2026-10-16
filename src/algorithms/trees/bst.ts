@@ -1,5 +1,6 @@
 import type { TreeTone } from '@/types/tree';
 import { buildBst, createNode, inorderValues, snapshotTree, treeFrame, treeHeight, type MutableNode, type TreeFrame } from './treeFrames';
+import { countOf } from '@/lib/plural';
 
 type TreeGenerator = Generator<TreeFrame, void, unknown>;
 
@@ -84,10 +85,10 @@ export function* bstBuildScenario(values: readonly number[]): TreeGenerator {
     LABEL,
     snapshotTree(root),
     6,
-    `Дерево построено: ${values.length} узлов, высота ${height}, сравнений при вставке — ${comparisons}. ${
+    `Дерево построено: ${countOf(values.length, 'узел', 'узла', 'узлов')}, высота ${height}, сравнений при вставке — ${comparisons}. ${
       height > ideal + 1
         ? `Идеально сбалансированное дерево из стольких узлов имело бы высоту ${ideal}: порядок вставки перекосил дерево, и поиск в нём стал медленнее.`
-        : `Это близко к оптимуму (${ideal}): поиск любого ключа займёт не больше ${height} сравнений.`
+        : `Это близко к оптимуму (${ideal}): поиск любого ключа займёт не больше ${countOf(height, 'сравнения', 'сравнений', 'сравнений')}.`
     } Симметричный обход выдаёт ключи по возрастанию: ${inorderValues(root).join(', ')}.`,
   );
 }
@@ -116,7 +117,7 @@ export function* bstSearchNodeScenario(values: readonly number[], target: number
         LABEL,
         snapshotTree(root, tones(null, path, found)),
         5,
-        `Ключ ${target} найден за ${visited.length} ${visited.length === 1 ? 'сравнение' : visited.length < 5 ? 'сравнения' : 'сравнений'}. Путь: ${visited.join(' → ')}. В дереве ${values.length} узлов, но просмотрена лишь одна ветка.`,
+        `Ключ ${target} найден за ${countOf(visited.length, 'сравнение', 'сравнения', 'сравнений')}. Путь: ${visited.join(' → ')}. В дереве ${countOf(values.length, 'узел', 'узла', 'узлов')}, но просмотрена лишь одна ветка.`,
         { output: visited.map(String), outputLabel: 'Путь поиска', found: true },
       );
       return;
@@ -312,7 +313,7 @@ export function* traversalScenario(values: readonly number[], order: TraversalOr
     label,
     snapshotTree(root),
     1,
-    `Обход «${traversalNames[order]}» посетит каждый из ${values.length} узлов ровно один раз. Порядок посещения и есть результат.`,
+    `Обход «${traversalNames[order]}» посетит каждый из ${countOf(values.length, 'узла', 'узлов', 'узлов')} ровно один раз. Порядок посещения и есть результат.`,
     { output, outputLabel: 'Порядок посещения' },
   );
 

@@ -105,7 +105,7 @@ export function* bfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
     graph,
     [],
     bfsPseudocode.complete,
-    `Обход в ширину завершён: очередь пуста. Из вершины ${startNodeId} достижимы ${visitedNodeIds.size} вершин, порядок посещения: ${[...visitedNodeIds].join(' → ')}. Выделенные рёбра образуют дерево обхода.`,
+    `Обход в ширину завершён: очередь пуста. Из вершины ${startNodeId} достижимо вершин: ${visitedNodeIds.size}, порядок посещения: ${[...visitedNodeIds].join(' → ')}. Выделенные рёбра образуют дерево обхода.`,
     createGraphMeta(startNodeId, visitedNodeIds, queue, traversedEdgeIds),
   );
 }

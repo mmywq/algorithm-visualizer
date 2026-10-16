@@ -7,6 +7,7 @@ import { TextInput } from '@/features/demo/TextInput';
 import { useDemoPlayer } from '@/features/player/useDemoPlayer';
 import { useFrames } from '@/features/player/usePlayer';
 import { stringCodec, useUrlState } from '@/hooks/useUrlState';
+import { countOf } from '@/lib/plural';
 
 type Run = (text: string, pattern: string) => Generator<StringFrame, void, unknown>;
 
@@ -15,7 +16,7 @@ const validator =
   (raw: string): { value: string } | { error: string } => {
     const value = raw.replace(/\s+/g, '');
     if (value.length === 0) return { error: `Введите ${what}.` };
-    if (value.length > max) return { error: `Не длиннее ${max} символов.` };
+    if (value.length > max) return { error: `Не длиннее ${countOf(max, 'символа', 'символов', 'символов')}.` };
     if (!/^[\p{L}\p{N}]+$/u.test(value)) return { error: 'Только буквы и цифры, без пробелов.' };
     return { value };
   };

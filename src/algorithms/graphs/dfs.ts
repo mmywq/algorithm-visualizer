@@ -107,7 +107,7 @@ export function* dfs({ graph, startNodeId }: GraphTraversalInput): Generator<Gra
     graph,
     [],
     dfsPseudocode.complete,
-    `Обход в глубину завершён: стек пуст. Из вершины ${startNodeId} достижимы ${visitedNodeIds.size} вершин, порядок обнаружения: ${[...visitedNodeIds].join(' → ')}. Выделенные рёбра образуют дерево обхода.`,
+    `Обход в глубину завершён: стек пуст. Из вершины ${startNodeId} достижимо вершин: ${visitedNodeIds.size}, порядок обнаружения: ${[...visitedNodeIds].join(' → ')}. Выделенные рёбра образуют дерево обхода.`,
     createGraphMeta(startNodeId, visitedNodeIds, stack, traversedEdgeIds),
   );
 }

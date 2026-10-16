@@ -1,6 +1,7 @@
 import { treeFrame, type TreeFrame } from '@/algorithms/trees/treeFrames';
 import type { AlgorithmPhase } from '@/types';
 import type { TreeDiagramNode, TreeTone } from '@/types/tree';
+import { countOf } from '@/lib/plural';
 
 export type DsuOp = { readonly kind: 'union'; readonly a: number; readonly b: number } | { readonly kind: 'find'; readonly x: number };
 
@@ -76,7 +77,11 @@ export function* dsuScenario(size: number, ops: readonly DsuOp[]): Generator<Tre
     extra: Partial<DsuMeta> & Record<string, unknown> = {},
   ) => treeFrame(step++, phase, LABEL, nodes(toneOf), line, message, { parent: [...parent], rank: [...rank], ...extra });
 
-  yield frame('initial', 1, `${size} элементов, каждый — отдельное множество: parent[i] = i, ранг 0. Корень дерева — представитель множества.`);
+  yield frame(
+    'initial',
+    1,
+    `${countOf(size, 'элемент', 'элемента', 'элементов')}, каждый — отдельное множество: parent[i] = i, ранг 0. Корень дерева — представитель множества.`,
+  );
 
   /** поиск корня с кадрами; затем сжатие пути */
   function* find(x: number, opIndex: number, role: string): Generator<TreeFrame, number, unknown> {

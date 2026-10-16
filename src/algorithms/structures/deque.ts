@@ -1,4 +1,5 @@
 import type { AlgorithmFrame, AlgorithmPhase } from '@/types';
+import { countOf } from '@/lib/plural';
 
 export type DequeOp =
   | { readonly kind: 'push-front'; readonly value: number }
@@ -90,7 +91,7 @@ export function* dequeScript(ops: readonly DequeOp[], capacity = DEQUE_CAPACITY)
   yield frame(
     'initial',
     1,
-    `Буфер из ${capacity} ячеек, front = 0, size = 0. Ячейки замкнуты в кольцо: за последней сразу идёт первая, поэтому дек может расти в обе стороны без сдвигов.`,
+    `Буфер из ${countOf(capacity, 'ячейки', 'ячеек', 'ячеек')}, front = 0, size = 0. Ячейки замкнуты в кольцо: за последней сразу идёт первая, поэтому дек может расти в обе стороны без сдвигов.`,
   );
 
   for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {

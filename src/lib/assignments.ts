@@ -2,6 +2,7 @@
  * Статус задания для студента и выгрузка сводки класса в таблицу.
  * Модуль чистый (без React и сети): его используют страница класса, демо-класс и тесты.
  */
+import { plural } from '@/lib/plural';
 import type { AlgoProgress } from '@/lib/userData';
 
 /** done — сдано в срок (или срока нет), late — сдано после срока, overdue — срок прошёл, а задание не сдано. */
@@ -52,14 +53,6 @@ export const assignmentStatus = (
   else if (due !== null && now > due) state = 'overdue';
   else state = algorithmIds.some((id) => started(progress[id])) ? 'progress' : 'idle';
   return { state, done, total, completedAt };
-};
-
-const plural = (count: number, one: string, few: string, many: string): string => {
-  const mod10 = count % 10;
-  const mod100 = count % 100;
-  if (mod10 === 1 && mod100 !== 11) return one;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
-  return many;
 };
 
 /** Подпись срока для студента: «осталось 3 дня», «срок сегодня», «просрочено на 2 дня». Дни считаются по календарю. */

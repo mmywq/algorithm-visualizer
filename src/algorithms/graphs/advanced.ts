@@ -1,5 +1,6 @@
 import type { EdgeId, GraphAlgorithmFrame, GraphSnapshot, NodeId } from '@/types';
 import { buildAdjacencyList, createGraphFrame, createGraphMeta, getNeighbors, hasNode } from './utils';
+import { countOf } from '@/lib/plural';
 
 export const defaultWeightedGraph: GraphSnapshot = {
   nodes: [
@@ -400,8 +401,8 @@ export function* mstKruskal(graph: GraphSnapshot): Generator<GraphAlgorithmFrame
     [],
     4,
     isComplete
-      ? `Минимальное остовное дерево построено. В остов вошли рёбра: ${chosenEdges.join(', ')} — это ${traversed.size} рёбер для ${graph.nodes.length} вершин, суммарный вес ${totalWeight}. Каждое ребро выбрано как самое лёгкое из не образующих цикл, поэтому полученное дерево соединяет все вершины с минимальной возможной суммой весов.`
-      : `Рёбра закончились, а дерево охватило не все вершины: граф несвязный. Получен минимальный остовный лес из ${traversed.size} рёбер (${chosenEdges.join(', ') || '—'}) с суммарным весом ${totalWeight}.`,
+      ? `Минимальное остовное дерево построено. В остов вошли рёбра: ${chosenEdges.join(', ')} — это ${countOf(traversed.size, 'ребро', 'ребра', 'рёбер')} для ${countOf(graph.nodes.length, 'вершины', 'вершин', 'вершин')}, суммарный вес ${totalWeight}. Каждое ребро выбрано как самое лёгкое из не образующих цикл, поэтому полученное дерево соединяет все вершины с минимальной возможной суммой весов.`
+      : `Рёбра закончились, а дерево охватило не все вершины: граф несвязный. Получен минимальный остовный лес из ${countOf(traversed.size, 'ребра', 'рёбер', 'рёбер')} (${chosenEdges.join(', ') || '—'}) с суммарным весом ${totalWeight}.`,
     { ...createGraphMeta(startId, visited, [], traversed), ...liveMeta() },
   );
 }

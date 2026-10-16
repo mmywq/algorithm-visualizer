@@ -1,5 +1,6 @@
 import type { AlgorithmPhase, ArrayAlgorithmFrame, ArrayAlgorithmMeta, ArrayItem } from '@/types';
 import { cloneArraySnapshot, createArrayItems, getArrayItemIds } from './utils';
+import { countOf } from '@/lib/plural';
 
 type SearchGenerator = Generator<ArrayAlgorithmFrame, void, unknown>;
 
@@ -61,7 +62,7 @@ export function* linearSearch(input: readonly number[], key: number): SearchGene
     'initial',
     items,
     1,
-    `Ищем ключ ${key} среди ${n} элементов. Массив не обязан быть упорядочен, поэтому проверяем элементы по очереди слева направо.`,
+    `Ищем ключ ${key} среди ${countOf(n, 'элемента', 'элементов', 'элементов')}. Массив не обязан быть упорядочен, поэтому проверяем элементы по очереди слева направо.`,
     { targetValue: key, pointers: { i: 0 }, counters: counters(n) },
   );
 
@@ -338,12 +339,19 @@ export function* jumpSearch(input: readonly number[], key: number): SearchGenera
       });
       return;
     }
-    yield frame(step++, 'discard', items, 3, `Весь блок меньше ключа — отбрасываем его и прыгаем на ${m} позиций вперёд: prev ← ${prev}.`, {
-      targetValue: key,
-      discardedIndices: indices(0, prev - 1),
-      pointers: { prev },
-      counters: { comparisons, candidates: n - prev },
-    });
+    yield frame(
+      step++,
+      'discard',
+      items,
+      3,
+      `Весь блок меньше ключа — отбрасываем его и прыгаем на ${countOf(m, 'позицию', 'позиции', 'позиций')} вперёд: prev ← ${prev}.`,
+      {
+        targetValue: key,
+        discardedIndices: indices(0, prev - 1),
+        pointers: { prev },
+        counters: { comparisons, candidates: n - prev },
+      },
+    );
   }
 
   const last = Math.min(prev + m, n) - 1;

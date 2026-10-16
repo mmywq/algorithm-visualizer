@@ -289,7 +289,7 @@ export function* avlScenario(values: readonly number[]): Generator<StructureAlgo
   yield createFrame(
     step,
     root,
-    `Построение AVL-дерева завершено: вставлено ${values.length} ключей, выполнено поворотов: ${rotationCount}. Высота дерева — ${heightOf(root)}; для каждого узла разность высот поддеревьев находится в пределах от −1 до 1, поэтому поиск гарантированно выполняется за O(log n).`,
+    `Построение AVL-дерева завершено: вставлено ключей: ${values.length}, выполнено поворотов: ${rotationCount}. Высота дерева — ${heightOf(root)}; для каждого узла разность высот поддеревьев находится в пределах от −1 до 1, поэтому поиск гарантированно выполняется за O(log n).`,
     5,
     undefined,
     'complete',

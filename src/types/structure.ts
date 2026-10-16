@@ -24,6 +24,8 @@ export interface StructureAlgorithmMeta extends Record<string, unknown> {
   readonly pointers?: Readonly<Record<string, number>>;
   readonly bucketIndex?: number;
   readonly key?: number;
+  /** итог операции: miss — ключа нет или вставить некуда (на итоговом кадре Кэш грустит) */
+  readonly outcome?: 'hit' | 'miss';
 }
 
 export type StructureAlgorithmFrame = AlgorithmFrame<StructureSnapshot, StructureAlgorithmMeta>;

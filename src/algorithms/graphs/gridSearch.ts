@@ -1,4 +1,5 @@
 import type { AlgorithmFrame, AlgorithmPhase } from '@/types';
+import { countOf } from '@/lib/plural';
 
 export interface GridSnapshot {
   readonly cols: number;
@@ -109,7 +110,7 @@ export function* gridSearch(grid: GridSnapshot, mode: GridMode): Generator<GridF
       yield frame(
         'complete',
         3,
-        `Цель извлечена из открытого списка — путь найден: ${path.length - 1} шагов. Раскрыто клеток: ${closed.size}. ${
+        `Цель извлечена из открытого списка — путь найден: ${countOf(path.length - 1, 'шаг', 'шага', 'шагов')}. Раскрыто клеток: ${closed.size}. ${
           mode === 'astar'
             ? 'Это кратчайший путь.'
             : mode === 'dijkstra'

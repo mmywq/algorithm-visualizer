@@ -1,6 +1,7 @@
 import type { AlgorithmPhase } from '@/types';
 import type { TreeDiagramNode, TreeTone } from '@/types/tree';
 import { treeFrame, type TreeFrame } from './treeFrames';
+import { countOf } from '@/lib/plural';
 
 type SegmentGenerator = Generator<TreeFrame, void, unknown>;
 
@@ -82,7 +83,7 @@ export function* segmentBuildScenario(values: readonly number[]): SegmentGenerat
   yield frame(
     'initial',
     1,
-    `Массив из ${values.length} элементов. Каждый узел дерева отвечает за отрезок массива (подписан под узлом) и хранит сумму на нём. Корень — весь массив [0…${values.length - 1}].`,
+    `Массив из ${countOf(values.length, 'элемента', 'элементов', 'элементов')}. Каждый узел дерева отвечает за отрезок массива (подписан под узлом) и хранит сумму на нём. Корень — весь массив [0…${values.length - 1}].`,
     () => undefined,
   );
 
@@ -119,7 +120,7 @@ export function* segmentBuildScenario(values: readonly number[]): SegmentGenerat
   yield frame(
     'complete',
     4,
-    `Дерево построено: ${count} узлов (всегда 2n − 1), уровней — ${Math.ceil(Math.log2(values.length)) + 1}. Каждый узел посчитан один раз, поэтому построение заняло O(n).`,
+    `Дерево построено: ${countOf(count, 'узел', 'узла', 'узлов')} (всегда 2n − 1), уровней — ${Math.ceil(Math.log2(values.length)) + 1}. Каждый узел посчитан один раз, поэтому построение заняло O(n).`,
     () => undefined,
   );
 }
@@ -188,7 +189,7 @@ export function* segmentQueryScenario(values: readonly number[], ql: number, qr:
   yield frame(
     'complete',
     5,
-    `Сумма на [${lo}…${hi}] = ${parts.join(' + ')} = ${total}. Посещено ${visited.size} из ${countNodes(root)} узлов; простой перебор сложил бы ${hi - lo + 1} чисел. На любом уровне дерева в ответ входят не больше двух узлов — отсюда O(log n).`,
+    `Сумма на [${lo}…${hi}] = ${parts.join(' + ')} = ${total}. Посещено ${visited.size} из ${countOf(countNodes(root), 'узла', 'узлов', 'узлов')}; простой перебор сложил бы ${countOf(hi - lo + 1, 'число', 'числа', 'чисел')}. На любом уровне дерева в ответ входят не больше двух узлов — отсюда O(log n).`,
     tone(null),
     { arrayRange: [lo, hi], output: parts.map(String), outputLabel: 'Взятые узлы', found: true },
   );
@@ -253,7 +254,7 @@ export function* segmentUpdateScenario(input: readonly number[], index: number, 
   yield frame(
     'complete',
     4,
-    `Обновлено ${updated.size} узлов — по одному на уровне, не больше ⌈log₂ n⌉ + 1 = ${Math.ceil(Math.log2(values.length)) + 1}. Остальные суммы остались верными без пересчёта: O(log n).`,
+    `Обновлено узлов: ${updated.size} — по одному на уровне, не больше ⌈log₂ n⌉ + 1 = ${Math.ceil(Math.log2(values.length)) + 1}. Остальные суммы остались верными без пересчёта: O(log n).`,
     (item) => (updated.has(item) ? 'new' : undefined),
   );
 }
