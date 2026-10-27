@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Database, Maximize2, Minimize2, Pause, Play, RotateCcw, SkipForward, StepBack, StepForward } from 'lucide-react';
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties } from 'react';
 import { Menu } from '@/components/ui/Menu';
 import { SPEED_OPTIONS } from '@/stores/settingsStore';
 import type { Player } from './usePlayer';
@@ -8,7 +8,8 @@ import type { Player } from './usePlayer';
 interface PlayerBarProps {
   readonly player: Player<unknown>;
   readonly onOpenData?: (() => void) | undefined;
-  readonly dataLabel?: ReactNode;
+  /** краткая запись входных данных — показывается на кнопке и входит в её подпись для экранных дикторов */
+  readonly dataLabel?: string | undefined;
   readonly lecture?: boolean;
   readonly onToggleLecture?: (() => void) | undefined;
   readonly floating?: boolean;
@@ -58,7 +59,12 @@ export function PlayerBar({ player, onOpenData, dataLabel, lecture = false, onTo
       <div className="mt-1.5 grid grid-cols-[1fr_auto_1fr] items-center gap-1.5 sm:gap-2">
         <div className="flex min-w-0 items-center gap-1">
           {onOpenData !== undefined && (
-            <button aria-label="Входные данные" className="btn btn-secondary btn-sm min-w-0 shrink px-2.5 lg:hidden" onClick={onOpenData} type="button">
+            <button
+              aria-label={dataLabel === undefined ? 'Входные данные' : `Входные данные: ${dataLabel}`}
+              className="btn btn-secondary btn-sm min-w-0 shrink px-2.5 lg:hidden"
+              onClick={onOpenData}
+              type="button"
+            >
               <Database className="shrink-0" size={16} strokeWidth={2.5} />
               <span className="hidden max-w-[96px] truncate min-[420px]:inline">{dataLabel ?? 'Данные'}</span>
             </button>
@@ -116,7 +122,7 @@ export function PlayerBar({ player, onOpenData, dataLabel, lecture = false, onTo
         <div className="flex items-center justify-end gap-1">
           <button
             aria-label="К результату"
-            className="btn btn-ghost btn-icon hidden sm:inline-flex"
+            className="btn btn-ghost btn-icon shrink-0"
             disabled={player.atEnd}
             onClick={player.toEnd}
             title="К результату (End)"

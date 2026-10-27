@@ -220,7 +220,14 @@ export function QuizView({ entry, onNavigate }: { readonly entry: AlgorithmEntry
         >
           <h2 className="text-[22px] font-black leading-snug tracking-[-0.015em] text-ink sm:text-[24px]">{question.q}</h2>
           {question.code !== undefined && (
-            <pre className="mt-4 overflow-x-auto rounded-2xl bg-surface-2 p-4 font-mono text-[14px] font-semibold leading-6 text-ink">{question.code}</pre>
+            <pre
+              aria-label="Фрагмент к вопросу"
+              className="mt-4 overflow-x-auto rounded-2xl bg-surface-2 p-4 font-mono text-[14px] font-semibold leading-6 text-ink"
+              role="region"
+              tabIndex={0}
+            >
+              {question.code}
+            </pre>
           )}
           <div className="mt-6 grid gap-3" role="radiogroup">
             {question.order.map((optionIndex, position) => {

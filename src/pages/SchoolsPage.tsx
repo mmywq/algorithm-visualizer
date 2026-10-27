@@ -132,7 +132,7 @@ function Hero() {
     { name: 'Студент 4', cells: [0.66, 0.33, 0, 0] },
   ];
   return (
-    <section className="grid items-center gap-12 pt-4 lg:grid-cols-[1.05fr_1fr] lg:pt-10">
+    <section className="grid grid-cols-1 items-center gap-12 pt-4 lg:grid-cols-[1.05fr_1fr] lg:pt-10">
       <div>
         <p className="tag border-cyan text-cyan">ДЛЯ ВУЗОВ, КОЛЛЕДЖЕЙ И ШКОЛ</p>
         <h1 className="h-display mt-6 text-ink">
@@ -223,21 +223,19 @@ function Features() {
         {features.map((feature, index) => {
           const Icon = feature.icon;
           return (
-            <Reveal delay={(index % 3) * 0.06} key={feature.title}>
-              <li className="card h-full p-6">
-                <span
-                  className="inline-flex h-12 w-12 items-center justify-center rounded-xl border-2 text-on"
-                  style={{
-                    background: `rgb(var(--c-${feature.color}))`,
-                    borderColor: `rgb(var(--c-${feature.color}-press))`,
-                    boxShadow: `0 4px 0 rgb(var(--c-${feature.color}-press))`,
-                  }}
-                >
-                  <Icon size={24} strokeWidth={2.5} />
-                </span>
-                <h3 className="mt-5 text-xl font-black text-ink">{feature.title}</h3>
-                <p className="mt-2 text-[15px] font-semibold leading-6 text-ink-2">{feature.text}</p>
-              </li>
+            <Reveal as="li" className="card h-full p-6" delay={(index % 3) * 0.06} key={feature.title}>
+              <span
+                className="inline-flex h-12 w-12 items-center justify-center rounded-xl border-2 text-on"
+                style={{
+                  background: `rgb(var(--c-${feature.color}))`,
+                  borderColor: `rgb(var(--c-${feature.color}-press))`,
+                  boxShadow: `0 4px 0 rgb(var(--c-${feature.color}-press))`,
+                }}
+              >
+                <Icon size={24} strokeWidth={2.5} />
+              </span>
+              <h3 className="mt-5 text-xl font-black text-ink">{feature.title}</h3>
+              <p className="mt-2 text-[15px] font-semibold leading-6 text-ink-2">{feature.text}</p>
             </Reveal>
           );
         })}
@@ -260,14 +258,12 @@ function Steps() {
       </h2>
       <ol className="mt-8 grid gap-5 md:grid-cols-3">
         {steps.map((step, index) => (
-          <Reveal delay={index * 0.08} key={step.title}>
-            <li className="card relative h-full overflow-hidden p-6">
-              <span aria-hidden="true" className="absolute -right-2 -top-6 font-display text-[96px] leading-none text-line">
-                {index + 1}
-              </span>
-              <h3 className="relative text-xl font-black text-ink">{step.title}</h3>
-              <p className="relative mt-2 text-[15px] font-semibold leading-6 text-ink-2">{step.text}</p>
-            </li>
+          <Reveal as="li" className="card relative h-full overflow-hidden p-6" delay={index * 0.08} key={step.title}>
+            <span aria-hidden="true" className="absolute -right-2 -top-6 font-display text-[96px] leading-none text-line">
+              {index + 1}
+            </span>
+            <h3 className="relative text-xl font-black text-ink">{step.title}</h3>
+            <p className="relative mt-2 text-[15px] font-semibold leading-6 text-ink-2">{step.text}</p>
           </Reveal>
         ))}
       </ol>
@@ -278,7 +274,7 @@ function Steps() {
 function Coverage() {
   return (
     <Reveal>
-      <Window bodyClassName="grid gap-8 p-6 sm:p-8 lg:grid-cols-[1fr_1.3fr] lg:items-center" color="purple" title="program.txt">
+      <Window bodyClassName="grid grid-cols-1 gap-8 p-6 sm:p-8 lg:grid-cols-[1fr_1.3fr] lg:items-center" color="purple" title="program.txt">
         <div>
           <p className="tag border-purple text-purple">ПРОГРАММА</p>
           <h2 className="h-section mt-4">Покрывает курс «Алгоритмы и структуры данных»</h2>
@@ -426,7 +422,7 @@ function RequestForm() {
 
   return (
     <section aria-labelledby="request-title" className="scroll-mt-24" id="request">
-      <Window bodyClassName="grid gap-8 p-6 sm:p-8 lg:grid-cols-[0.8fr_1.2fr]" color="brand" title="request.exe">
+      <Window bodyClassName="grid grid-cols-1 gap-8 p-6 sm:p-8 lg:grid-cols-[0.8fr_1.2fr]" color="brand" title="request.exe">
         <div>
           <p className="tag border-brand text-brand">ЗАЯВКА</p>
           <h2 className="h-section mt-4" id="request-title">

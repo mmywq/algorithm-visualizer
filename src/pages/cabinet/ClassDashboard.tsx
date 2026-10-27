@@ -236,7 +236,12 @@ function AssignmentProgress({
               </li>
             ))}
           </ul>
-          <div className="mt-3 overflow-x-auto rounded-2xl border-2 border-line">
+          <div
+            aria-label={`Прогресс по заданию «${assignment.title}»`}
+            className="mt-3 overflow-x-auto rounded-2xl border-2 border-line"
+            role="region"
+            tabIndex={0}
+          >
             <table className="w-full min-w-[640px] border-collapse text-left text-sm">
               <thead>
                 <tr className="bg-surface-2 text-[13px] font-extrabold text-ink-2">

@@ -58,7 +58,7 @@ function Hero() {
   const continueEntry = lastVisit === undefined ? undefined : entryById.get(lastVisit.id);
 
   return (
-    <section className="grid items-center gap-12 pt-4 lg:grid-cols-[1.05fr_1fr] lg:gap-14 lg:pt-10">
+    <section className="grid grid-cols-1 items-center gap-12 pt-4 lg:grid-cols-[1.05fr_1fr] lg:gap-14 lg:pt-10">
       <div>
         <motion.div animate={{ opacity: 1, y: 0 }} className="flex flex-wrap gap-2" initial={{ opacity: 0, y: 8 }}>
           <span className="tag border-brand text-brand">PLAYER 01</span>
@@ -198,7 +198,7 @@ function TodayBlock() {
   const streak = computeStreak(data.activity);
 
   return (
-    <section aria-label="Сегодня" className="grid gap-5 lg:grid-cols-[1.25fr_1fr]">
+    <section aria-label="Сегодня" className="grid grid-cols-1 gap-5 lg:grid-cols-[1.25fr_1fr]">
       <Reveal>
         {entry !== undefined ? (
           <Link className="card card-hover flex h-full flex-col gap-5 p-6 sm:flex-row sm:items-center" style={categoryVars(entry.category)} to={entry.path}>
@@ -333,24 +333,22 @@ function HowItWorks() {
         {steps.map((step, index) => {
           const Icon = step.icon;
           return (
-            <Reveal delay={index * 0.08} key={step.title}>
-              <li className="card relative h-full p-6">
-                <div className="flex items-center justify-between">
-                  <span
-                    className="inline-flex h-14 w-14 items-center justify-center rounded-2xl border-2 text-on"
-                    style={{
-                      background: `rgb(var(--c-${step.color}))`,
-                      borderColor: `rgb(var(--c-${step.color}-press))`,
-                      boxShadow: `0 4px 0 rgb(var(--c-${step.color}-press))`,
-                    }}
-                  >
-                    <Icon size={26} strokeWidth={2.5} />
-                  </span>
-                  <span className="font-display text-[16px] text-ink-3">{step.tag}</span>
-                </div>
-                <h3 className="mt-5 text-xl font-black text-ink">{step.title}</h3>
-                <p className="mt-2 text-[16px] font-semibold leading-7 text-ink-2">{step.text}</p>
-              </li>
+            <Reveal as="li" className="card relative h-full p-6" delay={index * 0.08} key={step.title}>
+              <div className="flex items-center justify-between">
+                <span
+                  className="inline-flex h-14 w-14 items-center justify-center rounded-2xl border-2 text-on"
+                  style={{
+                    background: `rgb(var(--c-${step.color}))`,
+                    borderColor: `rgb(var(--c-${step.color}-press))`,
+                    boxShadow: `0 4px 0 rgb(var(--c-${step.color}-press))`,
+                  }}
+                >
+                  <Icon size={26} strokeWidth={2.5} />
+                </span>
+                <span className="font-display text-[16px] text-ink-3">{step.tag}</span>
+              </div>
+              <h3 className="mt-5 text-xl font-black text-ink">{step.title}</h3>
+              <p className="mt-2 text-[16px] font-semibold leading-7 text-ink-2">{step.text}</p>
             </Reveal>
           );
         })}
@@ -388,7 +386,7 @@ function TeachersTeaser() {
   ];
   return (
     <Reveal>
-      <Window bodyClassName="relative grid gap-10 p-6 sm:p-10 lg:grid-cols-[1fr_1.15fr] lg:items-center" color="purple" title="for_teachers.exe">
+      <Window bodyClassName="relative grid grid-cols-1 gap-10 p-6 sm:p-10 lg:grid-cols-[1fr_1.15fr] lg:items-center" color="purple" title="for_teachers.exe">
         <div>
           <p className="tag border-purple text-purple">ДЛЯ ВУЗОВ, КОЛЛЕДЖЕЙ И ШКОЛ</p>
           <h2 className="h-section mt-4">Готовое наглядное пособие для вашего курса</h2>

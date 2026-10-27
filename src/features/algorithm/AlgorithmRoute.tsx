@@ -156,7 +156,7 @@ function AlgorithmHeader({ entry, tab, onTab }: { readonly entry: AlgorithmEntry
           >
             <Star fill={favorite ? 'currentColor' : 'none'} size={20} strokeWidth={2.5} />
           </button>
-          <button className="btn btn-secondary" onClick={() => setShare('link')} type="button">
+          <button aria-label="Поделиться" className="btn btn-secondary" onClick={() => setShare('link')} type="button">
             <Share2 size={18} strokeWidth={2.5} />
             <span className="hidden sm:inline">Поделиться</span>
           </button>

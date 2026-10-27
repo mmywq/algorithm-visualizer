@@ -88,7 +88,7 @@ function DistanceMatrix({ frame }: { readonly frame: GraphAlgorithmFrame | null 
         <h3 className="text-[15px] font-black text-ink">Матрица расстояний</h3>
         {k !== undefined && <span className="tag border-purple text-purple">k = {labels[k]}</span>}
       </div>
-      <div className="overflow-x-auto">
+      <div aria-label="Матрица расстояний" className="overflow-x-auto" role="region" tabIndex={0}>
         <table className="mx-auto border-separate border-spacing-1 text-center font-mono text-[14px]">
           <thead>
             <tr>

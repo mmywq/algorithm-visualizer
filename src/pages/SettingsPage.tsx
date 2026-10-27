@@ -85,7 +85,7 @@ export default function SettingsPage() {
           {motions.map((motion) => (
             <Choice current={settings.motion} key={motion.value} onSelect={settings.setMotion} value={motion.value}>
               {motion.label}
-              <span className="text-center text-[12px] font-bold text-ink-3">{motion.hint}</span>
+              <span className="text-center text-[12px] font-bold text-ink-2">{motion.hint}</span>
             </Choice>
           ))}
         </div>

@@ -34,7 +34,8 @@ export function ActivityHeatmap({ activity }: { readonly activity: Readonly<Reco
 
   return (
     <div>
-      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+      {/* на узком экране календарь прокручивается: с фокусом его можно листать стрелками */}
+      <div aria-label="Календарь активности" className="flex gap-2 overflow-x-auto pb-1 scrollbar-none" role="region" tabIndex={0}>
         <div className="flex shrink-0 flex-col gap-[3px] pt-5">
           {weekdays.map((label, index) => (
             <span className="h-3.5 text-[10px] font-bold leading-[14px] text-ink-3" key={index}>

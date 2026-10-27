@@ -553,7 +553,7 @@ export function GraphStatePanel({
       {order !== null && <ChipRow color="orange" items={order} label={(meta.orderLabel as string | undefined) ?? 'Порядок'} />}
 
       {distanceRows !== null && (
-        <div className="overflow-x-auto rounded-2xl border-2 border-line">
+        <div aria-label="Таблица расстояний" className="overflow-x-auto rounded-2xl border-2 border-line" role="region" tabIndex={0}>
           <table className="w-full border-collapse text-center text-[13px]">
             <thead>
               <tr className="bg-surface-2 font-extrabold text-ink-2">

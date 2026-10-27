@@ -57,7 +57,7 @@ export default function CabinetPage() {
 
       {tab === 'overview' && (
         <>
-          <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
             <Reveal>
               <Window bodyClassName="p-5 sm:p-6" color="green" title="Календарь занятий">
                 <ActivityHeatmap activity={data.activity} />

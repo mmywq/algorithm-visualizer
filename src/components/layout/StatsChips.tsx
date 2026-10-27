@@ -3,6 +3,7 @@ import { Flame } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { totalXp } from '@/content/achievements';
+import { countOf } from '@/lib/plural';
 import { computeStreak, levelFromXp } from '@/lib/progress';
 import { dayKey } from '@/lib/userData';
 import { useUserStore } from '@/stores/userStore';
@@ -25,15 +26,16 @@ export function StatsChips() {
   }, [lastGain]);
 
   return (
-    <Link
-      aria-label={`Уровень ${level.level}, ${xp} опыта, серия ${streak} дн.`}
-      className="relative flex items-center gap-2.5 rounded-xl px-1.5 py-1 transition-colors hover:bg-surface-2"
-      to="/cabinet"
-    >
-      <span className="tag border-green bg-green/12 text-green" title={`Уровень ${level.level}`}>
+    <Link className="relative flex items-center gap-2.5 rounded-xl px-1.5 py-1 transition-colors hover:bg-surface-2" to="/cabinet">
+      {/* значки ниже — для глаз; экранный диктор читает эту фразу */}
+      <span className="sr-only">
+        Уровень {level.level}, {xp} опыта, серия {countOf(streak, 'день', 'дня', 'дней')} — личный кабинет
+      </span>
+      <span aria-hidden="true" className="tag border-green bg-green/12 text-green" title={`Уровень ${level.level}`}>
         УР.{String(level.level).padStart(2, '0')}
       </span>
       <span
+        aria-hidden="true"
         className="hidden flex-col gap-1 sm:flex"
         title={`${xp - level.levelStartXp} из ${level.nextLevelXp - level.levelStartXp} опыта до уровня ${level.level + 1}`}
       >
@@ -51,6 +53,7 @@ export function StatsChips() {
         </span>
       </span>
       <span
+        aria-hidden="true"
         className={`inline-flex items-center gap-1 font-display text-[16px] leading-none ${activeToday ? 'text-orange' : 'text-ink-3'}`}
         title={activeToday ? `Серия ${streak} дн. продолжается` : 'Позанимайтесь сегодня, чтобы продолжить серию'}
       >

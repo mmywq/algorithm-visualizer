@@ -30,7 +30,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b-2 border-line-strong bg-bg/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-[1320px] items-center gap-2 px-3 sm:gap-3 sm:px-6">
-        <Link aria-label="На главную" className="mr-1 shrink-0 rounded-xl" to="/">
+        <Link aria-label="Алгоскоп — на главную" className="mr-1 shrink-0 rounded-xl" to="/">
           <Logo />
         </Link>
 
@@ -50,14 +50,16 @@ export function SiteHeader() {
 
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
           <button
-            aria-label="Поиск алгоритмов"
+            aria-keyshortcuts="Control+K"
             className="hidden h-10 w-52 items-center gap-2 rounded-xl border-2 border-line-strong bg-surface-2 px-3 text-[15px] font-bold text-ink-3 transition-colors hover:border-brand/60 hover:text-ink-2 md:flex lg:hidden xl:flex xl:w-60"
             onClick={() => setPaletteOpen(true)}
             type="button"
           >
             <Search size={18} strokeWidth={2.5} />
             <span className="flex-1 text-left">Найти алгоритм</span>
-            <span className="kbd">Ctrl K</span>
+            <span aria-hidden="true" className="kbd">
+              Ctrl K
+            </span>
           </button>
           {/* на узких экранах и при 1024–1279 px, где рядом стоит меню, поиск — одной кнопкой */}
           <button

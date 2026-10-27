@@ -127,17 +127,20 @@ export function PixelCat({ pose = 'sit', size = 78, className = '', animate = tr
     />
   );
 
+  // Кликабельный кот — это кнопка, а не картинка: внутри role="img" кнопку не увидят экранные дикторы,
+  // а скрывать aria-hidden элемент, на который можно перейти клавишей Tab, нельзя.
+  const pettable = `Погладить ${MASCOT_NAME}а`;
   return (
     <span
-      aria-hidden={label === undefined}
-      aria-label={label}
+      aria-hidden={!interactive && label === undefined ? true : undefined}
+      aria-label={interactive ? undefined : label}
       className={`group/cat relative inline-block shrink-0 ${className}`}
-      role={label === undefined ? undefined : 'img'}
+      role={!interactive && label !== undefined ? 'img' : undefined}
       style={{ width: boxW, height: boxH }}
     >
       {interactive ? (
         <button
-          aria-label={`Погладить ${MASCOT_NAME}а`}
+          aria-label={label === undefined ? pettable : `${label}. ${pettable}`}
           className="relative block h-full w-full cursor-pointer rounded-xl transition-transform duration-150 hover:-translate-y-1 active:translate-y-0.5"
           onClick={pet}
           type="button"

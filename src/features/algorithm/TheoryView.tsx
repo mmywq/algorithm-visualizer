@@ -104,7 +104,7 @@ export function TheoryView({ entry, onNavigate }: TheoryViewProps) {
         {theory.complexity.length > 0 && (
           <section>
             <SectionTitle title="Сложность" />
-            <div className="mt-3 overflow-x-auto rounded-2xl border-2 border-line">
+            <div aria-label="Таблица сложности" className="mt-3 overflow-x-auto rounded-2xl border-2 border-line" role="region" tabIndex={0}>
               <table className="w-full min-w-[480px] border-collapse text-left">
                 <thead>
                   <tr className="bg-surface-2 text-sm font-extrabold text-ink-2">
@@ -143,7 +143,11 @@ export function TheoryView({ entry, onNavigate }: TheoryViewProps) {
         {theory.pseudocode.length > 0 && (
           <section>
             <SectionTitle title="Псевдокод" />
-            <ol className="mt-3 overflow-x-auto rounded-2xl bg-[rgb(27_31_43)] p-4 font-mono text-[14px] leading-7 text-[rgb(226_230_240)] dark:bg-surface-2">
+            <ol
+              aria-label="Псевдокод"
+              className="mt-3 overflow-x-auto rounded-2xl bg-[rgb(27_31_43)] p-4 font-mono text-[14px] leading-7 text-[rgb(226_230_240)] dark:bg-surface-2"
+              tabIndex={0}
+            >
               {theory.pseudocode.map((line, index) => (
                 <li className="flex gap-3" key={`${index}-${line.code}`}>
                   <span className="w-5 shrink-0 select-none text-right text-[rgb(120_128_150)]">{index + 1}</span>

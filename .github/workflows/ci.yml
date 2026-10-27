@@ -26,7 +26,31 @@ jobs:
         run: npm run format:check
       - name: Типы
         run: npm run typecheck
-      - name: Тесты
+      - name: Модульные тесты
         run: npm test
       - name: Сборка
         run: npm run build
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - name: Браузеры Playwright
+        run: npx playwright install --with-deps chromium webkit
+      - name: Сквозные тесты и проверка доступности (Chromium, телефон, WebKit)
+        run: npm run test:e2e
+      - name: Отчёт о тестах
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7

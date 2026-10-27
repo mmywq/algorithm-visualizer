@@ -19,7 +19,7 @@ import { StepCard } from './StepCard';
 export interface DemoData {
   readonly title?: string;
   /** короткая подпись текущих данных: «[5, 3, 8]», «граф: 6 вершин» */
-  readonly summary: ReactNode;
+  readonly summary: string;
   readonly editor: ReactNode;
 }
 
@@ -60,6 +60,13 @@ export function DemoLayout({
   const isDesktop = useIsDesktop();
   const setFlag = useUserStore((state) => state.setFlag);
   const [dataOpen, setDataOpen] = useState(false);
+  const appliedSummary = useRef(data?.summary);
+  useEffect(() => {
+    if (appliedSummary.current === data?.summary) return;
+    appliedSummary.current = data?.summary;
+    // на телефоне редактор открыт поверх демонстрации: после «Применить» сразу показываем результат
+    setDataOpen(false);
+  }, [data?.summary]);
   const [desktopDataOpen, setDesktopDataOpen] = useState(false);
   const [lecture, setLecture] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -156,6 +163,7 @@ export function DemoLayout({
           {data !== undefined && isDesktop && (
             <button
               aria-expanded={desktopDataOpen}
+              aria-label={`${data.title ?? 'Входные данные'}: ${data.summary}`}
               className="btn btn-secondary btn-sm ml-auto max-w-[min(440px,100%)]"
               onClick={() => setDesktopDataOpen((current) => !current)}
               type="button"

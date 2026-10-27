@@ -26,7 +26,7 @@ export function SiteFooter() {
     <footer className="relative mt-24 border-t-2 border-line-strong bg-surface">
       {/* Кэш дремлет на кромке подвала; если погладить — проснётся и обрадуется */}
       {showCat && (
-        <div className="absolute -top-[76px] right-6 sm:right-16" onMouseEnter={() => setAwake(true)} onMouseLeave={() => setAwake(false)}>
+        <div className="absolute -top-[76px] right-9 sm:right-16" onMouseEnter={() => setAwake(true)} onMouseLeave={() => setAwake(false)}>
           <PixelCat interactive label={`${MASCOT_NAME} — маскот. Погладьте его!`} onPet={petCat} pose={awake ? 'sit' : 'sleep'} size={78} />
           {pets > 0 && (
             <span className="tag absolute -left-3 -top-2 border-brand bg-surface text-brand" title="Сколько раз вы погладили Кэша">
@@ -36,7 +36,7 @@ export function SiteFooter() {
         </div>
       )}
 
-      <div className="mx-auto grid max-w-[1320px] gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.2fr_2fr]">
+      <div className="mx-auto grid max-w-[1320px] grid-cols-1 gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.2fr_2fr]">
         <div>
           <Logo />
           <p className="mt-4 max-w-sm text-[15px] font-semibold leading-6 text-ink-2">{brand.description}</p>

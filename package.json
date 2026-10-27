@@ -8,10 +8,12 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b --pretty",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"scripts/**/*.ts\" vite.config.ts tailwind.config.ts",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"scripts/**/*.ts\" vite.config.ts tailwind.config.ts",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"scripts/**/*.ts\" \"e2e/**/*.ts\" playwright.config.ts vite.config.ts tailwind.config.ts",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"scripts/**/*.ts\" \"e2e/**/*.ts\" playwright.config.ts vite.config.ts tailwind.config.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "vite build && playwright test",
+    "screenshots": "vite build && node scripts/screenshots.mjs"
   },
   "dependencies": {
     "@fontsource-variable/jetbrains-mono": "^5.3.0",
@@ -28,6 +30,8 @@
     "zustand": "^4.5.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.64.1",
     "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^22.15.17",
     "@types/qrcode": "^1.5.6",
