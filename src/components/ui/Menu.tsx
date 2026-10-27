@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { ease, exitFast } from '@/lib/motion';
 
 export interface MenuItem {
   readonly key: string;
@@ -48,12 +49,12 @@ export function Menu({ trigger, items, align = 'right', direction = 'down', widt
         {open && (
           <motion.div
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            className={`absolute z-[70] overflow-hidden rounded-2xl border-2 border-line-strong bg-surface p-1.5 shadow-float ${direction === 'up' ? 'bottom-[calc(100%+8px)]' : 'top-[calc(100%+8px)]'} ${align === 'right' ? 'right-0 origin-top-right' : 'left-0 origin-top-left'}`}
-            exit={{ opacity: 0, y: -4, scale: 0.97 }}
-            initial={{ opacity: 0, y: -4, scale: 0.97 }}
+            className={`absolute z-[70] overflow-hidden rounded-2xl border-2 border-line-strong bg-surface p-1.5 shadow-float ${direction === 'up' ? 'bottom-[calc(100%+8px)]' : 'top-[calc(100%+8px)]'} ${align === 'right' ? 'right-0' : 'left-0'} ${direction === 'up' ? (align === 'right' ? 'origin-bottom-right' : 'origin-bottom-left') : align === 'right' ? 'origin-top-right' : 'origin-top-left'}`}
+            exit={{ opacity: 0, scale: 0.98, transition: exitFast }}
+            initial={{ opacity: 0, y: direction === 'up' ? 4 : -4, scale: 0.96 }}
             role="menu"
             style={{ width }}
-            transition={{ duration: 0.14 }}
+            transition={{ duration: 0.18, ease: ease.out }}
           >
             {header}
             {items.map((item, index) =>

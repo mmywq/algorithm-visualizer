@@ -1,3 +1,4 @@
+import { MotionGlobalConfig } from 'framer-motion';
 import { useEffect } from 'react';
 import { resolveTheme, useSettingsStore } from '@/stores/settingsStore';
 
@@ -22,6 +23,15 @@ export function ThemeController() {
   useEffect(() => {
     if (motion === 'system') delete document.documentElement.dataset.motion;
     else document.documentElement.dataset.motion = motion;
+    // при «меньше движения» переходы framer сразу встают в конечное состояние: не только без сдвигов,
+    // но и без проявления — интерфейс меняется мгновенно, как просил пользователь
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const apply = (): void => {
+      MotionGlobalConfig.skipAnimations = motion === 'reduce' || (motion === 'system' && media.matches);
+    };
+    apply();
+    media.addEventListener('change', apply);
+    return () => media.removeEventListener('change', apply);
   }, [motion]);
 
   return null;

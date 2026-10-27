@@ -10,6 +10,7 @@ import { useDemoPlayer } from '@/features/player/useDemoPlayer';
 import { useFrames } from '@/features/player/usePlayer';
 import { useElementWidth } from '@/hooks/useElementSize';
 import { useUrlState } from '@/hooks/useUrlState';
+import { spring } from '@/lib/motion';
 
 const opsCodec = { parse: decodeOps, serialize: (ops: readonly DequeOp[]) => encodeOps(ops) };
 
@@ -101,7 +102,7 @@ function Cell({ frame, index, size }: { readonly frame: DequeFrame | null; reado
         fontSize: size > 44 ? 17 : 14,
         boxShadow: tone === 'empty' || tone === 'cleared' ? 'none' : 'inset 0 -4px 0 rgb(0 0 0 / 0.2)',
       }}
-      transition={{ type: 'spring', stiffness: 420, damping: 24 }}
+      transition={spring.viz}
     >
       <AnimatePresence mode="popLayout">
         <motion.span animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} initial={{ opacity: 0, y: -8 }} key={String(value)}>

@@ -5,6 +5,7 @@ import { PixelCat } from '@/components/mascot/PixelCat';
 import { toast } from '@/components/ui/Toaster';
 import { useOptionalAlgorithm } from '@/features/algorithm/AlgorithmContext';
 import { copyText } from '@/lib/clipboard';
+import { spring } from '@/lib/motion';
 import { pluralize } from '@/lib/progress';
 
 interface ResultPanelProps {
@@ -43,7 +44,7 @@ export function ResultPanel({ summary, steps, input, miss = false }: ResultPanel
           ? { '--cat': 'var(--c-red)', '--cat-press': 'var(--c-red-press)' }
           : { '--cat': 'var(--c-green)', '--cat-press': 'var(--c-green-press)' }) as MotionStyle
       }
-      transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+      transition={spring.smooth}
     >
       <div className="window-bar">
         <span className="window-title">result.txt</span>

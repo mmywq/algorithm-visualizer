@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useElementWidth } from '@/hooks/useElementSize';
 
+import { spring } from '@/lib/motion';
 import type { TreeDiagramNode, TreeTone } from '@/types/tree';
 
 export type { TreeDiagramNode, TreeTone };
@@ -131,7 +132,7 @@ export function TreeDiagram({ nodes, binary = true, emptyText = 'Дерево п
                   stroke={highlighted ? 'rgb(var(--c-brand))' : 'rgb(var(--viz-edge))'}
                   strokeLinecap="round"
                   strokeWidth={highlighted ? 4 : 3}
-                  transition={{ type: 'spring', stiffness: 220, damping: 26 }}
+                  transition={spring.viz}
                 />
               );
             })}
@@ -145,7 +146,7 @@ export function TreeDiagram({ nodes, binary = true, emptyText = 'Дерево п
                   exit={{ opacity: 0, scale: 0.4 }}
                   initial={{ x: toX(node.x), y: toY(node.y) - 18, opacity: 0, scale: 0.4 }}
                   key={node.key}
-                  transition={{ type: 'spring', stiffness: 220, damping: 24 }}
+                  transition={spring.viz}
                 >
                   {node.ring !== undefined && (
                     <motion.circle

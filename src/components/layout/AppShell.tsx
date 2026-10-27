@@ -8,6 +8,7 @@ import { Toaster } from '@/components/ui/Toaster';
 import { findEntryByPath } from '@/content/catalog';
 import { useAuthStore } from '@/features/auth/authStore';
 import { SyncController } from '@/features/sync/SyncController';
+import { ease } from '@/lib/motion';
 import { AchievementWatcher } from './AchievementWatcher';
 import { CommandPalette } from './CommandPalette';
 import { CookieBanner } from './CookieBanner';
@@ -54,12 +55,7 @@ export function AppShell() {
       <OfflineBanner />
       <main className={`mx-auto w-full max-w-[1320px] px-4 pt-5 sm:px-6 sm:pt-7 ${isAlgorithmPage ? 'pb-6' : 'pb-24 lg:pb-8'}`} id="main">
         <Suspense fallback={<PageSkeleton />}>
-          <motion.div
-            animate={{ opacity: 1, y: 0 }}
-            initial={{ opacity: 0, y: 10 }}
-            key={location.pathname}
-            transition={{ duration: 0.28, ease: [0.2, 0.8, 0.2, 1] }}
-          >
+          <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 10 }} key={location.pathname} transition={{ duration: 0.34, ease: ease.out }}>
             <Outlet />
           </motion.div>
         </Suspense>

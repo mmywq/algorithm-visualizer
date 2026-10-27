@@ -379,10 +379,12 @@ body {
     background-size: 22px 22px;
   }
 
-  .graph-node-pulse {
-    animation: graph-pulse 1.4s ease-in-out infinite;
+  /* одна волна от текущей вершины при каждом шаге обхода — без бесконечной пульсации */
+  .graph-node-ping {
+    animation: graph-ping 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
     transform-box: fill-box;
     transform-origin: center;
+    pointer-events: none;
   }
 
   .pixelated {
@@ -415,15 +417,14 @@ body {
 }
 
 /* ---------- анимации ---------- */
-@keyframes graph-pulse {
-  0%,
-  100% {
-    opacity: 0.9;
+@keyframes graph-ping {
+  from {
+    opacity: 0.8;
     transform: scale(1);
   }
-  50% {
-    opacity: 0.25;
-    transform: scale(1.2);
+  to {
+    opacity: 0;
+    transform: scale(1.55);
   }
 }
 
@@ -470,25 +471,43 @@ body {
   animation: drift var(--dur, 90s) linear var(--delay, 0s) infinite;
 }
 
-@keyframes shoot {
+/* комета: летит вдоль собственной оси; точку старта и угол меняет скрипт перед каждым пролётом */
+@keyframes comet {
   0% {
     opacity: 0;
-    transform: translate(0, 0) rotate(-24deg);
+    transform: translate(var(--comet-x, 80vw), var(--comet-y, 10vh)) rotate(var(--comet-angle, -24deg)) translateX(0);
   }
-  4% {
+  3% {
     opacity: 1;
   }
-  12% {
+  11% {
     opacity: 0;
-    transform: translate(-46vw, 20vw) rotate(-24deg);
+    transform: translate(var(--comet-x, 80vw), var(--comet-y, 10vh)) rotate(var(--comet-angle, -24deg)) translateX(-48vw);
   }
   100% {
     opacity: 0;
-    transform: translate(-46vw, 20vw) rotate(-24deg);
+    transform: translate(var(--comet-x, 80vw), var(--comet-y, 10vh)) rotate(var(--comet-angle, -24deg)) translateX(-48vw);
   }
 }
-.fx-shoot {
-  animation: shoot 14s ease-in 4s infinite;
+.fx-comet {
+  animation: comet 16s cubic-bezier(0.55, 0, 1, 0.45) 5s infinite backwards;
+  transform-origin: left center;
+}
+
+/* у «искрящих» звёзд иногда на миг вырастают лучи — реже, чем мерцание */
+@keyframes rays {
+  0%,
+  72%,
+  100% {
+    opacity: 0;
+  }
+  78%,
+  86% {
+    opacity: 1;
+  }
+}
+.fx-rays {
+  animation: rays calc(var(--dur, 3.2s) * 2) steps(1, end) var(--delay, 0s) infinite;
 }
 
 /* бегущая строка */
@@ -503,8 +522,9 @@ body {
 .marquee-track {
   animation: marquee var(--dur, 40s) linear infinite;
 }
-.marquee:hover .marquee-track {
-  animation-play-state: paused;
+/* паузу при наведении и за экраном ставит скрипт: он же меняет скорость при прокрутке */
+.marquee-fade {
+  mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
 }
 
 /* кот: дыхание и прыжок */

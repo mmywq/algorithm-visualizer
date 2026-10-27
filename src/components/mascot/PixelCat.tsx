@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useMemo, useRef, useState, type CSSProperties } from 'react';
+import { ease } from '@/lib/motion';
 import type { Outfit } from '@/lib/userData';
 import { bitmapUrl, outfitKey, outfitLayers, PAD_SIDE, PAD_TOP, spriteUrl } from './catRender';
 import { catHead, catPosePalette, catPoses, type CatPoseName, type PoseDeco } from './catPoses';
@@ -163,7 +164,7 @@ export function PixelCat({ pose = 'sit', size = 78, className = '', animate = tr
             exit={{ opacity: 0, y: -boxH * 0.8 }}
             initial={{ opacity: 0, y: 0, scale: 0.4 }}
             key={id}
-            transition={{ duration: 0.9, ease: 'easeOut' }}
+            transition={{ duration: 0.9, ease: ease.out }}
           >
             <PixelHeart size={Math.max(14, scale * 7)} />
           </motion.span>

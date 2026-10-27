@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { GraduationCap, House, LayoutGrid, Search, UserRound, type LucideIcon } from 'lucide-react';
 import { Fragment } from 'react';
 import { NavLink } from 'react-router-dom';
+import { spring } from '@/lib/motion';
 import { useUiStore } from '@/stores/uiStore';
 
 const items = [
@@ -19,7 +20,7 @@ function NavIcon({ icon: Icon, active }: { readonly icon: LucideIcon; readonly a
           className="absolute inset-0 rounded-full"
           layoutId="mobile-nav-pill"
           style={{ background: 'rgb(var(--c-brand) / 0.16)' }}
-          transition={{ type: 'spring', stiffness: 500, damping: 36 }}
+          transition={spring.snappy}
         />
       )}
       <Icon className={`relative ${active ? 'text-brand' : 'text-ink-3'}`} size={22} strokeWidth={active ? 2.75 : 2.25} />

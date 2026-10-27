@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import type { StringFrame } from '@/algorithms/strings/stringSearch';
 import { useElementWidth } from '@/hooks/useElementSize';
+import { spring } from '@/lib/motion';
 
 const GAP = 4;
 
@@ -66,7 +67,7 @@ export function StringMatchView({ frame }: { readonly frame: StringFrame | null 
         <p className="mb-1.5 mt-3 text-[11px] font-extrabold uppercase tracking-wide text-ink-3">
           {building ? 'образец — строим префикс-функцию' : `образец · сдвиг ${meta.shift}`}
         </p>
-        <motion.div animate={{ x: building ? 0 : offset }} initial={false} transition={{ type: 'spring', stiffness: 260, damping: 28 }}>
+        <motion.div animate={{ x: building ? 0 : offset }} initial={false} transition={{ ...spring.viz }}>
           <div className="flex" style={{ gap: GAP }}>
             {[...pattern].map((char, index) => (
               <span key={index}>{box(char, patternTone(index))}</span>

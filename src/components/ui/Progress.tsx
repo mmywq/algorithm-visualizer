@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import type { ReactNode } from 'react';
+import { spring } from '@/lib/motion';
 
 interface ProgressRingProps {
   readonly value: number; // 0..1
@@ -39,7 +40,7 @@ export function ProgressRing({ value, size = 56, stroke = 7, color = 'rgb(var(--
           strokeDasharray={circumference}
           strokeLinecap="round"
           strokeWidth={stroke}
-          transition={{ duration: 0.9, ease: [0.2, 0.8, 0.2, 1] }}
+          transition={spring.gentle}
         />
       </svg>
       {children !== undefined && <div className="absolute inset-0 flex items-center justify-center">{children}</div>}
@@ -68,11 +69,11 @@ export function ProgressBar({ value, color = 'rgb(var(--cat))', className = '', 
       style={{ height }}
     >
       <motion.div
-        animate={{ width: `${clamped * 100}%` }}
-        className="relative h-full rounded-full"
-        initial={{ width: 0 }}
+        animate={{ clipPath: `inset(0 ${100 - clamped * 100}% 0 0 round 999px)` }}
+        className="relative h-full w-full rounded-full"
+        initial={{ clipPath: 'inset(0 100% 0 0 round 999px)' }}
         style={{ background: color }}
-        transition={{ duration: 0.7, ease: [0.2, 0.8, 0.2, 1] }}
+        transition={spring.gentle}
       >
         {/* блик сверху — фирменная деталь «объёмных» индикаторов */}
         <span className="absolute inset-x-2 top-[3px] h-[3px] rounded-full bg-white/35" style={{ display: height >= 10 ? 'block' : 'none' }} />

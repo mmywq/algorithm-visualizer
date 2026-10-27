@@ -12,6 +12,7 @@ import { Window } from '@/components/ui/Window';
 import { catalog, categories, entriesOfCategory } from '@/content/catalog';
 import { usePageMeta } from '@/hooks/usePageMeta';
 import { submitLicenseRequest, type LicenseRequest } from '@/lib/leads';
+import { spring } from '@/lib/motion';
 import { pluralize } from '@/lib/progress';
 
 const features = [
@@ -152,12 +153,7 @@ function Hero() {
           </Link>
         </div>
       </div>
-      <motion.div
-        animate={{ opacity: 1, y: 0 }}
-        className="relative pt-14"
-        initial={{ opacity: 0, y: 20 }}
-        transition={{ delay: 0.1, type: 'spring', stiffness: 160, damping: 20 }}
-      >
+      <motion.div animate={{ opacity: 1, y: 0 }} className="relative pt-14" initial={{ opacity: 0, y: 20 }} transition={{ ...spring.gentle, delay: 0.1 }}>
         <div className="absolute -top-[1px] right-6 z-[2]">
           <PixelCat pose="peek" size={64} />
         </div>

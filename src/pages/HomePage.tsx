@@ -1,5 +1,5 @@
 import { motion, type MotionStyle } from 'framer-motion';
-import { ArrowRight, BookOpen, GraduationCap, Play, Presentation, Share2, Target, Users, WifiOff } from 'lucide-react';
+import { ArrowRight, BookOpen, GraduationCap, Pause, Play, Presentation, Share2, Target, Users, WifiOff } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { bubbleSort } from '@/algorithms/arrays';
@@ -18,6 +18,7 @@ import { brand } from '@/config/brand';
 import { catalog, categories, entryById } from '@/content/catalog';
 import { collectFrames } from '@/features/player/usePlayer';
 import { usePageMeta } from '@/hooks/usePageMeta';
+import { spring } from '@/lib/motion';
 import { categoryStats, computeStreak, pluralize, progressShare } from '@/lib/progress';
 import { useUserStore } from '@/stores/userStore';
 
@@ -53,44 +54,65 @@ export default function HomePage() {
   );
 }
 
+/**
+ * Первый экран появляется одной сценой: метки, две строки заголовка, подчёркивание «рисуется»,
+ * затем текст и кнопки. Сцена играет один раз при открытии страницы.
+ */
+const scene = {
+  hidden: {},
+  shown: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
+} as const;
+const rise = {
+  hidden: { opacity: 0, y: 18, filter: 'blur(8px)' },
+  shown: { opacity: 1, y: 0, filter: 'blur(0px)', transition: spring.gentle },
+} as const;
+const pop = {
+  hidden: { opacity: 0, y: 6, scale: 0.9 },
+  shown: { opacity: 1, y: 0, scale: 1, transition: spring.playful },
+} as const;
+
 function Hero() {
   const lastVisit = useUserStore((state) => state.data.history[0]);
   const continueEntry = lastVisit === undefined ? undefined : entryById.get(lastVisit.id);
 
   return (
     <section className="grid grid-cols-1 items-center gap-12 pt-4 lg:grid-cols-[1.05fr_1fr] lg:gap-14 lg:pt-10">
-      <div>
-        <motion.div animate={{ opacity: 1, y: 0 }} className="flex flex-wrap gap-2" initial={{ opacity: 0, y: 8 }}>
-          <span className="tag border-brand text-brand">PLAYER 01</span>
-          <span className="tag border-green text-green">{catalog.length} ДЕМО</span>
-          <span className="tag border-yellow text-yellow">БЕЗ РЕГИСТРАЦИИ</span>
+      <motion.div animate="shown" initial="hidden" variants={scene}>
+        <motion.div className="flex flex-wrap gap-2" variants={scene}>
+          <motion.span className="tag border-brand text-brand" variants={pop}>
+            PLAYER 01
+          </motion.span>
+          <motion.span className="tag border-green text-green" variants={pop}>
+            {catalog.length} ДЕМО
+          </motion.span>
+          <motion.span className="tag border-yellow text-yellow" variants={pop}>
+            БЕЗ РЕГИСТРАЦИИ
+          </motion.span>
         </motion.div>
-        <motion.h1
-          animate={{ opacity: 1, y: 0 }}
-          className="h-display-xl mt-6 text-ink"
-          initial={{ opacity: 0, y: 14 }}
-          transition={{ delay: 0.05, type: 'spring', stiffness: 200, damping: 22 }}
-        >
-          Алгоритмы,
-          <br />
-          <span className="relative inline-block text-brand">
+        <h1 className="h-display-xl mt-6 text-ink">
+          <motion.span className="block" variants={rise}>
+            Алгоритмы,
+          </motion.span>
+          <motion.span className="relative inline-block text-brand" variants={rise}>
             которые видно
-            <svg aria-hidden="true" className="pixelated absolute -bottom-3 left-0 h-2 w-full" preserveAspectRatio="none" viewBox="0 0 40 2">
+            {/* подчёркивание «прорисовывается» слева направо, когда строка уже на месте */}
+            <motion.svg
+              aria-hidden="true"
+              className="pixelated absolute -bottom-3 left-0 h-2 w-full origin-left"
+              preserveAspectRatio="none"
+              variants={{ hidden: { scaleX: 0 }, shown: { scaleX: 1, transition: { ...spring.smooth, delay: 0.35 } } }}
+              viewBox="0 0 40 2"
+            >
               <rect fill="rgb(var(--c-yellow))" height="1" width="40" x="0" y="0" />
               <rect fill="rgb(var(--c-yellow-press))" height="1" width="40" x="0" y="1" />
-            </svg>
-          </span>
-        </motion.h1>
-        <motion.p
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-8 max-w-xl text-[18px] font-semibold leading-8 text-ink-2"
-          initial={{ opacity: 0, y: 14 }}
-          transition={{ delay: 0.1 }}
-        >
+            </motion.svg>
+          </motion.span>
+        </h1>
+        <motion.p className="mt-8 max-w-xl text-[18px] font-semibold leading-8 text-ink-2" variants={rise}>
           {brand.name} показывает работу алгоритма шаг за шагом — на ваших собственных данных. Теория, псевдокод с подсветкой текущей строки, тесты и миссии дня
           — как в игре, только по программе курса.
         </motion.p>
-        <motion.div animate={{ opacity: 1, y: 0 }} className="mt-9 flex flex-wrap gap-3" initial={{ opacity: 0, y: 14 }} transition={{ delay: 0.15 }}>
+        <motion.div className="mt-9 flex flex-wrap gap-3" variants={rise}>
           <Link className="btn btn-primary btn-lg font-display text-[24px]" to={continueEntry?.path ?? '/sorting/bubble'}>
             {continueEntry === undefined ? 'Начать игру' : 'Продолжить'} ▶
           </Link>
@@ -99,7 +121,7 @@ function Hero() {
             Для преподавателей
           </Link>
         </motion.div>
-        <ul className="mt-9 flex flex-wrap gap-x-6 gap-y-2 text-[15px] font-bold text-ink-2">
+        <motion.ul className="mt-9 flex flex-wrap gap-x-6 gap-y-2 text-[15px] font-bold text-ink-2" variants={rise}>
           <li className="inline-flex items-center gap-2">
             <Play className="text-brand" size={18} strokeWidth={2.5} />
             Анимация каждого шага
@@ -112,8 +134,8 @@ function Hero() {
             <WifiOff className="text-yellow" size={18} strokeWidth={2.5} />
             Офлайн в аудитории
           </li>
-        </ul>
-      </div>
+        </motion.ul>
+      </motion.div>
       <HeroDemo />
     </section>
   );
@@ -129,16 +151,36 @@ const catLine = (phase: string | undefined): string => {
 };
 
 /** Настоящая пузырьковая сортировка по кругу; Кэш комментирует происходящее. */
+/** Пользователь просил меньше движения — демо стоит на одном кадре, пока его не запустят. */
+const prefersLessMotion = (): boolean =>
+  document.documentElement.dataset.motion === 'reduce' ||
+  (document.documentElement.dataset.motion !== 'full' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
 function HeroDemo() {
   const frames = useMemo(() => collectFrames(bubbleSort(heroValues)).frames, []);
-  const [index, setIndex] = useState(0);
+  // с уменьшенным движением показываем осмысленный кадр из середины сортировки, а не пустое начало
+  const [index, setIndex] = useState(() => (prefersLessMotion() ? Math.floor(frames.length / 3) : 0));
+  const [paused, setPaused] = useState(prefersLessMotion);
+  const [visible, setVisible] = useState(true);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  // за пределами экрана демо не тратит ресурсы
+  useEffect(() => {
+    const root = rootRef.current;
+    if (root === null) return undefined;
+    const observer = new IntersectionObserver(([entry]) => setVisible(entry?.isIntersecting ?? true));
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
+    if (paused || !visible) return undefined;
     const atEnd = index >= frames.length - 1;
     const timer = window.setTimeout(() => setIndex(atEnd ? 0 : index + 1), atEnd ? 3200 : 560);
     return () => window.clearTimeout(timer);
-  }, [index, frames.length]);
+  }, [index, frames.length, paused, visible]);
 
+  const [catUp, setCatUp] = useState(false);
   const frame = frames[index] ?? null;
   const phase = frame?.phase;
   const wanted = catLine(phase === 'inspect' || phase === 'initial' ? undefined : phase);
@@ -156,20 +198,45 @@ function HeroDemo() {
 
   return (
     <motion.div
-      animate={{ opacity: 1, y: 0 }}
+      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
       className="relative pt-20"
-      initial={{ opacity: 0, y: 20 }}
+      ref={rootRef}
+      initial={{ opacity: 0, y: 24, filter: 'blur(8px)' }}
       style={categoryVars('sorting') as MotionStyle}
-      transition={{ delay: 0.15, type: 'spring', stiffness: 160, damping: 20 }}
+      transition={{ ...spring.gentle, delay: 0.2 }}
     >
-      {/* Кэш выглядывает из-за окна: голова над рамкой, лапы держатся за край */}
-      <div className="absolute right-5 top-[23px] z-[2] sm:right-10">
-        <PixelCat interactive label={`${MASCOT_NAME} выглядывает из-за окна`} onPet={petCat} pose="peek" size={64} />
+      {/* Кэш выглядывает из-за окна: поднимается из-под рамки, лапы держатся за край.
+          Пока он поднимается, обёртка обрезает всё ниже лап; потом обрезка снимается — иначе срежет сердечки */}
+      <div className={`absolute right-5 top-[23px] z-[2] sm:right-10 ${catUp ? '' : 'overflow-hidden'}`}>
+        <motion.div animate={{ y: 0 }} initial={{ y: 70 }} onAnimationComplete={() => setCatUp(true)} transition={{ ...spring.playful, delay: 0.75 }}>
+          <PixelCat interactive label={`${MASCOT_NAME} выглядывает из-за окна`} onPet={petCat} pose="peek" size={64} />
+        </motion.div>
       </div>
-      <div className="absolute left-0 top-0 z-10 max-w-[calc(100%-150px)] sm:max-w-[320px]">
+      <motion.div
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="absolute left-0 top-0 z-10 max-w-[calc(100%-150px)] origin-bottom-right sm:max-w-[320px]"
+        initial={{ opacity: 0, scale: 0.85, y: 8 }}
+        transition={{ ...spring.playful, delay: 1.05 }}
+      >
         <CatSays tail="right" text={line} />
-      </div>
-      <Window className="relative z-[1] shadow-pixel-lg" title="bubble_sort.exe">
+      </motion.div>
+      <Window
+        actions={
+          // движущийся сам по себе контент должен останавливаться (WCAG 2.2.2)
+          <button
+            aria-label={paused ? 'Запустить демонстрацию' : 'Остановить демонстрацию'}
+            aria-pressed={paused}
+            className="btn btn-ghost btn-icon btn-sm -my-2 ml-auto"
+            onClick={() => setPaused((current) => !current)}
+            title={paused ? 'Запустить' : 'Пауза'}
+            type="button"
+          >
+            {paused ? <Play size={16} strokeWidth={2.75} /> : <Pause size={16} strokeWidth={2.75} />}
+          </button>
+        }
+        className="relative z-[1] shadow-pixel-lg"
+        title="bubble_sort.exe"
+      >
         <div className="p-3 sm:p-4">
           <ArrayBars frame={frame} height={210} />
           <div className="mt-3 flex items-center gap-3">
@@ -179,7 +246,12 @@ function HeroDemo() {
               {phase === 'swap' ? 'ОБМЕН' : phase === 'compare' ? 'СРАВНЕНИЕ' : phase === 'complete' ? 'ГОТОВО' : 'ПРОХОД'}
             </span>
             <div className="h-3 flex-1 overflow-hidden rounded-[3px] border border-line-strong bg-surface-2">
-              <div className="h-full bg-cat transition-[width] duration-300" style={{ width: `${((index + 1) / frames.length) * 100}%` }} />
+              <motion.div
+                animate={{ clipPath: `inset(0 ${100 - ((index + 1) / frames.length) * 100}% 0 0)` }}
+                className="h-full w-full bg-cat"
+                initial={false}
+                transition={spring.smooth}
+              />
             </div>
             <span className="font-display text-[16px] leading-none text-ink-3">
               {index + 1}/{frames.length}

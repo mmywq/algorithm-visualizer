@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Trophy } from 'lucide-react';
+import { ease, spring } from '@/lib/motion';
 import type { ArrayAlgorithmFrame, SortComparisonRow } from '@/types';
 
 /** Вспомогательный массив (счётчики, корзины, буфер слияния) под основной сценой. */
@@ -49,7 +50,7 @@ export function OperationCounters({ frames, index }: { readonly frames: readonly
             className="font-mono text-[28px] font-black leading-tight tabular"
             key={item.value}
             style={{ color: `rgb(var(--c-${item.color}))` }}
-            transition={{ duration: 0.25 }}
+            transition={{ duration: 0.25, ease: ease.out }}
           >
             {item.value}
           </motion.p>
@@ -102,10 +103,10 @@ export function SortComparisonTable({ rows }: { readonly rows: readonly SortComp
                     <div className="flex items-center gap-2">
                       <div className="h-3 flex-1 overflow-hidden rounded-full bg-line">
                         <motion.div
-                          animate={{ width: `${(total / maxOps) * 100}%` }}
-                          className={`h-full rounded-full ${row.isBest === true ? 'bg-green' : 'bg-cat'}`}
-                          initial={{ width: 0 }}
-                          transition={{ duration: 0.6 }}
+                          animate={{ clipPath: `inset(0 ${100 - (total / maxOps) * 100}% 0 0 round 999px)` }}
+                          className={`h-full w-full rounded-full ${row.isBest === true ? 'bg-green' : 'bg-cat'}`}
+                          initial={{ clipPath: 'inset(0 100% 0 0 round 999px)' }}
+                          transition={spring.gentle}
                         />
                       </div>
                       <span className="w-10 text-right font-mono text-sm font-black text-ink">{total}</span>

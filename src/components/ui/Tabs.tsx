@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { useId, type ReactNode } from 'react';
+import { spring } from '@/lib/motion';
 
 export interface TabItem<T extends string> {
   readonly value: T;
@@ -60,7 +61,7 @@ export function Tabs<T extends string>({ items, value, onChange, className = '',
                 className="absolute inset-0 rounded-xl border-2 border-line bg-surface"
                 layoutId={layoutId}
                 style={{ boxShadow: '0 2px 0 rgb(var(--c-line))' }}
-                transition={{ type: 'spring', stiffness: 500, damping: 38 }}
+                transition={spring.snappy}
               />
             )}
             <span className="relative z-[1] inline-flex items-center gap-1.5">

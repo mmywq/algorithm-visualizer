@@ -3,6 +3,7 @@ import { Check, Gift } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Window } from '@/components/ui/Window';
 import { QUEST_DAY_BONUS, questStates } from '@/content/quests';
+import { ease } from '@/lib/motion';
 import { useUserStore } from '@/stores/userStore';
 
 const untilMidnight = (): string => {
@@ -66,7 +67,7 @@ export function QuestsPanel({ className = '' }: { readonly className?: string })
         <motion.span
           animate={complete ? { rotate: [0, -8, 8, -4, 0], scale: [1, 1.15, 1] } : {}}
           className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 ${complete ? 'border-yellow-press bg-yellow text-on' : 'border-line-strong bg-surface-2 text-ink-3'}`}
-          transition={{ duration: 0.7, repeat: complete ? Infinity : 0, repeatDelay: 2.4 }}
+          transition={{ duration: 0.7, ease: ease.out }}
         >
           <Gift size={22} strokeWidth={2.5} />
         </motion.span>

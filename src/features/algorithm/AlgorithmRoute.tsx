@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import {
   ArrowLeft,
   ArrowRight,
@@ -24,6 +25,7 @@ import { Menu } from '@/components/ui/Menu';
 import { brand } from '@/config/brand';
 import { catalog, categoryById, type AlgorithmEntry } from '@/content/catalog';
 import { usePageMeta } from '@/hooks/usePageMeta';
+import { spring } from '@/lib/motion';
 import { useUserStore } from '@/stores/userStore';
 import { AlgorithmContext, type AlgorithmTab } from './AlgorithmContext';
 import { QuizView } from './QuizView';
@@ -87,11 +89,12 @@ export default function AlgorithmRoute({ entry }: { readonly entry: AlgorithmEnt
     <AlgorithmContext.Provider value={context}>
       <div style={categoryVars(entry.category)}>
         <AlgorithmHeader entry={entry} onTab={setTab} tab={tab} />
-        <div className="mt-6">
+        {/* смена этапа: новое содержимое проявляется, а не появляется рывком; без размытия — блок большой */}
+        <motion.div animate={{ opacity: 1, y: 0 }} className="mt-6" initial={{ opacity: 0, y: 10 }} key={tab} transition={spring.smooth}>
           {tab === 'demo' && <Suspense fallback={<PageSkeleton />}>{demo}</Suspense>}
           {tab === 'theory' && <TheoryView entry={entry} onNavigate={setTab} />}
           {tab === 'quiz' && <QuizView entry={entry} onNavigate={setTab} />}
-        </div>
+        </motion.div>
         <NeighborNav entry={entry} />
       </div>
     </AlgorithmContext.Provider>

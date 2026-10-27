@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { spring } from '@/lib/motion';
 
 interface SwitchProps {
   readonly checked: boolean;
@@ -29,7 +30,7 @@ export function Switch({ checked, onChange, label, description, disabled = false
         <motion.span
           animate={{ x: checked ? 20 : 0 }}
           className="block h-6 w-6 rounded-full bg-white shadow-[0_2px_0_rgb(0_0_0/0.15)]"
-          transition={{ type: 'spring', stiffness: 600, damping: 34 }}
+          transition={spring.snappy}
         />
       </button>
     </label>

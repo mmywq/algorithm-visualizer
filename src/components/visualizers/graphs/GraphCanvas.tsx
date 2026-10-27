@@ -4,6 +4,7 @@ import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import type { ColorName } from '@/content/catalog';
 import { clampWeight, edgePairKey, type GraphKind } from '@/lib/graphEditing';
 import { GRAPH_CANVAS_HEIGHT, GRAPH_CANVAS_WIDTH } from '@/lib/graphLayout';
+import { ease } from '@/lib/motion';
 import type { GraphAlgorithmFrame, GraphEdge, GraphSnapshot, NodeId } from '@/types';
 
 const NODE_RADIUS = 23;
@@ -305,7 +306,7 @@ export function GraphCanvas({ graph, frame, editable, kind, startNodeId, targetN
                 markerEnd={kind.directed ? `url(#arrow-${tone})` : undefined}
                 strokeDasharray={style.dash}
                 strokeLinecap="round"
-                transition={{ duration: 0.25 }}
+                transition={{ duration: 0.25, ease: ease.out }}
               />
               {editable && (
                 <path
@@ -372,15 +373,19 @@ export function GraphCanvas({ graph, frame, editable, kind, startNodeId, targetN
                 />
               )}
               {isCurrent && (
-                <circle
-                  className="graph-node-pulse"
-                  cx={node.position.x}
-                  cy={node.position.y}
-                  fill="none"
-                  r={NODE_RADIUS + 6}
-                  stroke="rgb(var(--c-purple))"
-                  strokeWidth={4}
-                />
+                <>
+                  {/* текущая вершина: спокойное кольцо и одна «волна» в момент, когда обход пришёл сюда */}
+                  <circle cx={node.position.x} cy={node.position.y} fill="none" r={NODE_RADIUS + 6} stroke="rgb(var(--c-purple))" strokeWidth={4} />
+                  <circle
+                    className="graph-node-ping"
+                    cx={node.position.x}
+                    cy={node.position.y}
+                    fill="none"
+                    r={NODE_RADIUS + 6}
+                    stroke="rgb(var(--c-purple))"
+                    strokeWidth={3}
+                  />
+                </>
               )}
               <circle cx={node.position.x} cy={node.position.y + 4} fill={style.press} r={NODE_RADIUS} />
               <motion.circle
@@ -390,7 +395,7 @@ export function GraphCanvas({ graph, frame, editable, kind, startNodeId, targetN
                 initial={false}
                 r={NODE_RADIUS}
                 strokeWidth={isSelected ? 4 : 2.5}
-                transition={{ duration: 0.25 }}
+                transition={{ duration: 0.25, ease: ease.out }}
               />
               <text
                 dominantBaseline="central"

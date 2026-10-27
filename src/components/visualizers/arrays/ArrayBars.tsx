@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useElementWidth } from '@/hooks/useElementSize';
+import { ease, exitFast, spring } from '@/lib/motion';
 import type { ArrayAlgorithmFrame, ArrayItem } from '@/types';
 
 interface ArrayBarsProps {
@@ -103,14 +104,16 @@ export function ArrayBars({ frame, height = 260, showIndices = true }: ArrayBars
           <AnimatePresence>
             {groupPointers(pointers).map(([position, names]) => (
               <motion.span
-                animate={{ left: position * (barWidth + GAP) + barWidth / 2, opacity: 1 }}
-                className="absolute top-0.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-1.5 py-0.5 font-mono text-[11px] font-bold text-surface"
-                exit={{ opacity: 0 }}
-                initial={{ left: position * (barWidth + GAP) + barWidth / 2, opacity: 0 }}
+                animate={{ x: position * (barWidth + GAP) + barWidth / 2, opacity: 1 }}
+                className="absolute left-0 top-0.5"
+                exit={{ opacity: 0, transition: exitFast }}
+                initial={{ x: position * (barWidth + GAP) + barWidth / 2, opacity: 0 }}
                 key={names.join('+')}
-                transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                transition={spring.viz}
               >
-                ▲ {names.join(', ')}
+                <span className="block -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-1.5 py-0.5 font-mono text-[11px] font-bold text-surface">
+                  ▲ {names.join(', ')}
+                </span>
               </motion.span>
             ))}
           </AnimatePresence>
@@ -135,11 +138,11 @@ function TargetLine({
   const top = Math.max(0, Math.min(plotHeight, baseline - value * scale));
   return (
     <motion.div
-      animate={{ top }}
+      animate={{ y: top }}
       aria-hidden="true"
-      className="pointer-events-none absolute -left-3 -right-3 z-10 border-t-[3px] border-dashed border-yellow"
+      className="pointer-events-none absolute -left-3 -right-3 top-0 z-10 border-t-[3px] border-dashed border-yellow"
       initial={false}
-      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      transition={spring.viz}
     >
       <span
         className="absolute -left-1 -top-[13px] rounded-md bg-yellow px-1.5 py-0.5 font-mono text-[11px] font-black leading-none text-on"
@@ -185,14 +188,15 @@ function Bar({ item, index, tone, barWidth, baseline, scale, plotHeight, fontSiz
       className="absolute left-0 top-0"
       initial={false}
       style={{ width: barWidth, height: plotHeight }}
-      transition={{ type: 'spring', stiffness: 420, damping: 32, mass: 0.8 }}
+      transition={spring.viz}
     >
       <motion.div
-        animate={{ top, height: barHeight, backgroundColor: colors.fill, boxShadow: `inset 0 -5px 0 ${colors.press}` }}
+        animate={{ top, height: barHeight, backgroundColor: colors.fill, color: colors.ink, boxShadow: `inset 0 -5px 0 ${colors.press}` }}
         className={`absolute inset-x-0 flex justify-center font-mono font-extrabold ${isNegative ? 'items-end rounded-b-[10px] pb-1.5' : 'items-start rounded-t-[10px] pt-1'}`}
         initial={false}
-        style={{ color: colors.ink, fontSize }}
-        transition={{ duration: 0.28, ease: [0.2, 0.8, 0.2, 1] }}
+        // цвет текста перекрашивается вместе с фоном — иначе на миг проседает контраст
+        style={{ fontSize }}
+        transition={{ duration: 0.3, ease: ease.out }}
       >
         {barWidth >= 20 ? item.value : ''}
       </motion.div>

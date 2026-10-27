@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { brand } from '@/config/brand';
+import { spring } from '@/lib/motion';
 import { useConsentStore } from '@/stores/consentStore';
 
 const COOKIE = ['..OOOO..', '.OccccO.', 'OcdcccdO', 'OccccccO', 'OcccdccO', 'OdccccdO', '.OccccO.', '..OOOO..'];
@@ -32,7 +33,7 @@ export function CookieBanner() {
           exit={{ opacity: 0, y: 24 }}
           initial={{ opacity: 0, y: 24 }}
           role="dialog"
-          transition={{ type: 'spring', stiffness: 260, damping: 26, delay: 0.6 }}
+          transition={{ ...spring.smooth, delay: 0.6 }}
         >
           <div className="window-bar" style={{ '--cat': 'var(--c-yellow)' } as React.CSSProperties}>
             <span className="window-title">cookie.exe</span>

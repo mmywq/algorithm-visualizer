@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import type { Cell, DpFrame } from '@/algorithms/dp/dp';
+import { spring } from '@/lib/motion';
 
 const same = (a: Cell | undefined, r: number, c: number): boolean => a !== undefined && a[0] === r && a[1] === c;
 const inList = (list: readonly Cell[] | undefined, r: number, c: number): boolean => list?.some((cell) => cell[0] === r && cell[1] === c) === true;
@@ -64,7 +65,7 @@ export function DpTable({ frame }: { readonly frame: DpFrame | null }) {
                     <motion.div
                       animate={{ scale: isCurrent ? 1.08 : 1 }}
                       className={`flex items-center justify-center rounded-lg border-2 font-black transition-colors duration-150 ${tone} ${size}`}
-                      transition={{ type: 'spring', stiffness: 420, damping: 26 }}
+                      transition={spring.snappy}
                     >
                       {value ?? '·'}
                     </motion.div>

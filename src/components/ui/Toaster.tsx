@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { CircleAlert, CircleCheck, Info, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { create } from 'zustand';
+import { exitFast, spring } from '@/lib/motion';
 
 type ToastTone = 'success' | 'info' | 'error' | 'custom';
 
@@ -67,12 +68,12 @@ export function Toaster() {
           <motion.div
             animate={{ opacity: 1, y: 0, scale: 1 }}
             className="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-2xl border-2 border-line bg-surface p-3.5 pr-2 shadow-float"
-            exit={{ opacity: 0, y: 12, scale: 0.96, transition: { duration: 0.15 } }}
+            exit={{ opacity: 0, y: 6, scale: 0.98, transition: exitFast }}
             initial={{ opacity: 0, y: 24, scale: 0.94 }}
             key={item.id}
             layout
             role="status"
-            transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+            transition={spring.smooth}
           >
             <span className="mt-0.5 shrink-0">{item.tone === 'custom' ? item.icon : toneIcon[item.tone]}</span>
             <div className="min-w-0 flex-1">

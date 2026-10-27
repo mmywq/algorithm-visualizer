@@ -7,6 +7,7 @@ import { categoryVars } from '@/components/ui/cat';
 import { CategoryIcon } from '@/components/ui/CategoryArt';
 import { catalog, categoryById } from '@/content/catalog';
 import { useHotkeys } from '@/hooks/useHotkeys';
+import { ease } from '@/lib/motion';
 import { searchCatalog } from '@/lib/search';
 import { resolveTheme, useSettingsStore } from '@/stores/settingsStore';
 import { useUiStore } from '@/stores/uiStore';
@@ -145,7 +146,7 @@ export function CommandPalette() {
             initial={{ opacity: 0, y: -8, scale: 0.98 }}
             onKeyDown={onKeyDown}
             role="dialog"
-            transition={{ duration: 0.16 }}
+            transition={{ duration: 0.16, ease: ease.out }}
           >
             <div className="flex items-center gap-3 border-b-2 border-line px-4 py-3">
               <Search className="shrink-0 text-ink-3" size={22} strokeWidth={2.5} />

@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { useId, useState } from 'react';
 import { Window } from '@/components/ui/Window';
+import { spring } from '@/lib/motion';
 import type { PseudocodeLine } from '@/types';
 
 interface PseudocodePanelProps {
@@ -44,7 +45,7 @@ export function PseudocodePanel({ lines, activeLine, collapsible = false }: Pseu
                   className="absolute inset-0 rounded-lg border-2 border-cat bg-cat/12"
                   layoutId={highlightId}
                   style={{ boxShadow: '0 0 18px -6px rgb(var(--cat))' }}
-                  transition={{ type: 'spring', stiffness: 520, damping: 40 }}
+                  transition={spring.snappy}
                 />
               )}
               <div className="relative flex gap-2.5">

@@ -6,6 +6,7 @@ import { ArrayAlgorithmDemo } from '@/demos/shared/ArrayAlgorithmDemo';
 import { KeyField } from '@/features/demo/KeyField';
 import type { LegendItem } from '@/features/demo/Legend';
 import { intCodec, useUrlState } from '@/hooks/useUrlState';
+import { spring } from '@/lib/motion';
 import { pluralize } from '@/lib/progress';
 import type { ArrayAlgorithmFrame, PseudocodeLine } from '@/types';
 
@@ -83,10 +84,10 @@ function SearchStats({ frame, bound }: { readonly frame: ArrayAlgorithmFrame | n
           </div>
           <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-surface-2">
             <motion.div
-              animate={{ width: `${share * 100}%` }}
-              className="h-full rounded-full bg-brand"
+              animate={{ clipPath: `inset(0 ${100 - share * 100}% 0 0 round 999px)` }}
+              className="h-full w-full rounded-full bg-brand"
               initial={false}
-              transition={{ type: 'spring', stiffness: 260, damping: 30 }}
+              transition={spring.smooth}
             />
           </div>
         </div>

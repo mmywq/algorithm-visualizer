@@ -7,6 +7,7 @@ import { TextInput } from '@/features/demo/TextInput';
 import { useDemoPlayer } from '@/features/player/useDemoPlayer';
 import { useFrames } from '@/features/player/usePlayer';
 import { stringCodec, useUrlState } from '@/hooks/useUrlState';
+import { spring } from '@/lib/motion';
 import { countOf } from '@/lib/plural';
 
 type Run = (text: string, pattern: string) => Generator<StringFrame, void, unknown>;
@@ -50,10 +51,10 @@ function SearchStats({ frame, bound }: { readonly frame: StringFrame | null; rea
       </div>
       <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-surface-2">
         <motion.div
-          animate={{ width: `${share * 100}%` }}
-          className="h-full rounded-full bg-brand"
+          animate={{ clipPath: `inset(0 ${100 - share * 100}% 0 0 round 999px)` }}
+          className="h-full w-full rounded-full bg-brand"
           initial={false}
-          transition={{ type: 'spring', stiffness: 260, damping: 30 }}
+          transition={spring.smooth}
         />
       </div>
     </section>

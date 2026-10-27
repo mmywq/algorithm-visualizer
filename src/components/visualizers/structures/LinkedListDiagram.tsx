@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useId } from 'react';
 import { useElementWidth } from '@/hooks/useElementSize';
+import { ease, exitFast, spring } from '@/lib/motion';
 import type { LinkedListFrame, ListNode } from '@/types';
 
 const NODE_W = 82;
@@ -165,7 +166,7 @@ export function LinkedListDiagram({ frame }: { readonly frame: LinkedListFrame |
                     stroke={link.changed ? 'rgb(var(--c-orange))' : 'rgb(var(--viz-edge))'}
                     strokeLinecap="round"
                     strokeWidth={link.changed ? 4 : 3}
-                    transition={{ duration: 0.45, ease: [0.2, 0.8, 0.2, 1] }}
+                    transition={{ duration: 0.45, ease: ease.out }}
                   />
                 ))}
               </AnimatePresence>
@@ -178,13 +179,13 @@ export function LinkedListDiagram({ frame }: { readonly frame: LinkedListFrame |
                 const names = pointers.byNode.get(node.id) ?? [];
                 return (
                   <motion.div
-                    animate={{ left: box.x, top: box.y, opacity: tone === 'removed' ? 0.75 : 1, scale: 1 }}
-                    className="absolute"
-                    exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
-                    initial={{ left: box.x, top: box.y - 16, opacity: 0, scale: 0.6 }}
+                    animate={{ x: box.x, y: box.y, opacity: tone === 'removed' ? 0.75 : 1, scale: 1 }}
+                    className="absolute left-0 top-0"
+                    exit={{ opacity: 0, scale: 0.85, transition: exitFast }}
+                    initial={{ x: box.x, y: box.y - 16, opacity: 0, scale: 0.9 }}
                     key={node.id}
                     style={{ width: NODE_W, height: NODE_H }}
-                    transition={{ type: 'spring', stiffness: 360, damping: 30 }}
+                    transition={spring.viz}
                   >
                     <div
                       className={`flex h-full overflow-hidden rounded-xl border-2 font-mono font-black transition-colors duration-200 ${toneClass[tone]}`}

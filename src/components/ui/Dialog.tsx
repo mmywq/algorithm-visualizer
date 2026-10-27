@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { ease, exitFast, spring } from '@/lib/motion';
 
 interface DialogProps {
   readonly open: boolean;
@@ -81,10 +82,10 @@ export function Dialog({ open, onClose, title, description, children, footer, si
             exit={{ opacity: 0 }}
             initial={{ opacity: 0 }}
             onClick={onClose}
-            transition={{ duration: 0.18 }}
+            transition={{ duration: 0.2, ease: ease.out }}
           />
           <motion.div
-            animate={asSheet ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
+            animate={asSheet ? { y: 0 } : { opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
             aria-describedby={description === undefined ? undefined : `${titleId}-desc`}
             aria-labelledby={title === undefined ? undefined : titleId}
             aria-modal="true"
@@ -96,15 +97,15 @@ export function Dialog({ open, onClose, title, description, children, footer, si
             dragListener={false}
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 0.6 }}
-            exit={asSheet ? { y: '100%' } : { opacity: 0, scale: 0.96, y: 8 }}
-            initial={asSheet ? { y: '100%' } : { opacity: 0, scale: 0.96, y: 8 }}
+            exit={asSheet ? { y: '100%', transition: { duration: 0.24, ease: ease.in } } : { opacity: 0, scale: 0.98, y: 4, transition: exitFast }}
+            initial={asSheet ? { y: '100%' } : { opacity: 0, scale: 0.96, y: 10, filter: 'blur(4px)' }}
             onDragEnd={(_, info) => {
               if (info.offset.y > 120 || info.velocity.y > 600) onClose();
             }}
             ref={panelRef}
             role="dialog"
             tabIndex={-1}
-            transition={asSheet ? { type: 'spring', damping: 32, stiffness: 340 } : { duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }}
+            transition={spring.smooth}
           >
             {asSheet && (
               <div

@@ -8,6 +8,7 @@ import { PlayerBar } from '@/features/player/PlayerBar';
 import { isMiss, type AnyFrame, type Player } from '@/features/player/usePlayer';
 import { useHotkeys } from '@/hooks/useHotkeys';
 import { useIsDesktop } from '@/hooks/useMediaQuery';
+import { ease } from '@/lib/motion';
 import { SPEED_OPTIONS } from '@/stores/settingsStore';
 import { useUserStore } from '@/stores/userStore';
 import type { PseudocodeLine } from '@/types';
@@ -183,7 +184,7 @@ export function DemoLayout({
             className="overflow-hidden"
             exit={{ opacity: 0, height: 0 }}
             initial={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
+            transition={{ duration: 0.26, ease: ease.out }}
           >
             <Window bodyClassName="p-5" className="mb-4" title={data.title ?? 'Входные данные'}>
               {data.editor}
