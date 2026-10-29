@@ -1,6 +1,8 @@
 # Алгоскоп
 
-[![CI](https://github.com/mmywq/algorithm-visualizer/actions/workflows/ci.yml/badge.svg?branch=product-redesign)](https://github.com/mmywq/algorithm-visualizer/actions/workflows/ci.yml)
+[![CI](https://github.com/mmywq/algorithm-visualizer/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mmywq/algorithm-visualizer/actions/workflows/ci.yml)
+
+**Сайт:** https://algorithm-visualizer-rust-iota.vercel.app
 
 Интерактивный тренажёр по алгоритмам и структурам данных. Каждый алгоритм показан пошаговой анимацией на данных пользователя. К каждому есть теория, псевдокод с подсветкой текущей строки и тест. Для учебных заведений — классы, задания и сводка прогресса группы.
 
@@ -128,6 +130,8 @@ WebKit локально включается переменной `PW_WEBKIT=1`;
 ## Развёртывание
 
 `npm run build` собирает статический сайт в `dist/`. Его можно разместить на любом статическом хостинге. Нужно одно правило: все неизвестные пути отдают `index.html`, потому что маршрутизация работает в браузере.
+
+Сайт развёрнут на Vercel: настройки в `vercel.json` (все пути отдают приложение, `sw.js` не кешируется), адрес для production-сборки — в `.env.production`.
 
 Пример для nginx:
 
